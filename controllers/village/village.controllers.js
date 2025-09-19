@@ -1,10 +1,12 @@
 import { dbExecution } from "../../config/dbConfig.js";
  
 
+// queery vill data all
+
 export const query_village_dataall = async (req, res) => { // done
  
   try {
-    const query = `SELECT id, village,arean FROM public.tbprovince order by id asc limit 25`;
+    const query = `SELECT villageid, village,arean,districtid FROM public.tbprovince order by id asc limit 25`;
     const resultSingle = await dbExecution(query, []);
     console.log("Query result:", resultSingle?.rows);
     return res.json(resultSingle?.rows);
@@ -14,43 +16,115 @@ export const query_village_dataall = async (req, res) => { // done
   }
 };
 
-export const query_village_dataone = async (req, res) => { // done
-   const id=req.body.id;
+
+// query village by district id
+export const query_village_data_by_district_id = async (req, res) => {
+  const { districtid } = req.body;
+
   try {
-    const query = `SELECT id, village,arean FROM public.tbvillage where id='${id}'`;
-    const resultSingle = await dbExecution(query, []);
-    console.log("Query result:", resultSingle?.rows);
+    if (!districtid) {
+      return res.status(400).json({ error: "districtid is required" });
+    }
+
+    const query = `
+      SELECT villageid, village, arean
+      FROM public.tbvillage
+      WHERE districtid = $1 order by villageid asc
+    `;
+    const resultSingle = await dbExecution(query, [districtid]);
+
     return res.json(resultSingle?.rows);
   } catch (error) {
-    console.error("Error in testdda:", error);
+    console.error("Error in query_village_data_by_district_id:", error);
     res.status(500).send("Internal Server Error");
   }
 };
 
-export const insert_village_data = async (req, res) => { // done yet 90%
-  const {id,village,arean}=req.body;
+
+
+// query village by id
+
+export const query_village_dataone = async (req, res) => {
+  const { villageid } = req.body;
+
   try {
-    const query = `INSERT INTO public.tbvillage(id, village, arean)VALUES ('${id}', '${village}', '${arean}');`;
-    const resultSingle = await dbExecution(query, []);
-    console.log("Query result:", resultSingle?.rows);
+    const query = `
+      SELECT villageid, village, arean
+      FROM public.tbvillage
+      WHERE villageid = $1
+    `;
+    const resultSingle = await dbExecution(query, [villageid]);
+
     return res.json(resultSingle?.rows);
   } catch (error) {
-    console.error("Error in testdda:", error);
+    console.error("Error in query_village_dataone:", error);
     res.status(500).send("Internal Server Error");
   }
 };
 
-export const update_village_data = async (req, res) => { // done
-  
-   const {id,village,arean}=req.body;
+
+
+// insert village data
+
+export const insert_village_data = async (req, res) => {
+  const { villageid, village, arean, districtid } = req.body;
 
   try {
-    const query = `UPDATE public.tbvillage SET village='${village}', arean='${arean}' WHERE id='${id}'`;
-    const resultSingle = await dbExecution(query, []);
-    console.log("Query result:", resultSingle?.rows);
-    return res.json(resultSingle?.rows);
+    if (!villageid || !village || !arean || !districtid) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    const query = `
+      INSERT INTO public.tbvillage (villageid, village, arean, districtid)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+    const values = [villageid, village, arean, districtid];
+    const resultSingle = await dbExecution(query, values);
+
+    return res.status(201).json({
+      status: true,
+      message: "Village inserted successfully",
+      data: resultSingle?.rows[0],
+    });
   } catch (error) {
-    console.error("Error in testdda:", error);
+    console.error("Error in insert_village_data:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+
+// update village data by id
+
+export const update_village_data = async (req, res) => {
+  const { villageid, village, arean } = req.body;
+
+  try {
+    if (!villageid || !village || !arean) {
+      return res.status(400).json({ error: "villageid, village, and arean are required" });
+    }
+
+    const query = `
+      UPDATE public.tbvillage
+      SET village = $1,
+          arean = $2
+      WHERE villageid = $3
+      RETURNING *
+    `;
+    const values = [village, arean, villageid];
+    const resultSingle = await dbExecution(query, values);
+
+    if (resultSingle.rowCount === 0) {
+      return res.status(404).json({ error: "Village not found" });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Village updated successfully",
+      data: resultSingle.rows[0],
+    });
+  } catch (error) {
+    console.error("Error in update_village_data:", error);
     res.status(500).send("Internal Server Error");
   }
 };
