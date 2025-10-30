@@ -6,7 +6,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 
 export const query_district_dataall = async (req, res) => {
   try {
-    const query = `SELECT districtid, district, provinceid FROM public.tbdistrict order by id asc`;
+    const query = `SELECT districtid, district, arean, provinceid
+	FROM public.tbdistrict order by districtid asc`;
     const resultSingle = await dbExecution(query, []); 
     if (resultSingle) {
       res.status(200).send({

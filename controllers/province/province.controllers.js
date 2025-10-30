@@ -3,7 +3,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 export const quer_province_dataall = async (req, res) => { // done
   
   try {
-    const query = `SELECT id, province FROM public.tbprovince order by id asc`;
+    const query = `SELECT provinceid, province
+	FROM public.tbprovince;`;
     const resultSingle = await dbExecution(query, []);
     console.log("Query result:", resultSingle?.rows);
     return res.json(resultSingle?.rows);

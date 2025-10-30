@@ -9,8 +9,8 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'itcw-' + uniqueSuffix + '-' + file.originalname);  // filenamek
+    cb(null, 'saub-' + uniqueSuffix + '-' + file.originalname);  // filenamek
   }
 });
  
-export const uploadimage = multer({ storage: storage }).single('file');
+export const uploadimage = multer({ storage: storage }).array('files', 5); 
