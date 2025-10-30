@@ -4,7 +4,12 @@
 *.env.*
 /uploads/*
 /logs
-
+landimage 
+taxiimage
+tshuajimage
+houseimage
+creamimage
+mouaimage
 
 git rm -rf --cached .
 git add .
