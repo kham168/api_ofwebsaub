@@ -1,9 +1,9 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
-export const query_cream_dataall = async (req, res) => {
+export const queryCreamDataAll = async (req, res) => {
   try {
     // Extract pagination params from query
-    const { page = "0", limit = "15" } = req.query;
+    const { page = "0", limit = "25" } = req.params;
 
     // Validate and convert to numbers
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
@@ -31,11 +31,9 @@ export const query_cream_dataall = async (req, res) => {
         c.tel,
         c.detail,
         c.donation,
-        COALESCE(ARRAY_AGG(ci.url) FILTER (WHERE ci.url IS NOT NULL), '{}') AS images
+        c.image
       FROM public.tbcream c
-      LEFT JOIN public.tbcreamimage ci ON ci.id = c.id
-      WHERE c.status = '1'
-      GROUP BY c.id, c.creamname, c."Price1", c."Price2", c."Price3", c.tel, c.detail, c.donation
+      WHERE c.status = '1' 
       ORDER BY c.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -47,10 +45,25 @@ export const query_cream_dataall = async (req, res) => {
     const baseUrl = "http://localhost:5151/";
 
     // Append full URLs to images
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        // PostgreSQL returns arrays as strings like "{a,b,c}"
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     // Unified API response
     res.status(200).send({
@@ -74,20 +87,38 @@ export const query_cream_dataall = async (req, res) => {
   }
 };
 
-// search cream data by name
-export const search_cream_data = async (req, res) => {
-  const name = req.body.name;
-
-  if (!name || typeof name !== "string") {
-    return res.status(400).send({
-      status: false,
-      message: "Invalid id",
-      data: [],
-    });
-  }
-
+export const searchCreamData = async (req, res) => {
   try {
-    const query = `SELECT 
+    // ✅ Get parameters from request
+    const { name = "", page = 0, limit = 25 } = req.params;
+
+    // ✅ Validate name
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid or missing name",
+        data: [],
+      });
+    }
+
+    // ✅ Sanitize pagination inputs
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
+    const offset = validPage * validLimit;
+
+    // ✅ Count total matching rows
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM public.tbcream c
+      WHERE c.status = '1' AND c.creamname ILIKE $1;
+    `;
+    const countResult = await dbExecution(countQuery, [`%${name}%`]);
+    const total = parseInt(countResult.rows[0]?.total || 0, 10);
+    const totalPages = Math.ceil(total / validLimit);
+
+    // ✅ Main data query (with pagination)
+    const query = `
+      SELECT 
         c.id,
         c.creamname,
         c."Price1",
@@ -96,30 +127,52 @@ export const search_cream_data = async (req, res) => {
         c.tel,
         c.detail,
         c.donation,
-        COALESCE(ARRAY_AGG(ci.url) FILTER (WHERE ci.url IS NOT NULL), '{}') AS images
+        c.image
       FROM public.tbcream c
-      LEFT JOIN public.tbcreamimage ci ON ci.id = c.id where c.status='1' and c.creamname Ilike $1
-      GROUP BY c.id, c.creamname, c."Price1", c."Price2", c."Price3",c.tel, c.detail,c.donation
-      ORDER BY c.cdate DESC limit 25;
+      WHERE c.status = '1' AND c.creamname ILIKE $1
+      ORDER BY c.cdate DESC
+      LIMIT $2 OFFSET $3;
     `;
-    const resultSingle = await dbExecution(query, [`%${name}%`]);
-    const rows = resultSingle?.rows || [];
+    const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
+    let rows = result?.rows || [];
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    // ✅ Base URL for images
+    const baseUrl = "http://localhost:5151/";
+
+    // ✅ Parse image array safely
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Final response
+    res.status(200).send({
+      status: rows.length > 0,
+      message: rows.length > 0 ? "Query data success" : "No data found",
+      data: rows,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
-    console.error("Error in query_cream_dataone:", error);
+    console.error("Error in searchCreamData:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -128,12 +181,12 @@ export const search_cream_data = async (req, res) => {
   }
 };
 
-export const query_cream_dataone = async (req, res) => {
+export const queryCreamDataOne = async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id } = req.params; // ✅ fixed destructuring
 
-    // Validate ID input (allow both string or number)
-    if (!id || (typeof id !== "string" && typeof id !== "number")) {
+    // ✅ Validate ID
+    if (!id || typeof id !== "string") {
       return res.status(400).send({
         status: false,
         message: "Invalid or missing ID",
@@ -151,24 +204,36 @@ export const query_cream_dataone = async (req, res) => {
         c.tel,
         c.detail,
         c.donation,
-        COALESCE(ARRAY_AGG(ci.url) FILTER (WHERE ci.url IS NOT NULL), '{}') AS images
-      FROM public.tbcream c
-      LEFT JOIN public.tbcreamimage ci ON ci.id = c.id
-      WHERE c.status = '1' AND c.id = $1
-      GROUP BY c.id, c.creamname, c."Price1", c."Price2", c."Price3", c.tel, c.detail, c.donation;
+        c.image
+      FROM public.tbcream c 
+      WHERE c.id = $1 AND c.status = '1'
     `;
 
     const result = await dbExecution(query, [id]);
     let rows = result?.rows || [];
 
-    // Define base URL for image mapping
+    // ✅ Base URL for image mapping
     const baseUrl = "http://localhost:5151/";
 
-    // Map images to full URLs
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    // ✅ Parse images properly
+    rows = rows.map((r) => {
+      let images = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          images = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          images = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: images.map((img) => baseUrl + img),
+      };
+    });
 
     if (rows.length > 0) {
       res.status(200).send({
@@ -184,7 +249,7 @@ export const query_cream_dataone = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in query_cream_dataone:", error);
+    console.error("Error in queryCreamDataOne:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -194,11 +259,11 @@ export const query_cream_dataone = async (req, res) => {
 };
 
 // insert cream data
+export const insertCreamData = async (req, res) => {
+  const { id, creamName, price1, price2, price3, tel, detail, donation } =
+    req.body;
 
-export const insert_cream_data = async (req, res) => {
-  const { id, creamname, price1, price2, price3, tel, detail } = req.body;
-
-  if (!id || !creamname || !price1 || !detail) {
+  if (!id || !creamName || !price1 || !detail) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields",
@@ -207,32 +272,42 @@ export const insert_cream_data = async (req, res) => {
   }
 
   try {
-    // Insert images first
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        await dbExecution(
-          `INSERT INTO public.tbcreamimage(id, url) VALUES ($1, $2) RETURNING *`,
-          [id, file.filename]
-        );
-      }
-    }
+    // 🖼️ Collect uploaded image filenames into an array
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files.map((file) => file.filename)
+        : [];
 
-    // Insert main cream data
+    // 🧠 Insert into tbcream
     const query = `
-  INSERT INTO public.tbcream(id, creamname, "Price1", "Price2", "Price3",tel, detail, cdate, status)
-  VALUES ($1, $2, $3, $4, $5, $6,$7, NOW(), $8)
-  RETURNING *
-`;
+      INSERT INTO public.tbcream (
+        id, creamname, "Price1", "Price2", "Price3", 
+        tel, detail, image, donation, status, cdate
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[], $9, $10, NOW())
+      RETURNING *;
+    `;
 
-    const values = [id, creamname, price1, price2, price3, tel, detail, "1"];
+    const values = [
+      id,
+      creamName,
+      price1,
+      price2,
+      price3,
+      tel,
+      detail,
+      imageArray, // 👈 image array here
+      donation || "",
+      "1", // status = active
+    ];
 
-    const resultSingle = await dbExecution(query, values);
+    const result = await dbExecution(query, values);
 
-    if (resultSingle && resultSingle.rowCount > 0) {
+    if (result && result.rowCount > 0) {
       return res.status(200).send({
         status: true,
         message: "Insert data successful",
-        data: resultSingle.rows,
+        data: result.rows,
       });
     } else {
       return res.status(400).send({
@@ -242,7 +317,7 @@ export const insert_cream_data = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in insert_cream_data:", error);
+    console.error("Error in insertCreamData:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -253,7 +328,7 @@ export const insert_cream_data = async (req, res) => {
 
 // delet cream data  ||  update status 1 to 0
 
-export const delete_cream_data = async (req, res) => {
+export const deleteCreamData = async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -282,7 +357,7 @@ export const delete_cream_data = async (req, res) => {
 
 // re-open cream data status 0 to 1
 
-export const reopen_cream_data_status_0_to_1 = async (req, res) => {
+export const reopenCreamDataStatus0To1 = async (req, res) => {
   const { id } = req.body;
 
   try {

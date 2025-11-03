@@ -1,18 +1,15 @@
 import { dbExecution } from "../../config/dbConfig.js";
  
-  
-
-
-  export const query_land_dataall = async (req, res) => {
+   export const queryLandDataAll = async (req, res) => {
   try {
-    const { page = 0, limit = 20 } = req.body;
+    const { page = 0, limit = 20 } = req.params;
 
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total records for pagination
+    // ✅ Count total records
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
       FROM public.tbland l
@@ -21,49 +18,61 @@ import { dbExecution } from "../../config/dbConfig.js";
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // Main query with LIMIT and OFFSET
+    // ✅ Main query
     const query = `
       SELECT 
         l.id,
-        l.ownername,
         l.productname,
         l.area,
         l.price,
+        l.tel,
         l.contactnumber,
         l.locationurl,
         l.locationvideo,
-        l.tel,
         l.moredetail,
-        l.status,
-        l.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT li.url) FILTER (WHERE li.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        l.image,
+        l.cdate
       FROM public.tbland l
-      LEFT JOIN public.tbprovince p ON p.provinceid = l.provinceid
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tblandimage li ON li.id = l.id
+      INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
+      INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1'
-      GROUP BY
-        l.id, l.ownername, l.productname, l.area, l.price,
-        l.contactnumber, l.locationurl, l.locationvideo, l.tel, l.moredetail,
-        l.status, l.cdate, p.province, d.district
+      GROUP BY 
+        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.locationurl, l.locationvideo, l.moredetail, 
+        p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
 
     const result = await dbExecution(query, [validLimit, offset]);
-    let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map(r => ({
-      ...r,
-      images: r.images.map(img => baseUrl + img),
-    }));
+    // ✅ Format image URLs
+    const rows = result.rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
 
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Build response
     const response = {
       lands: rows,
       pagination: {
@@ -75,7 +84,7 @@ import { dbExecution } from "../../config/dbConfig.js";
     };
 
     res.status(200).send({
-      status: rows.length > 0,
+      status: true,
       message: rows.length > 0 ? "Query data successful" : "No data found",
       data: response,
     });
@@ -89,53 +98,65 @@ import { dbExecution } from "../../config/dbConfig.js";
   }
 };
 
-
-// kho lawm
-
-export const query_land_dataone = async (req, res) => {
-  const { id } = req.body;
+export const queryLandDataOne = async (req, res) => {
+  const { id } = req.params;
+  const baseUrl = "http://localhost:5151/";
 
   try {
     const query = `
-   SELECT 
-  l.id,
-  l.ownername,
-  l.productname,
-  l.area,
-  l.price,
-  l.contactnumber,
-  l.locationurl,
-  l.locationvideo,
-  l.tel,
-  l.moredetail,
-  l.status,
-  l.cdate,
-  p.province,
-  d.district,
-  COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-  COALESCE(ARRAY_AGG(DISTINCT li.url)    FILTER (WHERE li.url IS NOT NULL),    '{}') AS images
-FROM public.tbland l
-LEFT JOIN public.tbprovince p ON p.provinceid = l.provinceid
-LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-LEFT JOIN public.tblandimage li ON li.id = l.id
-WHERE l.id=$1
-GROUP BY
-  l.id, l.ownername, l.productname, l.area, l.price,
-  l.contactnumber, l.locationurl, l.locationvideo,l.tel, l.moredetail,
-  l.status, l.cdate, p.province, d.district
-ORDER BY l.cdate DESC
-LIMIT 50;
+      SELECT 
+        l.id,
+        l.productname,
+        l.area,
+        l.price,
+        l.tel,
+        l.contactnumber,
+        l.locationurl,
+        l.locationvideo,
+        l.moredetail,
+        p.province,
+        d.district,
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        l.image,
+        l.cdate
+      FROM public.tbland l
+      INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
+      INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE l.status = '1' AND l.id = $1
+      GROUP BY 
+        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.locationurl, l.locationvideo, l.moredetail, 
+        p.province, d.district, l.image, l.cdate
+      ORDER BY l.cdate DESC;
     `;
 
     const result = await dbExecution(query, [id]);
 
     if (result && result.rowCount > 0) {
+      // ✅ Parse images just like in queryLandDataAll
+      const row = result.rows[0];
+      let imgs = [];
+
+      if (row.image) {
+        if (Array.isArray(row.image)) {
+          imgs = row.image;
+        } else if (typeof row.image === "string" && row.image.startsWith("{")) {
+          imgs = row.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      row.images = imgs.map((img) => baseUrl + img);
+
       res.status(200).send({
         status: true,
         message: "Query data successful",
-        data: result.rows,
+        data: row,
       });
     } else {
       res.status(404).send({
@@ -154,17 +175,14 @@ LIMIT 50;
   }
 };
 
-
-
-
-export const query_land_data_by_province_and_districtid = async (req, res) => {
+export const queryLandDataByDistrictId = async (req, res) => {
   try {
-    const { provinceid, districtid, page = 0, limit = 20 } = req.body;
+    const { districtId, page = 0, limit = 20 } = req.params;
 
-    if (!provinceid || !districtid) {
+    if (!districtId) {
       return res.status(400).send({
         status: false,
-        message: "Missing province ID or district ID",
+        message: "Missing district ID",
         data: [],
       });
     }
@@ -177,55 +195,66 @@ export const query_land_data_by_province_and_districtid = async (req, res) => {
     // Count total records for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
-      FROM public.tbland l
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      WHERE l.status = '1' AND l.provinceid = $1 AND d.districtid = $2;
+      FROM public.tbland l 
+      WHERE l.status = '1' AND l.districtid = $1;
     `;
-    const countResult = await dbExecution(countQuery, [provinceid, districtid]);
+    const countResult = await dbExecution(countQuery, [districtId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // Main query with LIMIT and OFFSET
+    // Main query
     const query = `
       SELECT 
         l.id,
-        l.ownername,
         l.productname,
         l.area,
         l.price,
+        l.tel,
         l.contactnumber,
         l.locationurl,
         l.locationvideo,
-        l.tel,
         l.moredetail,
-        l.status,
-        l.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT li.url) FILTER (WHERE li.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        l.image,
+        l.cdate
       FROM public.tbland l
-      LEFT JOIN public.tbprovince p ON p.provinceid = l.provinceid
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tblandimage li ON li.id = l.id
-      WHERE l.status = '1' AND l.provinceid = $1 AND d.districtid = $2
-      GROUP BY
-        l.id, l.ownername, l.productname, l.area, l.price,
-        l.contactnumber, l.locationurl, l.locationvideo, l.tel, l.moredetail,
-        l.status, l.cdate, p.province, d.district
+      INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
+      INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE l.status = '1' AND l.districtid = $1
+      GROUP BY 
+        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.locationurl, l.locationvideo, l.moredetail, 
+        p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
-      LIMIT $3 OFFSET $4;
+      LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [provinceid, districtid, validLimit, offset]);
+    const result = await dbExecution(query, [districtId, validLimit, offset]);
     let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map(r => ({
-      ...r,
-      images: r.images.map(img => baseUrl + img),
-    }));
+    // ✅ Parse image arrays like before
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     const response = {
       lands: rows,
@@ -243,7 +272,7 @@ export const query_land_data_by_province_and_districtid = async (req, res) => {
       data: response,
     });
   } catch (error) {
-    console.error("Error in query_land_data_by_province_and_districtid:", error);
+    console.error("Error in query_land_data_by_districtid:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -253,16 +282,14 @@ export const query_land_data_by_province_and_districtid = async (req, res) => {
 };
 
 
-
-
- export const query_land_data_by_district_and_villageid = async (req, res) => {
+export const queryLandDataByVillageId = async (req, res) => {
   try {
-    const { districtid, villageid, page = 0, limit = 20 } = req.body;
+    const { villageId, page = 0, limit = 20 } = req.params;
 
-    if (!districtid || !villageid) {
+    if (!villageId) {
       return res.status(400).send({
         status: false,
-        message: "Missing district ID or village ID",
+        message: "Missing village ID",
         data: [],
       });
     }
@@ -272,59 +299,71 @@ export const query_land_data_by_province_and_districtid = async (req, res) => {
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total records for pagination
+    // ✅ Count total records for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
       FROM public.tbland l
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-      WHERE l.status = '1' AND d.districtid = $1 AND j.villageid = $2;
+      WHERE l.status = '1'
+      AND $1 = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[]);
     `;
-    const countResult = await dbExecution(countQuery, [districtid, villageid]);
+    const countResult = await dbExecution(countQuery, [villageId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // Main query with LIMIT and OFFSET
+    // ✅ Main query with LIMIT and OFFSET
     const query = `
       SELECT 
         l.id,
-        l.ownername,
         l.productname,
         l.area,
         l.price,
+        l.tel,
         l.contactnumber,
         l.locationurl,
         l.locationvideo,
-        l.tel,
         l.moredetail,
-        l.status,
-        l.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT li.url) FILTER (WHERE li.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        l.image,
+        l.cdate
       FROM public.tbland l
-      LEFT JOIN public.tbprovince p ON p.provinceid = l.provinceid
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tblandimage li ON li.id = l.id
-      WHERE l.status = '1' AND d.districtid = $1 AND j.villageid = $2
-      GROUP BY
-        l.id, l.ownername, l.productname, l.area, l.price,
-        l.contactnumber, l.locationurl, l.locationvideo, l.tel, l.moredetail,
-        l.status, l.cdate, p.province, d.district
+      INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
+      INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE l.status = '1'
+      AND $1 = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
+      GROUP BY 
+        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.locationurl, l.locationvideo, l.moredetail, 
+        p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
-      LIMIT $3 OFFSET $4;
+      LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [districtid, villageid, validLimit, offset]);
+    const result = await dbExecution(query, [villageId, validLimit, offset]);
     let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map(r => ({
-      ...r,
-      images: r.images.map(img => baseUrl + img),
-    }));
+    // ✅ Proper image parsing
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     const response = {
       lands: rows,
@@ -342,7 +381,7 @@ export const query_land_data_by_province_and_districtid = async (req, res) => {
       data: response,
     });
   } catch (error) {
-    console.error("Error in query_land_data_by_district_and_villageid:", error);
+    console.error("Error in query_land_data_by_villageid:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -351,203 +390,131 @@ export const query_land_data_by_province_and_districtid = async (req, res) => {
   }
 };
 
-
-export const query_land_data_by_district_or_arean = async (req, res) => {
-  try {
-    const { districtid, area, page = 0, limit = 20 } = req.body;
-
-    if (!districtid || !area) {
-      return res.status(400).send({
-        status: false,
-        message: "Missing district ID or area",
-        data: [],
-      });
-    }
-
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
-    const offset = validPage * validLimit;
-    const baseUrl = "http://localhost:5151/";
-
-    // Count total records for pagination
-    const countQuery = `
-      SELECT COUNT(DISTINCT l.id) AS total
-      FROM public.tbland l
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      WHERE l.status = '1' AND d.districtid = $1 AND v.arean ILIKE $2;
-    `;
-    const countResult = await dbExecution(countQuery, [districtid, `%${area}%`]);
-    const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
-
-    // Main query with LIMIT and OFFSET
-    const query = `
-      SELECT 
-        l.id,
-        l.ownername,
-        l.productname,
-        l.area,
-        l.price,
-        l.tel,
-        l.contactnumber,
-        l.locationurl,
-        l.locationvideo,
-        l.moredetail,
-        l.status,
-        l.cdate,
-        p.province,
-        d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT li.url) FILTER (WHERE li.url IS NOT NULL), '{}') AS images
-      FROM public.tbland l
-      LEFT JOIN public.tbprovince p ON p.provinceid = l.provinceid
-      LEFT JOIN public.tbdistrict d ON d.districtid = l.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = l.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tblandimage li ON li.id = l.id
-      WHERE l.status = '1' AND d.districtid = $1 AND v.arean ILIKE $2
-      GROUP BY
-        l.id, l.ownername, l.productname, l.area, l.price,
-        l.contactnumber, l.locationurl, l.locationvideo, l.tel, l.moredetail,
-        l.status, l.cdate, p.province, d.district
-      ORDER BY l.cdate DESC
-      LIMIT $3 OFFSET $4;
-    `;
-
-    const result = await dbExecution(query, [districtid, `%${area}%`, validLimit, offset]);
-    let rows = result?.rows || [];
-
-    // Map images to full URLs
-    rows = rows.map(r => ({
-      ...r,
-      images: r.images.map(img => baseUrl + img),
-    }));
-
-    const response = {
-      lands: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
-    };
-
-    res.status(200).send({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: response,
-    });
-  } catch (error) {
-    console.error("Error in query_land_data_by_district_or_arean:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
- 
 
   // insert data //    kho lawm
-export const insert_land_data = async (req, res) => {
+   export const insertLandData = async (req, res) => {
   const {
-    id, ownername, productname, area, price, tel,contactnumber,
-    locationurl, locationvideo, moredetail,
-    provinceid, districtid, villagelistid
+    id,
+    ownername,
+    productname,
+    area,
+    price,
+    tel,
+    contactnumber,
+    locationurl,
+    locationvideo,
+    moredetail,
+    province,
+    district,
+    village,
   } = req.body;
 
-  // helper to normalize villagelistid into an array
-  const parseVillageList = (v) => {
-    if (!v) return [];
-    if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
-    if (typeof v === "string") {
-      const trimmed = v.trim();
-      if (trimmed.startsWith("[")) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          return Array.isArray(parsed) ? parsed.map(x => String(x).trim()).filter(Boolean) : [];
-        } catch {}
-      }
-      return trimmed.split(",").map(x => x.trim()).filter(Boolean);
-    }
-    return [String(v).trim()];
-  };
-
-  const imageFiles = (req.files && req.files.length) ? req.files : [];
-
   try {
-    await dbExecution("BEGIN", []);
-
-    // 1) Insert images first
-    if (imageFiles.length > 0) {
-      const insertImageQuery = `
-        INSERT INTO public.tblandimage(id, url)
-        VALUES ($1, $2)
-      `;
-      for (const file of imageFiles) {
-        if (!file?.filename) continue;
-        await dbExecution(insertImageQuery, [id, file.filename]);
-      }
+    // ✅ Validate required fields
+    if (!id || !ownername || !productname || !price || !tel) {
+      return res.status(400).send({
+        status: false,
+        message: "Missing required fields",
+        data: [],
+      });
     }
 
-    // 2) Insert village joins
-    const villageIds = parseVillageList(villagelistid);
-    if (villageIds.length > 0) {
-      const insertJoinQuery = `
-        INSERT INTO public.tb_join_villageid(transactionid, villageid)
-        VALUES ($1, $2)
-        ON CONFLICT DO NOTHING
-      `;
-      for (const vid of villageIds) {
-        if (!vid) continue;
-        await dbExecution(insertJoinQuery, [id, vid]);
+    // 🏘️ Parse village into array
+    const parseVillageList = (v) => {
+      if (!v) return [];
+      if (Array.isArray(v))
+        return v.map((x) => String(x).trim()).filter(Boolean);
+      if (typeof v === "string") {
+        const trimmed = v.trim();
+        if (trimmed.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            return Array.isArray(parsed)
+              ? parsed.map((x) => String(x).trim()).filter(Boolean)
+              : [];
+          } catch {
+            // fallback if JSON.parse fails
+          }
+        }
+        return trimmed.split(",").map((x) => x.trim()).filter(Boolean);
       }
-    }
+      return [String(v).trim()];
+    };
 
-    // 3) Insert land info
-    const landQuery = `
+    const villageArray = parseVillageList(village);
+
+    // 🖼️ Collect uploaded image filenames
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files.map((file) => file.filename)
+        : [];
+
+    // ✅ Build SQL Query
+    const query = `
       INSERT INTO public.tbland(
         id, ownername, productname, area, price, tel, contactnumber,
         locationurl, locationvideo, moredetail,
-        status, cdate, provinceid, districtid
+        province, district, village, image,
+        status, cdate
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12,$13)
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7,
+        $8, $9, $10,
+        $11, $12, $13::text[], $14::text[],
+        $15, NOW()
+      )
       RETURNING *;
     `;
- 
-    const landValues = [
-      id, ownername, productname, area, price,tel, contactnumber,
-      locationurl, locationvideo, moredetail,
-      '1', provinceid, districtid
-    ];
-    const landResult = await dbExecution(landQuery, landValues);
 
-    if (!landResult || landResult.rowCount === 0) {
-      await dbExecution("ROLLBACK", []);
-      return res.status(400).send({ status: false, message: "Insert tbland failed" });
+    const values = [
+      id,
+      ownername,
+      productname,
+      area,
+      price,
+      tel,
+      contactnumber,
+      locationurl,
+      locationvideo,
+      moredetail,
+      province,
+      district,
+      villageArray, // array of villages
+      imageArray, // array of images
+      "1", // active status
+    ];
+
+    // ✅ Execute Insert
+    const result = await dbExecution(query, values);
+
+    if (result && result.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Insert land successful",
+        data: result.rows,
+      });
     }
 
-    await dbExecution("COMMIT", []);
-
-    return res.status(200).send({
-      status: true,
-      message: "Insert land successful",
-      data: landResult.rows,
+    return res.status(400).send({
+      status: false,
+      message: "Insert land failed",
+      data: [],
     });
-
   } catch (error) {
-    await dbExecution("ROLLBACK", []);
     console.error("Error in insert_land_data:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: [],
+    });
   }
 };
+
 
 
 ///kho lawm
   
-export const update_active_status_land_data = async (req, res) => {
+export const updateActiveStatusLandData = async (req, res) => {
   const { id, ownername, status } = req.body;
 
   try {
@@ -586,7 +553,7 @@ export const update_active_status_land_data = async (req, res) => {
 
 
   // kho lawm
-export const update_side_and_price_land_data = async (req, res) => {
+export const updateSideAndPriceLandData = async (req, res) => {
   const { id, ownername, side, price } = req.body;
 
   try {
@@ -625,7 +592,7 @@ export const update_side_and_price_land_data = async (req, res) => {
 };
 
 // kho lawm
-export const update_new_link_and_detail_land_data = async (req, res) => {
+export const updateNewLinkAndDetailLandData = async (req, res) => {
   const { id, ownername, new_link, detail } = req.body;
 
   try {

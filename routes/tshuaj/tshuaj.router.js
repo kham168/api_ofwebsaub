@@ -1,14 +1,14 @@
 import Route from "express";
 import { verifyJWT } from "../../middleware/jwt.js";
-import { query_tshuaj_dataall,search_tshuaj_data, query_tshuaj_dataone, insert_tshuaj_data, delete_tshuaj_data,reopen_tshuaj_data_status_0_to_1 } from "../../controllers/tshuaj/tshuaj.controllers.js";
-import { uploadimage } from "../../middleware/tshuaj.uploadimage.js";
+import { queryTshuajDataAll,searchTshuajData, queryTshuajDataOne, insertTshuajData, deleteTshuajData,reopenTshuajDataStatus0To1 } from "../../controllers/tshuaj/tshuaj.controllers.js";
+import { uploadImage } from "../../middleware/tshuaj.uploadimage.js";
 const route = Route();
 
-route.get("/selectall", query_tshuaj_dataall);
-route.post("/searchbyname", search_tshuaj_data);
-route.post("/selectone", query_tshuaj_dataone);
-route.post("/insert", uploadimage,insert_tshuaj_data);
-route.put("/delete", delete_tshuaj_data);
-route.put("/reopen", reopen_tshuaj_data_status_0_to_1);
+route.get("/selectAll/:page/:limit", queryTshuajDataAll); // done 100 % lawm os
+route.get("/searchByName/:name/:page/:limit", searchTshuajData); // done 100 % lawm os
+route.get("/selectOne/:id", queryTshuajDataOne); // done 100 % lawm os
+route.post("/insert", uploadImage,insertTshuajData); // done 100 % lawm os
+route.put("/delete", deleteTshuajData); // yuav tau saib ntxiv    
+route.put("/reopen", reopenTshuajDataStatus0To1); // yuav tau saib ntxiv
 
 export default route;

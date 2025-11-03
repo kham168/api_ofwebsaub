@@ -2,7 +2,7 @@ import { dbExecution } from "../../config/dbConfig.js";
 
 
 // query muas data all or select top 15 
- export const query_muas_dataall = async (req, res) => {
+ export const queryMuasDataAll = async (req, res) => {
   try {
     // Read pagination params from the query string
     const { page = '0', limit = '15' } = req.query;
@@ -33,12 +33,9 @@ import { dbExecution } from "../../config/dbConfig.js";
         m.status,
         m.donation,
         m.cdate,
-        COALESCE(ARRAY_AGG(mi.url) FILTER (WHERE mi.url IS NOT NULL), '{}') AS images
-      FROM public.tbmuas m
-      LEFT JOIN public.tbmuasimage mi ON mi.id = m.id
+        m.image
+      FROM public.tbmuas m 
       WHERE m.status = '1'
-      GROUP BY m.id, m.name, m.price, m.tel, m.detail, m.status, m.donation, m.cdate
-      ORDER BY m.id ASC
       LIMIT $1 OFFSET $2;
     `;
 
@@ -67,10 +64,9 @@ import { dbExecution } from "../../config/dbConfig.js";
   }
 };
 
-export const search_muas_data = async (req, res) => {
-  try {
-    const { name = '' } = req.body;
-    const { page = '0', limit = '15' } = req.query;
+export const searchMuasData = async (req, res) => {
+  try { 
+    const { name, page = '0', limit = '15' } = req.params;
 
     // Validate pagination
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
@@ -106,12 +102,9 @@ export const search_muas_data = async (req, res) => {
         m.detail,
         m.status,
         m.donation,
-        COALESCE(ARRAY_AGG(mi.url) FILTER (WHERE mi.url IS NOT NULL), '{}') AS images
+        image
       FROM public.tbmuas m
-      LEFT JOIN public.tbmuasimage mi ON mi.id = m.id
       WHERE m.status = '1' AND m.name ILIKE $1
-      GROUP BY m.id, m.name, m.price, m.tel, m.detail, m.status, m.donation
-      ORDER BY m.id ASC
       LIMIT $2 OFFSET $3;
     `;
 
@@ -142,10 +135,9 @@ export const search_muas_data = async (req, res) => {
 };
 
 
-
  // query muas data by id
-export const query_muas_dataone = async (req, res) => {
-  const id = req.body.id;
+export const queryMuasDataOne = async (req, res) => {
+  const id = req.params.id;
 
   if (!id || typeof id !== "string") {
     return res.status(400).send({
@@ -164,11 +156,9 @@ export const query_muas_dataone = async (req, res) => {
         m.detail,
         m.status,
         m.donation,
-        COALESCE(ARRAY_AGG(mi.url) FILTER (WHERE mi.url IS NOT NULL), '{}') AS images
-      FROM public.tbmuas m
-      LEFT JOIN public.tbmuasimage mi ON mi.id = m.id
-      WHERE m.status = '1' and m.id = $1
-      GROUP BY m.id, m.name, m.price,m.tel, m.detail, m.status,m.donation;
+        m.image
+      FROM public.tbmuas m 
+      WHERE m.id = $1
     `;
     const resultSingle = await dbExecution(query, [id]);
     const rows = resultSingle?.rows || [];
@@ -196,22 +186,11 @@ export const query_muas_dataone = async (req, res) => {
   }
 };
 
- 
+  
+export const insertMuasData = async (req, res) => {
+  const { id, name, price, tel, detail } = req.body;
 
-// insert muas data
-
-//INSERT INTO public.tbmuasimage(
-//	id, url)
-	//VALUES (?, ?)
-
-export const insert_muas_data = async (req, res) => {
-  const { id, name, price,tel, detail } = req.body;
-  const data = req.body; // define data to hold file
-
-  if (req.file) {
-    data.file = req.file.filename;
-  }
-
+  // Validate required fields
   if (!id || !name || !price || !detail) {
     return res.status(400).send({
       status: false,
@@ -221,28 +200,37 @@ export const insert_muas_data = async (req, res) => {
   }
 
   try {
-    // Insert image only if file exists
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-      const queryImage = `INSERT INTO public.tbmuasimage(id, url) VALUES ($1, $2) RETURNING *`;
-       await dbExecution(queryImage, [id, file.filename]);
-      }
-    }
+    // 🖼️ Collect uploaded image filenames into an array
+    const imageArray = req.files && req.files.length > 0
+      ? req.files.map(file => file.filename)
+      : [];
 
-    // Insert muas data
+    // 🧠 Insert data into tbmuas
     const query = `
-      INSERT INTO public.tbmuas(id, name, price,tel, detail, status, cdate)
-      VALUES ($1, $2, $3, $4, $5,$6, NOW())
-      RETURNING *
+      INSERT INTO public.tbmuas (
+        id, name, price, tel, detail, image, status, cdate
+      )
+      VALUES ($1, $2, $3, $4, $5, $6::text[], $7, NOW())
+      RETURNING *;
     `;
-    const values = [id, name, price,tel, detail, '1'];
-    const resultSingle = await dbExecution(query, values);
 
-    if (resultSingle && resultSingle.rowCount > 0) {
+    const values = [
+      id,
+      name,
+      price,
+      tel,
+      detail,
+      imageArray,  // 👈 store array of images here
+      "1",         // active status
+    ];
+
+    const result = await dbExecution(query, values);
+
+    if (result && result.rowCount > 0) {
       return res.status(200).send({
         status: true,
         message: "Insert data successful",
-        data: resultSingle.rows,
+        data: result.rows,
       });
     } else {
       return res.status(400).send({
@@ -252,7 +240,7 @@ export const insert_muas_data = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in insert_muas_data:", error);
+    console.error("Error in insertMuasData:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -260,11 +248,9 @@ export const insert_muas_data = async (req, res) => {
     });
   }
 };
+ 
 
-
-     // delete muas data
-
-export const delete_muas_data = async (req, res) => {
+export const deleteMuasData = async (req, res) => {
   const { id } = req.body;
 
   if (!id) {
@@ -310,7 +296,7 @@ export const delete_muas_data = async (req, res) => {
 };
 
      // delete muas data
-export const reopen_muas_data_status_0_to_1 = async (req, res) => {
+export const reopenMuasDataStatus0To1 = async (req, res) => {
   const { id } = req.body;
 
   if (!id) {

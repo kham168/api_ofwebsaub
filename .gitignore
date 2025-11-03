@@ -1,15 +1,17 @@
 /node_modules
 /package-lock.json
+# Environment files
 *.env
 *.env.*
-/uploads/*
-/logs
-landimage 
-taxiimage
-tshuajimage
-houseimage
-creamimage
-mouaimage
 
-git rm -rf --cached .
-git add .
+# Uploaded files and logs
+/uploads/*
+/logs/*
+
+# Image folders (ignore everything inside them)
+landimage/*
+taxiimage/*
+tshuajimage/*
+houseimage/*
+creamimage/*
+mouaimage/*

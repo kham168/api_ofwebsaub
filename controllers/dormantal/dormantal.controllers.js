@@ -1,20 +1,19 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // kho lawm  qhob no with image lawm nawb muas
-export const query_dormantal_dataall = async (req, res) => {
+
+export const queryDormitoryDataAll = async (req, res) => {
   try {
-    // Get query params for pagination
-    const { page = 0, limit = 15 } = req.query;
+    const { page = 0, limit = 25 } = req.query;
     const validPage = Math.max(parseInt(page), 0);
     const validLimit = Math.max(parseInt(limit), 1);
     const offset = validPage * validLimit;
-
     const baseUrl = "http://localhost:5151/";
 
     // 🧮 Count total records
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tbdormantalroom d
+      FROM public.tbdormitory d
       WHERE d.status = '1';
     `;
     const countResult = await dbExecution(countQuery, []);
@@ -34,31 +33,24 @@ export const query_dormantal_dataall = async (req, res) => {
         d.locationvideo,
         d.tel,
         d.contactnumber,
-        d.cdate,
         d.moredetail,
-        d.status,
-        d.plan_on_next_month,
         p.province,
         dis.district,
-        COALESCE(vs.villages, '{}') AS villages,
-        COALESCE(img.images, '{}')   AS images
-      FROM public.tbdormantalroom d
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        d.image,
+        d.plan_on_next_month,
+        d.cdate
+      FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
       INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
-      LEFT JOIN (
-        SELECT jtb.transactionid,
-               ARRAY_AGG(DISTINCT v.village) AS villages
-        FROM public.tb_join_villageid jtb
-        JOIN public.tbvillage v ON v.villageid = jtb.villageid
-        GROUP BY jtb.transactionid
-      ) vs ON vs.transactionid = d.id
-      LEFT JOIN (
-        SELECT di.id,
-               ARRAY_AGG(di.url) AS images
-        FROM public.tbdormantalimage di
-        GROUP BY di.id
-      ) img ON img.id = d.id
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.status = '1'
+      GROUP BY 
+        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+        d.totalroom, d.activeroom, d.locationvideo, d.tel, 
+        d.contactnumber, d.moredetail,
+        p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
       ORDER BY d.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -66,13 +58,31 @@ export const query_dormantal_dataall = async (req, res) => {
     const result = await dbExecution(dataQuery, [validLimit, offset]);
     let rows = result?.rows || [];
 
-    // Map image URLs to full paths
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    // 🖼️ Map image URLs to full paths
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
 
-    const responseData = {
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // 📤 Send response
+    res.status(200).send({
+      status: true,
+      message: "Query data successful",
       data: rows,
       pagination: {
         page: validPage,
@@ -80,12 +90,6 @@ export const query_dormantal_dataall = async (req, res) => {
         total,
         totalPages: Math.ceil(total / validLimit),
       },
-    };
-
-    res.status(200).send({
-      status: true,
-      message: "Query data successful",
-      ...responseData,
     });
   } catch (error) {
     console.error("Error in query_dormantal_dataall:", error);
@@ -98,38 +102,32 @@ export const query_dormantal_dataall = async (req, res) => {
 };
 
 // search ny name. // kho lawm
-
-export const search_dormantal_data = async (req, res) => {
+export const searchDormitoryData = async (req, res) => {
   try {
-    const { name } = req.body;
-    const { page = 0, limit = 15 } = req.query;
+    const { name } = req.params;
+    const { page = 0, limit = 25 } = req.query;
 
-    // 🧩 Validate name input
     if (!name || typeof name !== "string") {
       return res.status(400).send({
         status: false,
-        message: "Missing or invalid dormantal name",
+        message: "Missing or invalid dormitory name",
         data: [],
       });
     }
 
-    // 🧮 Pagination setup
-    const validPage = Math.max(parseInt(page), 0);
-    const validLimit = Math.max(parseInt(limit), 1);
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
     const offset = validPage * validLimit;
-
     const baseUrl = "http://localhost:5151/";
 
-    // 🧮 Count query (for pagination metadata)
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tbdormantalroom d
+      FROM public.tbdormitory d
       WHERE d.status = '1' AND d.dormantalname ILIKE $1;
     `;
     const countResult = await dbExecution(countQuery, [`%${name}%`]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // 📦 Main search query
     const query = `
       SELECT 
         d.id,
@@ -143,31 +141,24 @@ export const search_dormantal_data = async (req, res) => {
         d.locationvideo,
         d.tel,
         d.contactnumber,
-        d.cdate,
         d.moredetail,
-        d.status,
-        d.plan_on_next_month,
         p.province,
         dis.district,
-        COALESCE(vs.villages, '{}') AS villages,
-        COALESCE(img.images, '{}')   AS images
-      FROM public.tbdormantalroom d
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        d.image,
+        d.plan_on_next_month,
+        d.cdate
+      FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
       INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
-      LEFT JOIN (
-        SELECT jtb.transactionid,
-               ARRAY_AGG(DISTINCT v.village) AS villages
-        FROM public.tb_join_villageid jtb
-        JOIN public.tbvillage v ON v.villageid = jtb.villageid
-        GROUP BY jtb.transactionid
-      ) vs ON vs.transactionid = d.id
-      LEFT JOIN (
-        SELECT di.id,
-               ARRAY_AGG(di.url) AS images
-        FROM public.tbdormantalimage di
-        GROUP BY di.id
-      ) img ON img.id = d.id
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.status = '1' AND d.dormantalname ILIKE $1
+      GROUP BY 
+        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+        d.totalroom, d.activeroom, d.locationvideo, d.tel, 
+        d.contactnumber, d.moredetail,
+        p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
       ORDER BY d.cdate DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -175,14 +166,32 @@ export const search_dormantal_data = async (req, res) => {
     const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
     let rows = result?.rows || [];
 
-    // 🖼️ Map image URLs to full paths
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    rows = rows.map((r) => {
+      let imgs = [];
 
-    // 📦 Response with pagination
-    const responseData = {
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        } else if (typeof r.image === "string" && r.image.trim() !== "") {
+          imgs = [r.image];
+        }
+      }
+
+      return {
+        ...r,
+        images: imgs.map((img) => `${baseUrl}${img}`),
+      };
+    });
+
+    res.status(200).send({
+      status: true,
+      message: "Query data successful",
       data: rows,
       pagination: {
         page: validPage,
@@ -190,15 +199,9 @@ export const search_dormantal_data = async (req, res) => {
         total,
         totalPages: Math.ceil(total / validLimit),
       },
-    };
-
-    res.status(200).send({
-      status: true,
-      message: "Query data successful",
-      ...responseData,
     });
   } catch (error) {
-    console.error("Error in search_dormantal_data:", error);
+    console.error("Error in searchDormitoryData:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -208,17 +211,12 @@ export const search_dormantal_data = async (req, res) => {
 };
 
 // select data by provinceid and districtid   // kho lawm query_dormantal_data_by_provinceid_and_districtid
-
-export const query_dormantal_data_by_provinceid_and_districtid = async (
-  req,
-  res
-) => {
+export const queryDormitoryDataByDistrictId = async (req, res) => {
   try {
-    const { provinceid, districtid } = req.body;
-    const { page = 0, limit = 15 } = req.query;
+    const { districtId, page = 0, limit = 25 } = req.params;
 
     // 🧩 Validate input
-    if (!provinceid && !districtid) {
+    if (!districtId) {
       return res.status(400).send({
         status: false,
         message: "Missing province or district ID",
@@ -226,19 +224,18 @@ export const query_dormantal_data_by_provinceid_and_districtid = async (
       });
     }
 
-    const validPage = Math.max(parseInt(page), 0);
-    const validLimit = Math.max(parseInt(limit), 1);
+    const validPage = Math.max(parseInt(page) || 0, 0);
+    const validLimit = Math.max(parseInt(limit) || 15, 1);
     const offset = validPage * validLimit;
-
     const baseUrl = "http://localhost:5151/";
 
-    // 🧮 Count query for pagination
+    // 🧮 Count total
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tbdormantalroom d
-      WHERE d.status = '1' AND d.provinceid = $1 AND d.districtid = $2;
+      FROM public.tbdormitory d
+      WHERE d.status = '1' AND d.districtid = $2;
     `;
-    const countResult = await dbExecution(countQuery, [provinceid, districtid]);
+    const countResult = await dbExecution(countQuery, [districtId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
     // 📦 Main query
@@ -255,51 +252,57 @@ export const query_dormantal_data_by_provinceid_and_districtid = async (
         d.locationvideo,
         d.tel,
         d.contactnumber,
-        d.cdate,
         d.moredetail,
-        d.status,
-        d.plan_on_next_month,
         p.province,
         dis.district,
-        COALESCE(vs.villages, '{}') AS villages,
-        COALESCE(img.images, '{}') AS images
-      FROM public.tbdormantalroom d
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        d.image,
+        d.plan_on_next_month,
+        d.cdate
+      FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
       INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
-      LEFT JOIN (
-        SELECT jtb.transactionid,
-               ARRAY_AGG(DISTINCT v.village) AS villages
-        FROM public.tb_join_villageid jtb
-        JOIN public.tbvillage v ON v.villageid = jtb.villageid
-        GROUP BY jtb.transactionid
-      ) vs ON vs.transactionid = d.id
-      LEFT JOIN (
-        SELECT di.id,
-               ARRAY_AGG(di.url) AS images
-        FROM public.tbdormantalimage di
-        GROUP BY di.id
-      ) img ON img.id = d.id
-      WHERE d.status = '1' AND d.provinceid = $1 AND d.districtid = $2
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE d.status = '1' AND d.districtid = $1
+      GROUP BY 
+        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+        d.totalroom, d.activeroom, d.locationvideo, d.tel, 
+        d.contactnumber, d.moredetail,
+        p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
       ORDER BY d.cdate DESC
-      LIMIT $3 OFFSET $4;
+      LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [
-      provinceid,
-      districtid,
-      validLimit,
-      offset,
-    ]);
+    const result = await dbExecution(query, [districtId, validLimit, offset]);
     let rows = result?.rows || [];
 
-    // 🖼 Map images to full URLs
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    rows = rows.map((r) => {
+      let imgs = [];
 
-    // 📦 Response with pagination
-    const responseData = {
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        } else if (typeof r.image === "string" && r.image.trim() !== "") {
+          imgs = [r.image];
+        }
+      }
+
+      return {
+        ...r,
+        images: imgs.map((img) => `${baseUrl}${img}`),
+      };
+    });
+
+    res.status(200).send({
+      status: true,
+      message: "Query data successful",
       data: rows,
       pagination: {
         page: validPage,
@@ -307,18 +310,9 @@ export const query_dormantal_data_by_provinceid_and_districtid = async (
         total,
         totalPages: Math.ceil(total / validLimit),
       },
-    };
-
-    res.status(200).send({
-      status: true,
-      message: "Query data success",
-      ...responseData,
     });
   } catch (error) {
-    console.error(
-      "Error in query_dormantal_data_by_provinceid_and_districtid:",
-      error
-    );
+    console.error("Error in query_dormitory_data_by_districtid:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -327,16 +321,12 @@ export const query_dormantal_data_by_provinceid_and_districtid = async (
   }
 };
 
-//   ==> qhov no g tau kho and g tau rub mu siv query_dormantal_data_by_district_or_villageid
-export const query_dormantal_data_by_district_or_villageid = async (
-  req,
-  res
-) => {
+export const queryDormitoryDataByVillageId = async (req, res) => {
   try {
-    const { districtid, villageid, page = 0, limit = 20 } = req.body;
+    const { villageId, page = 0, limit = 20 } = req.params;
 
-    // Validate input
-    if (!districtid && !villageid) {
+    // 🧩 Validate input
+    if (!villageId) {
       return res.status(400).send({
         status: false,
         message: "Missing district or village ID",
@@ -344,28 +334,24 @@ export const query_dormantal_data_by_district_or_villageid = async (
       });
     }
 
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
+    const validPage = Math.max(parseInt(page) || 0, 0);
+    const validLimit = Math.max(parseInt(limit) || 20, 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total rows for pagination
+    // 🧮 Count query for pagination
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tbdormantalroom d
-      WHERE d.status = '1'
-        AND ($1::varchar IS NULL OR d.districtid = $1::varchar)
-        AND ($2::varchar IS NULL OR EXISTS (
-          SELECT 1 FROM public.tb_join_villageid j
-          WHERE j.transactionid = d.id AND j.villageid = $2::varchar
-        ));
+      FROM public.tbdormitory d
+      WHERE d.status = '1' 
+        AND ($1::varchar IS NULL OR $1::int = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[]));
     `;
-    const countResult = await dbExecution(countQuery, [districtid, villageid]);
+    const countResult = await dbExecution(countQuery, [villageId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // Main query with LIMIT and OFFSET
+    // 📦 Main query with joins
     const query = `
-      SELECT 
+        SELECT 
         d.id,
         d.dormantalname,
         d.price1,
@@ -377,68 +363,68 @@ export const query_dormantal_data_by_district_or_villageid = async (
         d.locationvideo,
         d.tel,
         d.contactnumber,
-        d.cdate,
         d.moredetail,
-        d.status,
-        d.plan_on_next_month,
         p.province,
         dis.district,
-        COALESCE(vs.villages, '{}') AS villages,
-        COALESCE(img.images, '{}') AS images
-      FROM public.tbdormantalroom d
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        d.image,
+        d.plan_on_next_month,
+        d.cdate
+      FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
       INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
-      LEFT JOIN (
-        SELECT jtb.transactionid,
-               ARRAY_AGG(DISTINCT v.village) AS villages
-        FROM public.tb_join_villageid jtb
-        JOIN public.tbvillage v ON v.villageid = jtb.villageid
-        GROUP BY jtb.transactionid
-      ) vs ON vs.transactionid = d.id
-      LEFT JOIN (
-        SELECT di.id,
-               ARRAY_AGG(di.url) AS images
-        FROM public.tbdormantalimage di
-        GROUP BY di.id
-      ) img ON img.id = d.id
-      WHERE d.status = '1'
-        AND ($1::varchar IS NULL OR d.districtid = $1::varchar)
-        AND ($2::varchar IS NULL OR EXISTS (
-          SELECT 1 FROM public.tb_join_villageid j
-          WHERE j.transactionid = d.id AND j.villageid = $2::varchar
-        ))
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE d.status = '1' AND $1 = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
+      GROUP BY 
+        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+        d.totalroom, d.activeroom, d.locationvideo, d.tel, 
+        d.contactnumber, d.moredetail,
+        p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
       ORDER BY d.cdate DESC
-      LIMIT $3 OFFSET $4;
+      LIMIT $2 OFFSET $3;
     `;
 
-    let rows =
-      (await dbExecution(query, [districtid, villageid, validLimit, offset]))
-        ?.rows || [];
+    const result = await dbExecution(query, [villageId, validLimit, offset]);
+    let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    rows = rows.map((r) => {
+      let imgs = [];
 
-    const result = {
-      dormantals: rows,
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        } else if (typeof r.image === "string" && r.image.trim() !== "") {
+          imgs = [r.image];
+        }
+      }
+
+      return {
+        ...r,
+        images: imgs.map((img) => `${baseUrl}${img}`),
+      };
+    });
+
+    res.status(200).send({
+      status: true,
+      message: "Query data successful",
+      data: rows,
       pagination: {
         page: validPage,
         limit: validLimit,
         total,
         totalPages: Math.ceil(total / validLimit),
       },
-    };
-
-    res.status(200).send({
-      status: true,
-      message: "Query data success",
-      data: result,
     });
   } catch (error) {
     console.error(
-      "Error in query_dormantal_data_by_district_or_villageid:",
+      "Error in query_dormitory_data_by_district_or_villageid:",
       error
     );
     res.status(500).send({
@@ -450,124 +436,22 @@ export const query_dormantal_data_by_district_or_villageid = async (
 };
 
 // tsi tau rub mu siv
-
-export const query_dormantal_dataone = async (req, res) => {
-  const id = req.body.id;
-
-  if (!id) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing dormantal id",
-      data: [],
-    });
-  }
-
+export const queryDormitoryDataOne = async (req, res) => {
   try {
-    const query = ` SELECT 
-  d.id,
-  d.dormantalname,
-  d.price1,
-  d.price2,
-  d.price3,
-  d.type,
-  d.totalroom,
-  d.activeroom,
-  d.locationvideo,
-  d.tel,
-  d.contactnumber,
-  d.cdate,
-  d.moredetail,
-  d.status,
-  d.plan_on_next_month,
-  p.province,
-  dis.district,
-  COALESCE(vs.villages, '{}') AS villages,
-  COALESCE(img.images, '{}')   AS images
-FROM public.tbdormantalroom d
-INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
-INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
+    const { id } = req.params;
 
-LEFT JOIN (
-  SELECT jtb.transactionid,
-         ARRAY_AGG(DISTINCT v.village) AS villages
-  FROM public.tb_join_villageid jtb
-  JOIN public.tbvillage v ON v.villageid = jtb.villageid
-  GROUP BY jtb.transactionid
-) vs ON vs.transactionid = d.id
-
-LEFT JOIN (
-  SELECT di.id,
-         ARRAY_AGG(di.url) AS images
-  FROM public.tbdormantalimage di
-  GROUP BY di.id
-) img ON img.id = d.id
-
-WHERE d.status = '1' and d.id=$1
-ORDER BY d.cdate DESC
-LIMIT 50;
-    `;
-
-    const resultSingle = await dbExecution(query, [id]);
-    const rows = resultSingle?.rows || [];
-
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error in query_dormantal_dataone:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-    });
-  }
-};
-
-export const query_dormantal_data_by_districtid_and_area = async (req, res) => {
-  try {
-    const { districtid, area, page = 0, limit = 20 } = req.body;
-
-    // Validate input
-    if (!districtid || !area) {
+    // 🧩 Validate input
+    if (!id) {
       return res.status(400).send({
         status: false,
-        message: "Missing district ID or area",
+        message: "Missing dormitory ID",
         data: [],
       });
     }
 
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
-    const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total rows for pagination
-    const countQuery = `
-      SELECT COUNT(DISTINCT d.id) AS total
-      FROM public.tbdormantalroom d
-      LEFT JOIN public.tb_join_villageid jtb ON jtb.transactionid = d.id
-      LEFT JOIN public.tbvillage v ON v.villageid = jtb.villageid
-      WHERE d.status = '1' 
-        AND d.districtid = $1
-        AND v.village ILIKE $2;
-    `;
-    const countResult = await dbExecution(countQuery, [
-      districtid,
-      `%${area}%`,
-    ]);
-    const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
-
-    // Main query with LIMIT and OFFSET
+    // 📦 Main query (no LIMIT/OFFSET)
     const query = `
       SELECT 
         d.id,
@@ -581,71 +465,63 @@ export const query_dormantal_data_by_districtid_and_area = async (req, res) => {
         d.locationvideo,
         d.tel,
         d.contactnumber,
-        d.cdate,
         d.moredetail,
-        d.status,
-        d.plan_on_next_month,
         p.province,
         dis.district,
-        COALESCE(vs.villages, '{}') AS villages,
-        COALESCE(img.images, '{}') AS images
-      FROM public.tbdormantalroom d
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        d.image,
+        d.plan_on_next_month,
+        d.cdate
+      FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
       INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
-      LEFT JOIN (
-        SELECT jtb.transactionid,
-               ARRAY_AGG(DISTINCT v.village) AS villages
-        FROM public.tb_join_villageid jtb
-        JOIN public.tbvillage v ON v.villageid = jtb.villageid
-        WHERE v.village ILIKE $2
-        GROUP BY jtb.transactionid
-      ) vs ON vs.transactionid = d.id
-      LEFT JOIN (
-        SELECT di.id,
-               ARRAY_AGG(di.url) AS images
-        FROM public.tbdormantalimage di
-        GROUP BY di.id
-      ) img ON img.id = d.id
-      WHERE d.status = '1' 
-        AND d.districtid = $1
-      ORDER BY d.cdate DESC
-      LIMIT $3 OFFSET $4;
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE d.id = $1
+      GROUP BY 
+        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+        d.totalroom, d.activeroom, d.locationvideo, d.tel, 
+        d.contactnumber, d.moredetail,
+        p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
+      ORDER BY d.cdate DESC;
     `;
 
-    const result = await dbExecution(query, [
-      districtid,
-      `%${area}%`,
-      validLimit,
-      offset,
-    ]);
+    // 🧮 Execute query
+    const result = await dbExecution(query, [id]);
     let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    // 🖼️ Process images
+    rows = rows.map((r) => {
+      let imgs = [];
 
-    const response = {
-      dormantals: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
-    };
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        } else if (typeof r.image === "string" && r.image.trim() !== "") {
+          imgs = [r.image];
+        }
+      }
 
+      return {
+        ...r,
+        images: imgs.map((img) => `${baseUrl}${img}`),
+      };
+    });
+
+    // ✅ Response
     res.status(200).send({
       status: true,
-      message: "Query data success",
-      data: response,
+      message: "Query data successful",
+      data: rows,
     });
   } catch (error) {
-    console.error(
-      "Error in query_dormantal_data_by_districtid_and_area:",
-      error
-    );
+    console.error("Error in queryDormitoryDataOne:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -655,8 +531,7 @@ export const query_dormantal_data_by_districtid_and_area = async (req, res) => {
 };
 
 // insert data   // kho lawm
-
-export const insert_dormantal_data = async (req, res) => {
+export const insertDormitoryData = async (req, res) => {
   const {
     id,
     dormantalname,
@@ -670,12 +545,13 @@ export const insert_dormantal_data = async (req, res) => {
     tel,
     contactnumber,
     moredetail,
-    provinceid,
-    districtid,
-    villagelistid, // can be array, JSON-string, comma-separated string, or single id
+    province,
+    district,
+    village,
+    plan_on_next_month,
   } = req.body;
 
-  // simple required-field check
+  // ✅ Required field validation
   if (!id || !type || !totalroom || !dormantalname) {
     return res.status(400).send({
       status: false,
@@ -685,13 +561,10 @@ export const insert_dormantal_data = async (req, res) => {
     });
   }
 
-  // helper to normalize villagelistid into an array of ids
+  // ✅ Normalize village input into array
   const parseVillageList = (v) => {
     if (!v) return [];
-    // already an array
     if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
-
-    // if submitted as JSON string like '["1","2"]' or '[1,2]'
     if (typeof v === "string") {
       const trimmed = v.trim();
       if (trimmed.startsWith("[")) {
@@ -700,65 +573,41 @@ export const insert_dormantal_data = async (req, res) => {
           return Array.isArray(parsed)
             ? parsed.map((x) => String(x).trim()).filter(Boolean)
             : [];
-        } catch (e) {
-          // fallthrough to comma-split
-        }
+        } catch {}
       }
-      // comma separated "1,2,3"
       return trimmed
         .split(",")
         .map((x) => x.trim())
         .filter(Boolean);
     }
-
-    // fallback: single value
     return [String(v).trim()];
   };
 
-  const imageFiles = req.files && req.files.length ? req.files : [];
+  // ✅ Extract uploaded images from multer
+  const imageArray =
+    req.files && req.files.length > 0
+      ? req.files.map((file) => file.filename)
+      : [];
+
+  // ✅ Parse villages
+  const villageArray = parseVillageList(village);
 
   try {
-    // START TRANSACTION
-    await dbExecution("BEGIN", []);
-
-    // 1) Insert images first (if any)
-    if (imageFiles.length > 0) {
-      const insertImageQuery = `INSERT INTO public.tbdormantalimage(id, url) VALUES ($1, $2)`;
-      for (const file of imageFiles) {
-        // file.filename assumed provided by multer
-        if (!file || !file.filename) continue;
-        await dbExecution(insertImageQuery, [id, file.filename]);
-      }
-    }
-
-    // 2) Insert tb_join_villageid entries (one by one)
-    const villageIds = parseVillageList(villagelistid);
-    if (villageIds.length > 0) {
-      // Use ON CONFLICT DO NOTHING to avoid duplicate errors if unique constraint exists.
-      // If your table has no unique constraint, this still works but won't dedupe.
-      const insertJoinQuery = `
-        INSERT INTO public.tb_join_villageid(transactionid, villageid)
-        VALUES ($1, $2)
-        ON CONFLICT DO NOTHING
-        RETURNING *
-      `;
-      for (const vid of villageIds) {
-        // skip empty values
-        if (!vid) continue;
-        await dbExecution(insertJoinQuery, [id, vid]);
-      }
-    }
-
-    // 3) Insert the dormantal room record
-    const queryRoom = `
-      INSERT INTO public.tbdormantalroom(
+    const query = `
+      INSERT INTO public.tbdormantal(
         id, dormantalname, price1, price2, price3, type, totalroom, activeroom,
-        locationvideo,tel, contactnumber, cdate, moredetail, provinceid, districtid, status
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12,$13,$14,$15
-      ) RETURNING *
+        locationvideo, tel, contactnumber, moredetail,
+        province, district, village, image, status, plan_on_next_month, cdate
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8,
+        $9, $10, $11, $12,
+        $13, $14, $15::text[], $16::text[], '1', $17, NOW()
+      )
+      RETURNING *;
     `;
-    const valuesRoom = [
+
+    const values = [
       id,
       dormantalname,
       price1 || null,
@@ -771,25 +620,22 @@ export const insert_dormantal_data = async (req, res) => {
       tel || "",
       contactnumber || "",
       moredetail || "",
-      provinceid || null,
-      districtid || null,
-      "1",
+      province || null,
+      district || null,
+      villageArray,
+      imageArray,
+      plan_on_next_month || "",
     ];
 
-    const resultRoom = await dbExecution(queryRoom, valuesRoom);
+    const result = await dbExecution(query, values);
 
-    // COMMIT
-    await dbExecution("COMMIT", []);
-
-    // success response
-    if (resultRoom && resultRoom.rowCount > 0) {
+    if (result && result.rowCount > 0) {
       return res.status(200).send({
         status: true,
         message: "Insert dormantal data successful",
-        data: resultRoom.rows,
+        data: result.rows,
       });
     } else {
-      // unlikely, but handle gracefully
       return res.status(400).send({
         status: false,
         message: "Insert dormantal data failed",
@@ -797,24 +643,18 @@ export const insert_dormantal_data = async (req, res) => {
       });
     }
   } catch (error) {
-    // ROLLBACK on any error
-    try {
-      await dbExecution("ROLLBACK", []);
-    } catch (rbErr) {
-      console.error("Rollback failed:", rbErr);
-    }
     console.error("Error in insert_dormantal_data:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      data: null,
+      error: error.message,
     });
   }
 };
 
 // kho lawm
 
-export const Update_active_Status_dormantal_data = async (req, res) => {
+export const UpdateActiveStatusDormitoryData = async (req, res) => {
   // done
 
   const { id, status } = req.body;
@@ -844,10 +684,7 @@ export const Update_active_Status_dormantal_data = async (req, res) => {
 
 // kho lawm
 
-export const Update_type_and_totalroom_and_active_room_dormantal_data = async (
-  req,
-  res
-) => {
+export const UpdateDormitoryRoomAndActiveRoomData = async (req, res) => {
   // done
 
   const { id, dormantal_type, totalroom, number_roomactive } = req.body;
@@ -876,42 +713,7 @@ export const Update_type_and_totalroom_and_active_room_dormantal_data = async (
   }
 };
 
-// kho lawm
-
-export const Update_contactinform_and_detailinform_and_plan_in_next_month_dormantal_data =
-  async (req, res) => {
-    // done
-
-    const { id, contactinform, detail, plan_in_next_month } = req.body;
-
-    try {
-      const query = `update public.tbdormantalroom set contactnumber=$1, moredetail=$2,plan_on_next_month=$3 where id=$4 RETURNING *`;
-
-      let values = [contactinform, detail, plan_in_next_month, id];
-
-      const resultSingle = await dbExecution(query, values);
-      if (resultSingle && resultSingle.rowCount > 0) {
-        return res.status(200).send({
-          status: true,
-          message: "updadte data successfull",
-          data: resultSingle?.rows,
-        });
-      } else {
-        return res.status(400).send({
-          status: false,
-          message: "updadte data fail",
-          data: null,
-        });
-      }
-    } catch (error) {
-      console.error("Error in testdda:", error);
-      res.status(500).send("Internal Server Error");
-    }
-  };
-
-// kho lawm
-
-export const Update_price_dormantal_data = async (req, res) => {
+export const UpdateDormitoryPricePerRoomData = async (req, res) => {
   // done
 
   const { id, price1, price2, price3 } = req.body;
@@ -942,7 +744,7 @@ export const Update_price_dormantal_data = async (req, res) => {
 
 // kho lawm // hai dormantal ce tsi ua lo yog tsi muaj viewnumber lawm
 
-export const Update_view_number_of_this_id = async (req, res) => {
+export const UpdateViewNumberOfThisId = async (req, res) => {
   // done
 
   const id = req.body.id;
@@ -976,41 +778,3 @@ export const Update_view_number_of_this_id = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-
-//router.post('/register',upload,register);
-
-//exports.upload = multer({ storage: storage }).single('file')
-
-//    var express = require('express');
-//     var router = express.Router();
-//     const {register,login} = require('../controller/register')
-//     const {upload} = require('../middleware/upload')
-
-//exports.register = async(req,res)=>{
-// try {
-
-/// <<<<========    nw yeej comment cia ua ntej no lawm.
-//     const {email,fname,password}= req.body
-//     const user = await User.findOne({where:{fname}})
-//     if(user){ return res.send("Email already Exists !!!").status(400)
-//     }   const salt= await bcrypt.genSalt(10)
-//     const adduser = new User({ email, fname, password })
-//     adduser.password = await bcrypt.hash(password,salt)
-
-//    await adduser.save()    res.send("Register Success")     console.log(adduser)
-/// =========>>>
-
-//const data= req.body;
-// if(req.file){
-//   data.file= req.file.filenamek
-// }
-//console.log(data)
-// const user=await Ownerstore({data})
-//await user.save()
-// res.send(user)
-// } catch (error) {  console.log(error);  res.status(500).send("server error")  } },
-
-// const {Ownerstore} = require('../config/db');
-//const bcrypt= require('bcryptjs');
-//const { where } = require('sequelize');
-//const jwt = require('jsonwebtoken');

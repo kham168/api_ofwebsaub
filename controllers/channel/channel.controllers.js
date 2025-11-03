@@ -3,190 +3,169 @@ import { dbExecution } from "../../config/dbConfig.js";
  
 
 // query image data or select top 15 of image
-
-export const query_channel_data_all = async (req, res) => {
+export const queryChannelDataAll = async (req, res) => {
   try {
     const baseUrl = "http://localhost:5151/";
 
     const query = `
       SELECT 
-        c.id,
-        c.channel,
-        c.detail,
-        c.ownername,
-        c.peopleintorm,
-        c.tel,
-        c.status,
-        c.cdate,
-        c.path,
-        COALESCE(
-          json_agg(DISTINCT i.url) FILTER (WHERE i.url IS NOT NULL), 
-          '[]'
-        ) AS image_urls
-      FROM public.tbchanneldetail c
-      LEFT JOIN public.tbchannelimage i ON c.id = i.id
-      WHERE c.status='1'
-      GROUP BY c.id, c.channel, c.detail, c.ownername, c.peopleintorm, c.tel, c.status, c.cdate, c.path
-      ORDER BY c.cdate DESC;
+        id,
+        channel,
+        detail,
+        ownername,
+        peopleintorm,
+        tel,
+        email,
+        status,
+        path,
+        pathproductdetail,
+        image,
+        video1,
+        video2,
+        guidelinevideo,
+        peoplecarimagepath,
+        cdate
+      FROM public.tbchanneldetail
+      WHERE status = '1';
     `;
 
     const result = await dbExecution(query, []);
+    const rows = result?.rows || [];
 
-    if (result && result.rows) {
-      // Map images to full URLs
-      const rowsWithFullUrls = result.rows.map(r => ({
+    const formatted = rows.map((r) => {
+      // 🧩 Convert `pathproductdetail` string → array
+      const pathProductDetailArray = r.pathproductdetail
+        ? r.pathproductdetail
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+        : [];
+
+      // 🧩 Convert `image` string → array and prepend baseUrl
+      const imageArray = r.image
+        ? r.image
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((img) => baseUrl + img)
+        : [];
+
+      return {
         ...r,
-        image_urls: r.image_urls.map(img => baseUrl + img) // full URL
-      }));
+        pathproductdetail: pathProductDetailArray,
+        image: imageArray,
+      };
+    });
 
-      res.status(200).send({
-        status: true,
-        message: "query data success",
-        data: rowsWithFullUrls,
-      });
-    } else {
-      res.status(400).send({
-        status: false,
-        message: "query data fail",
-        data: [],
-      });
-    }
+    res.status(200).send({
+      status: true,
+      message: "Query data success",
+      data: formatted,
+    });
   } catch (error) {
     console.error("Error in query_channel_data_all:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: [],
+    });
+  }
+};
+
+
+// query muas image data or select top 15 of image
+export const queryChannelDataByOne = async (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).send({
+      status: false,
+      message: "Missing required field: id",
+      data: [],
+    });
+  }
+
+  try {
+    const baseUrl = "http://localhost:5151/";
+
+    const query = `
+      SELECT 
+        id,
+        channel,
+        detail,
+        ownername,
+        peopleintorm,
+        tel,
+        email,
+        status,
+        path,
+        pathproductdetail,
+        image,
+        video1,
+        video2,
+        guidelinevideo,
+        peoplecarimagepath,
+        cdate
+      FROM public.tbchanneldetail
+      WHERE id = $1 AND status = '1';
+    `;
+
+    const result = await dbExecution(query, [id]);
+    const rows = result?.rows || [];
+
+    const formatted = rows.map((r) => {
+      // Convert `pathproductdetail` string → array
+      const pathProductDetailArray = r.pathproductdetail
+        ? r.pathproductdetail
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+        : [];
+
+      // Convert `image` string → array and prepend baseUrl
+      const imageArray = r.image
+        ? r.image
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((img) => baseUrl + img)
+        : [];
+
+      // Optionally make video URLs full too
+      const video1 = r.video1 ? baseUrl + r.video1 : null;
+      const video2 = r.video2 ? baseUrl + r.video2 : null;
+      const guidelinevideo = r.guidelinevideo ? baseUrl + r.guidelinevideo : null;
+
+      return {
+        ...r,
+        pathproductdetail: pathProductDetailArray,
+        image: imageArray,
+        video1,
+        video2,
+        guidelinevideo,
+      };
+    });
+
+    res.status(200).send({
+      status: true,
+      message: "Query data success",
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("Error in queryChannelDataByOne:", error);
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: [],
+    });
   }
 };
 
  
-
-// query muas image data or select top 15 of image
-
-export const query_channel_data_by_one = async (req, res) => {
-
-  const { id } = req.body;
-  try {
-    const query = `SELECT 
-    c.id,
-    c.channel,
-    c.detail,
-    c.ownername,
-    c.peopleintorm,
-    c.tel,
-    c.status,
-    c.cdate,path,
-    COALESCE(json_agg(DISTINCT i.url) FILTER (WHERE i.url IS NOT NULL), '[]') AS image_urls
-FROM public.tbchanneldetail c
-LEFT JOIN public.tbchannelimage i ON c.id = c.id where c.id=$1
-GROUP BY 
-    c.id, c.channel, c.detail, c.ownername, c.peopleintorm, c.tel, c.status, c.cdate,path
-ORDER BY c.cdate DESC;
-`;
-    const resultSingle = await dbExecution(query, [id]); 
-    if (resultSingle) {
-      res.status(200).send({
-        status: true,
-        message: "query data success",
-        data: resultSingle?.rows,
-      });
-    } else {
-      res.status(400).send({
-        status: false,
-        message: "query data fail",
-        data: resultSingle?.rows,
-      });
-    }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-
-export const query_channel_video_data_all = async (req, res) => {
-  try {
-    const query = `SELECT 
-    c.id,
-    c.channel,
-    c.detail,
-    c.ownername,
-    c.peopleintorm,
-    c.tel,
-    c.status,
-    c.cdate,path,
-    COALESCE(json_agg(DISTINCT v.url) FILTER (WHERE v.url IS NOT NULL), '[]') AS video_urls
-FROM public.tbchanneldetail c 
-LEFT JOIN public.tbchannelvideourl v ON c.id = v.id where c.status='1'
-GROUP BY 
-    c.id, c.channel, c.detail, c.ownername, c.peopleintorm, c.tel, c.status, c.cdate,path
-ORDER BY c.cdate DESC;
-`;
-    const resultSingle = await dbExecution(query, []); 
-    if (resultSingle) {
-      res.status(200).send({
-        status: true,
-        message: "query data success",
-        data: resultSingle?.rows,
-      });
-    } else {
-      res.status(400).send({
-        status: false,
-        message: "query data fail",
-        data: resultSingle?.rows,
-      });
-    }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-
-
-export const query_channel_vieo_data_by_one = async (req, res) => {
-
-  const { id } = req.body;
-  try {
-    const query = `SELECT 
-    c.id,
-    c.channel,
-    c.detail,
-    c.ownername,
-    c.peopleintorm,
-    c.tel,
-    c.status,
-    c.cdate, path,
-    COALESCE(json_agg(DISTINCT v.url) FILTER (WHERE v.url IS NOT NULL), '[]') AS video_urls
-FROM public.tbchanneldetail c
-LEFT JOIN public.tbchannelvideourl v ON c.id = v.id where c.id=$1
-GROUP BY 
-    c.id, c.channel, c.detail, c.ownername, c.peopleintorm, c.tel, c.status, c.cdate,path
-ORDER BY c.cdate DESC;
-`;
-    const resultSingle = await dbExecution(query, [id]); 
-    if (resultSingle) {
-      res.status(200).send({
-        status: true,
-        message: "query data success",
-        data: resultSingle?.rows,
-      });
-    } else {
-      res.status(400).send({
-        status: false,
-        message: "query data fail",
-        data: resultSingle?.rows,
-      });
-    }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-
-
+ 
 // insert channel data
   
-export const insert_channel_data_detail = async (req, res) => {
+export const insertChannelDataDetail = async (req, res) => {
   const { id, channel, detail, ownername, peopleintorm, tel, path} = req.body;
 
 console.log("Received data:", { id });

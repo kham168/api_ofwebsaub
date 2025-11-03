@@ -1,7 +1,7 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // query tshuaj data all or select top 15   with image lawm nawb muas
-export const query_tshuaj_dataall = async (req, res) => {
+export const queryTshuajDataAll = async (req, res) => {
   try {
     // Get pagination params from query
     const { page = "0", limit = "15" } = req.query;
@@ -32,12 +32,9 @@ export const query_tshuaj_dataall = async (req, res) => {
         t.tel,
         t.detail,
         t.donation,
-        COALESCE(ARRAY_AGG(ti.url) FILTER (WHERE ti.url IS NOT NULL), '{}') AS images
-      FROM public.tbtshuaj t
-      LEFT JOIN public.tbtshuajimage ti ON ti.id = t.id
+        t.image
+      FROM public.tbtshuaj t 
       WHERE t.status = '1'
-      GROUP BY t.id, t.name, t."Price1", t."Price2", t.tel, t.detail, t.donation
-      ORDER BY t.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
 
@@ -66,11 +63,9 @@ export const query_tshuaj_dataall = async (req, res) => {
   }
 };
 
-export const search_tshuaj_data = async (req, res) => {
-  
-  try {
-    const { name = "" } = req.body;
-    const { page = "0", limit = "15" } = req.query;
+export const searchTshuajData = async (req, res) => {
+  try { 
+    const { name, page = "0", limit = "15" } = req.params;
 
     // Validate pagination inputs
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
@@ -97,11 +92,9 @@ export const search_tshuaj_data = async (req, res) => {
         t.tel,
         t.detail,
         t.donation,
-        COALESCE(ARRAY_AGG(ti.url) FILTER (WHERE ti.url IS NOT NULL), '{}') AS images
-      FROM public.tbtshuaj t
-      LEFT JOIN public.tbtshuajimage ti ON ti.id = t.id
+        t.image
+      FROM public.tbtshuaj t 
       WHERE t.status = '1' AND t.name ILIKE $1
-      GROUP BY t.id, t.name, t."Price1", t."Price2", t.tel, t.detail, t.donation
       ORDER BY t.cdate DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -136,8 +129,8 @@ export const search_tshuaj_data = async (req, res) => {
 };
 
 // query tshuaj data by id
-export const query_tshuaj_dataone = async (req, res) => {
-  const { id } = req.body;
+export const queryTshuajDataOne = async (req, res) => {
+  const { id } = req.params;
 
   try {
     const query = `SELECT 
@@ -148,12 +141,9 @@ export const query_tshuaj_dataone = async (req, res) => {
         t.tel,
         t.detail,
         t.donation,
-        COALESCE(ARRAY_AGG(ti.url) FILTER (WHERE ti.url IS NOT NULL), '{}') AS images
+        t.image
       FROM public.tbtshuaj t
-      LEFT JOIN public.tbtshuajimage ti ON ti.id = t.id
-      WHERE t.id= $1 
-      GROUP BY t.id, t.name, t."Price1", t."Price2",t.tel, t.detail, t.donation
-      ORDER BY t.cdate DESC limit 25; 
+      WHERE t.id= $1; 
     `;
 
     const resultSingle = await dbExecution(query, [id]);
@@ -182,41 +172,60 @@ export const query_tshuaj_dataone = async (req, res) => {
 };
 
 // insert data  test  nw work lawm
+export const insertTshuajData = async (req, res) => {
+  const { id, name, price1, price2, tel, detail, donation } = req.body;
 
-export const insert_tshuaj_data = async (req, res) => {
-  const { id, name, price1, price2, tel, detail } = req.body;
+  // ✅ Validate required fields
+  if (!id || !name || !price1 || !detail) {
+    return res.status(400).send({
+      status: false,
+      message:
+        "Missing required fields: id, name, price1, and detail are required",
+      data: [],
+    });
+  }
+
+  // ✅ Collect uploaded filenames into an array
+  const imageArray =
+    req.files && req.files.length > 0
+      ? req.files.map((file) => file.filename)
+      : [];
 
   try {
-    // Insert images first if any
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const queryImage = `INSERT INTO public.tbtshuajimage(id, url) VALUES ($1, $2) RETURNING *`;
-        await dbExecution(queryImage, [id, file.filename]);
-      }
-    }
-
-    // Insert main record
-    const queryMain = `
+    // ✅ Insert into main table directly
+    const query = `
       INSERT INTO public.tbtshuaj(
-        id, name, "Price1", "Price2",tel, detail, status,cdate
+        id, name, "Price1", "Price2", tel, detail, image, status, donation, cdate
       )
-      VALUES ($1, $2, $3, $4, $5,$6, $7,NOW())
-      RETURNING *
+      VALUES ($1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
+      RETURNING *;
     `;
-    const valuesMain = [id, name, price1, price2, tel, detail, "1"];
-    const resultMain = await dbExecution(queryMain, valuesMain);
 
-    if (resultMain && resultMain.rowCount > 0) {
+    const values = [
+      id,
+      name,
+      price1,
+      price2 || null,
+      tel || "",
+      detail,
+      imageArray,
+      donation || "",
+    ];
+
+    const result = await dbExecution(query, values);
+
+    // ✅ Success response
+    if (result && result.rowCount > 0) {
       return res.status(200).send({
         status: true,
         message: "Insert data successful",
-        data: resultMain.rows,
+        data: result.rows,
       });
     } else {
       return res.status(400).send({
         status: false,
         message: "Insert data failed",
-        data: null,
+        data: [],
       });
     }
   } catch (error) {
@@ -224,14 +233,15 @@ export const insert_tshuaj_data = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      data: null,
+      error: error.message,
+      data: [],
     });
   }
 };
 
 // delete tshuaj data || update data status 1 to 0
 
-export const delete_tshuaj_data = async (req, res) => {
+export const deleteTshuajData = async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -260,8 +270,7 @@ export const delete_tshuaj_data = async (req, res) => {
 
 // re-open tshuaj data status 0 to 1
 
-export const reopen_tshuaj_data_status_0_to_1 = async (req, res) => {
-
+export const reopenTshuajDataStatus0To1 = async (req, res) => {
   const { id } = req.body;
 
   try {

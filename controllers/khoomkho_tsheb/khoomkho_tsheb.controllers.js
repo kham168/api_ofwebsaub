@@ -1,74 +1,79 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
-
-
-
-
-export const query_khoomkho_tsheb_dataall = async (req, res) => {
+ export const queryKhoomKhoTshebDataAll = async (req, res) => {
   try {
-    // Pagination params from request
-    const { page = 0, limit = 25 } = req.body;
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
+    // ✅ Read from query params (not path params)
+    const { page = 0, limit = 25 } = req.query;
+
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
     const offset = validPage * validLimit;
 
     const baseUrl = "http://localhost:5151/";
 
-    // Count total rows for pagination metadata
+    // ✅ Count total rows
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tbkhoomkho_tsheb k
-      WHERE k.status = '1';
+      FROM public.tbkhoomkhotsheb
+      WHERE status = '1';
     `;
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
+    const totalPages = Math.ceil(total / validLimit);
 
-    // Main data query with LIMIT and OFFSET
+    // ✅ Fetch data
     const query = `
       SELECT 
-        k.id,
-        k.name,
-        k."Price1",
-        k."Price2",
-        k.tel,
-        k.detail,
-        k.donation,
-        COALESCE(ARRAY_AGG(ki.url) FILTER (WHERE ki.url IS NOT NULL), '{}') AS images
-      FROM public.tbkhoomkho_tsheb k
-      LEFT JOIN public.tbkhoomkho_tshebimage ki ON ki.khoomkho_id = k.id
-      WHERE k.status = '1'
-      GROUP BY k.id, k.name, k."Price1", k."Price2", k.tel, k.detail, k.donation
-      ORDER BY k.cdate DESC
+        id,
+        name,
+        "Price1",
+        "Price2",
+        tel,
+        detail,
+        donation,
+        image
+      FROM public.tbkhoomkhotsheb
+      WHERE status = '1'
+      ORDER BY cdate DESC
       LIMIT $1 OFFSET $2;
     `;
 
     let rows = (await dbExecution(query, [validLimit, offset]))?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map(r => ({
-      ...r,
-      images: r.images.map(img => baseUrl + img),
-    }));
+    // ✅ Safely parse images
+    rows = rows.map((r) => {
+      let images = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          images = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          images = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: images.map((img) => baseUrl + img),
+      };
+    });
 
-    const result = {
-        status: true,
-        message: "Query data success",
+    // ✅ Send response
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query data successful" : "No data found",
       data: rows,
       pagination: {
         page: validPage,
         limit: validLimit,
         total,
-        totalPages: Math.ceil(total / validLimit),
+        totalPages,
       },
-    };
-
-    res.status(200).send({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: result,
     });
   } catch (error) {
-    console.error("Error in query_khoomkho_tsheb_dataall:", error);
+    console.error("Error in queryKhoomKhoTshebDataAll:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -76,80 +81,89 @@ export const query_khoomkho_tsheb_dataall = async (req, res) => {
     });
   }
 };
-
-
-export const search_khoomkho_tsheb_data = async (req, res) => {
-  const { name, page = 0, limit = 20 } = req.body;
-
-  if (!name || typeof name !== "string") {
-    return res.status(400).send({
-      status: false,
-      message: "Invalid name",
-      data: [],
-    });
-  }
-
+ 
+export const searchKhoomKhoTshebData = async (req, res) => {
   try {
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
+    const { name = "", page = 0, limit = 25 } = req.params;
+
+    // ✅ Validate name
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res.status(400).send({
+        status: false,
+        aaa:name,
+        message: "Invalid or missing name",
+        data: [],
+      });
+    }
+
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total rows for pagination
+    // ✅ Count total matches (for pagination)
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tbkhoomkho_tsheb k
-      WHERE k.status = '1' AND k.name ILIKE $1;
+      FROM public.tbkhoomkhotsheb
+      WHERE status = '1' AND name ILIKE $1;
     `;
     const countResult = await dbExecution(countQuery, [`%${name}%`]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
+    const totalPages = Math.ceil(total / validLimit);
 
-    // Main query with LIMIT and OFFSET
+    // ✅ Fetch paginated matching data
     const query = `
       SELECT 
-        k.id,
-        k.name,
-        k."Price1",
-        k."Price2",
-        k.tel,
-        k.detail,
-        k.donation,
-        COALESCE(ARRAY_AGG(ki.url) FILTER (WHERE ki.url IS NOT NULL), '{}') AS images
-      FROM public.tbkhoomkho_tsheb k
-      LEFT JOIN public.tbkhoomkho_tshebimage ki ON ki.khoomkho_id = k.id
-      WHERE k.status = '1' AND k.name ILIKE $1
-      GROUP BY k.id, k.name, k."Price1", k."Price2", k.tel, k.detail, k.donation
-      ORDER BY k.cdate DESC
+        id,
+        name,
+        "Price1",
+        "Price2",
+        tel,
+        detail,
+        donation,
+        image
+      FROM public.tbkhoomkhotsheb
+      WHERE status = '1' AND name ILIKE $1
+      ORDER BY cdate DESC
       LIMIT $2 OFFSET $3;
     `;
 
     let rows = (await dbExecution(query, [`%${name}%`, validLimit, offset]))?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map(r => ({
-      ...r,
-      images: r.images.map(img => baseUrl + img),
-    }));
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
+      let images = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          images = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          images = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: images.map((img) => baseUrl + img),
+      };
+    });
 
-    const result = {
-        status: true,
-        message: "Query data success",
+    // ✅ Send final response
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query data successful" : "No data found",
       data: rows,
       pagination: {
         page: validPage,
         limit: validLimit,
         total,
-        totalPages: Math.ceil(total / validLimit),
+        totalPages,
       },
-    };
-
-    res.status(200).send({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: result,
     });
   } catch (error) {
-    console.error("Error in search_khoomkho_tsheb_data:", error);
+    console.error("Error in searchKhoomKhoTshebData:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -160,8 +174,8 @@ export const search_khoomkho_tsheb_data = async (req, res) => {
 
 
 // query khoomkho_tsheb data by id
-export const query_khoomkho_tsheb_dataone = async (req, res) => {
-  const id = req.body.id;
+export const queryKhoomKhoTshebDataOne = async (req, res) => {
+  const id = req.params.id;
 
   if (!id || typeof id !== "string") {
     return res.status(400).send({
@@ -180,10 +194,8 @@ export const query_khoomkho_tsheb_dataone = async (req, res) => {
         k.tel,
         k.detail,
         k.donation,
-        COALESCE(ARRAY_AGG(ki.url) FILTER (WHERE ki.url IS NOT NULL), '{}') AS images
-      FROM public.tbkhoomkho_tsheb k
-      LEFT JOIN public.tbkhoomkho_tshebimage ki ON ki.id = k.id where k.status='1' and k.id= $1
-      GROUP BY k.id, k.name, k."Price1", k."Price2",k.tel, k.detail, k.donation;
+        k.image
+      FROM public.tbkhoomkhotsheb k where k.id= $1
     `;
 
     const resultSingle = await dbExecution(query, [id]);
@@ -217,45 +229,56 @@ export const query_khoomkho_tsheb_dataone = async (req, res) => {
 //INSERT INTO public.tbkhoomkho_tshebimage(
 //id, url)
 //VALUES (?, ?);
+export const insertKhoomKhoTshebData = async (req, res) => {
+  const { id, name, price1, price2, tel, detail, donation } = req.body;
 
-export const insert_khoomkho_tsheb_data = async (req, res) => {
-  const { id, name, price1, price2, tel, detail } = req.body;
-
+  // ✅ Validate required fields
   if (!id || !name || !price1 || !detail) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields",
+      message: "Missing required fields: id, name, price1, and detail are required",
       data: [],
     });
   }
 
+  // ✅ Extract uploaded image filenames
+  const imageArray =
+    req.files && req.files.length > 0
+      ? req.files.map((file) => file.filename)
+      : [];
+
   try {
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const queryImage = `INSERT INTO public.tbkhoomkho_tshebimage(id, url) VALUES ($1, $2) RETURNING *`;
-        await dbExecution(queryImage, [id, file.filename]);
-      }
-    }
-
+    // ✅ Build query for inserting data directly into tbkhoomkhotsheb
     const query = `
-      INSERT INTO public.tbkhoomkho_tsheb(
-        id, name, "Price1", "Price2",tel, detail, cdate, status
+      INSERT INTO public.tbkhoomkhotsheb(
+        id, name, "Price1", "Price2", tel, detail, image, status, donation, cdate
       )
-      VALUES ($1, $2, $3, $4, $5,$6, NOW(), $7)
-      RETURNING *
+      VALUES ($1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
+      RETURNING *;
     `;
-    const values = [id, name, price1, price2, tel, detail, "1"];
 
-    const resultSingle = await dbExecution(query, values);
+    const values = [
+      id,
+      name,
+      price1,
+      price2 || null,
+      tel || "",
+      detail,
+      imageArray,
+      donation || "",
+    ];
 
-    if (resultSingle && resultSingle.rowCount > 0) {
+    const result = await dbExecution(query, values);
+
+    // ✅ Response handling
+    if (result && result.rowCount > 0) {
       return res.status(200).send({
         status: true,
         message: "Insert data successful",
-        data: resultSingle.rows,
+        data: result.rows,
       });
     } else {
-      return res.status(200).send({
+      return res.status(400).send({
         status: false,
         message: "Insert data failed",
         data: [],
@@ -263,21 +286,23 @@ export const insert_khoomkho_tsheb_data = async (req, res) => {
     }
   } catch (error) {
     console.error("Error in insert_khoomkho_tsheb_data:", error);
-    res.status(500).send({
+    return res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      error: error.message,
       data: [],
     });
   }
 };
 
+
 // delete khoomkho_tsheb data
 
-export const delete_khoomkho_tsheb_data = async (req, res) => {
+export const deleteKhoomKhoTshebData = async (req, res) => {
   const { id } = req.body;
 
   try {
-    const query = `UPDATE public.tbkhoomkho_tsheb SET status='0' WHERE id =$1 RETURNING *`;
+    const query = `UPDATE public.tbkhoomkhotsheb SET status='0' WHERE id =$1 RETURNING *`;
     const values = [id];
     const resultSingle = await dbExecution(query, values);
 
@@ -302,11 +327,11 @@ export const delete_khoomkho_tsheb_data = async (req, res) => {
 
 // re-open khoomkho_tsheb data status 0 to 1
 
-export const reopen_khoomkho_tsheb_data_status_0_to_1 = async (req, res) => {
+export const reopenKhoomKhoTshebDataStatus0To1 = async (req, res) => {
   const { id } = req.body;
 
   try {
-    const query = `UPDATE public.tbkhoomkho_tsheb SET status='1' WHERE id =$1 RETURNING *`;
+    const query = `UPDATE public.tbkhoomkhotsheb SET status='1' WHERE id =$1 RETURNING *`;
     const values = [id];
     const resultSingle = await dbExecution(query, values);
 

@@ -1,6 +1,6 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
-export const insert_house_data = async (req, res) => {
+export const insertHouseData = async (req, res) => {
   const {
     id,
     housename,
@@ -11,12 +11,12 @@ export const insert_house_data = async (req, res) => {
     contactnumber,
     locationvideo,
     moredetail,
-    provinceid,
-    districtid,
-    villagelistid,
+    province,
+    district,
+    village,
   } = req.body;
 
-  // normalize village list
+  // ✅ Helper function to normalize village input into array
   const parseVillageList = (v) => {
     if (!v) return [];
     if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
@@ -28,7 +28,7 @@ export const insert_house_data = async (req, res) => {
           return Array.isArray(parsed)
             ? parsed.map((x) => String(x).trim()).filter(Boolean)
             : [];
-        } catch (e) {}
+        } catch {}
       }
       return trimmed
         .split(",")
@@ -38,51 +38,40 @@ export const insert_house_data = async (req, res) => {
     return [String(v).trim()];
   };
 
-  // Multer files
-  const imageFiles = Array.isArray(req.files) ? req.files : [];
+  // ✅ Get uploaded image filenames (from multer)
+  const imageArray =
+    req.files && req.files.length > 0
+      ? req.files.map((file) => file.filename)
+      : [];
+
+  // ✅ Parse village list into array
+  const villageArray = parseVillageList(village);
+
+  // ✅ Validate required fields
+  if (!id || !housename || !price1 || !tel) {
+    return res.status(400).send({
+      status: false,
+      message: "Missing required fields",
+      data: [],
+    });
+  }
 
   try {
-    await dbExecution("BEGIN");
-
-    // 1) Insert images (2,3,4… no problem)
-    if (imageFiles.length > 0) {
-      const insertImageQuery = `
-        INSERT INTO public.tbhouseimage(id, url)
-        VALUES ($1, $2)
-      `;
-      for (const file of imageFiles) {
-        if (!file || !file.filename) continue;
-        // save filename or path
-        await dbExecution(insertImageQuery, [id, file.filename]);
-        console.log("Inserted image:", file.filename);
-      }
-    }
-
-    // 2) Insert village joins
-    const villageIds = parseVillageList(villagelistid);
-    if (villageIds.length > 0) {
-      const insertJoinQuery = `
-        INSERT INTO public.tb_join_villageid(transactionid, villageid)
-        VALUES ($1, $2)
-        ON CONFLICT DO NOTHING
-      `;
-      for (const vid of villageIds) {
-        if (!vid) continue;
-        await dbExecution(insertJoinQuery, [id, vid]);
-      }
-    }
-
-    // 3) Insert house
-    const queryHouse = `
+    const query = `
       INSERT INTO public.tbhouse(
-        id, housename, price1, price2, price3,tel, contactnumber, locationvideo,
-        status, moredetail, cdate, provinceid, districtid
+        id, housename, price1, price2, price3,
+        tel, contactnumber, locationvideo, status, moredetail,
+        province, district, village, image, cdate
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '1',$9, NOW(), $10, $11)
-      RETURNING *
+      VALUES (
+        $1, $2, $3, $4, $5,
+        $6, $7, $8, $9, $10,
+        $11, $12, $13::text[], $14::text[], NOW()
+      )
+      RETURNING *;
     `;
 
-    const valuesHouse = [
+    const values = [
       id,
       housename,
       price1,
@@ -91,21 +80,30 @@ export const insert_house_data = async (req, res) => {
       tel,
       contactnumber,
       locationvideo,
+      "1", // status active
       moredetail,
-      provinceid,
-      districtid,
+      province,
+      district,
+      villageArray,
+      imageArray,
     ];
-    const resultHouse = await dbExecution(queryHouse, valuesHouse);
 
-    await dbExecution("COMMIT");
+    const result = await dbExecution(query, values);
 
-    return res.status(200).send({
-      status: true,
-      message: "insert data successful",
-      data: resultHouse.rows,
+    if (result && result.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Insert house successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(400).send({
+      status: false,
+      message: "Insert house failed",
+      data: [],
     });
   } catch (error) {
-    await dbExecution("ROLLBACK");
     console.error("Error in insert_house_data:", error);
     return res.status(500).send({
       status: false,
@@ -115,24 +113,25 @@ export const insert_house_data = async (req, res) => {
   }
 };
 
-export const query_house_dataall = async (req, res) => {
+export const queryHouseDataAll = async (req, res) => {
   try {
-    const { page = 0, limit = 20 } = req.body;
+    const { page = 0, limit = 20 } = req.query; // ✅ use query params
 
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total records for pagination
-    const countQuery = `SELECT COUNT(DISTINCT h.id) AS total
-      FROM public.tbhouse h
-      WHERE h.status = '1';
+    // ✅ Count total records
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM public.tbhouse
+      WHERE status = '1';
     `;
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // Main query with LIMIT and OFFSET
+    // ✅ Main query
     const query = `
       SELECT 
         h.id,
@@ -143,24 +142,22 @@ export const query_house_dataall = async (req, res) => {
         h.tel,
         h.contactnumber,
         h.locationvideo,
-        h.status,
         h.moredetail,
-        h.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT hi.url) FILTER (WHERE hi.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        h.image,
+        h.cdate
       FROM public.tbhouse h
       INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
       INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tbhouseimage hi ON hi.id = h.id
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1'
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, h.contactnumber,
-        h.locationvideo, h.status, h.moredetail, h.cdate,
-        p.province, d.district
+        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+        h.contactnumber, h.locationvideo, h.moredetail,
+        p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -168,11 +165,25 @@ export const query_house_dataall = async (req, res) => {
     const result = await dbExecution(query, [validLimit, offset]);
     let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    // ✅ Image parsing & full URLs
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     const response = {
       houses: rows,
@@ -200,24 +211,24 @@ export const query_house_dataall = async (req, res) => {
 };
 
 // search by name
-
-export const search_house_data = async (req, res) => {
+export const searchHouseData = async (req, res) => {
   try {
-    const { name = "", page = 0, limit = 20 } = req.body;
+    const { name = "", page = 0, limit = 20 } = req.body; // or req.query if GET
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // Count total matching records
-    const countQuery = `SELECT COUNT(DISTINCT h.id) AS total
-      FROM public.tbhouse h
-      WHERE h.status = '1' AND h.housename ILIKE $1;
+    // ✅ Count total matching records
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM public.tbhouse
+      WHERE status = '1' AND housename ILIKE $1;
     `;
     const countResult = await dbExecution(countQuery, [`%${name}%`]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // Main query
+    // ✅ Main query
     const query = `
       SELECT 
         h.id,
@@ -228,24 +239,22 @@ export const search_house_data = async (req, res) => {
         h.tel,
         h.contactnumber,
         h.locationvideo,
-        h.status,
         h.moredetail,
-        h.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT hi.url) FILTER (WHERE hi.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        h.image,
+        h.cdate
       FROM public.tbhouse h
       INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
       INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tbhouseimage hi ON hi.id = h.id
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1' AND h.housename ILIKE $1
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, h.contactnumber,
-        h.locationvideo, h.status, h.moredetail, h.cdate,
-        p.province, d.district
+        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+        h.contactnumber, h.locationvideo, h.moredetail,
+        p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -253,11 +262,25 @@ export const search_house_data = async (req, res) => {
     const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
     let rows = result?.rows || [];
 
-    // Map images to full URLs
-    rows = rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    // ✅ Safe image handling
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     const response = {
       houses: rows,
@@ -285,12 +308,8 @@ export const search_house_data = async (req, res) => {
 };
 
 // query by provice id and district id
-
-export const query_house_data_byprovinceid_and_districtid = async (
-  req,
-  res
-) => {
-  const { provinceid, districtid, name = "", page = 0, limit = 20 } = req.body;
+export const queryHouseDataByDistrictId = async (req, res) => {
+  const { districtId, page = 0, limit = 20 } = req.params;
 
   const validPage = Math.max(parseInt(page, 10), 0);
   const validLimit = Math.max(parseInt(limit, 10), 1);
@@ -302,16 +321,10 @@ export const query_house_data_byprovinceid_and_districtid = async (
     const countQuery = `
       SELECT COUNT(DISTINCT h.id) AS total
       FROM public.tbhouse h
-      WHERE h.status = '1' 
-        AND h.provinceid = $1 
-        AND h.districtid = $2 
-        AND h.housename ILIKE $3
+      WHERE h.status = '1'  
+        AND h.districtid = $1
     `;
-    const countResult = await dbExecution(countQuery, [
-      provinceid,
-      districtid,
-      `%${name}%`,
-    ]);
+    const countResult = await dbExecution(countQuery, [districtId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
     if (total === 0) {
@@ -339,44 +352,48 @@ export const query_house_data_byprovinceid_and_districtid = async (
         h.tel,
         h.contactnumber,
         h.locationvideo,
-        h.status,
         h.moredetail,
-        h.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT hi.url) FILTER (WHERE hi.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        h.image,
+        h.cdate
       FROM public.tbhouse h
       INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
       INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tbhouseimage hi ON hi.id = h.id
-      WHERE h.status = '1' 
-        AND h.provinceid = $1 
-        AND h.districtid = $2 
-        AND h.housename ILIKE $3
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE h.status = '1' AND h.districtid = $1
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, h.contactnumber,
-        h.locationvideo, h.status, h.moredetail, h.cdate,
-        p.province, d.district
+        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+        h.contactnumber, h.locationvideo, h.moredetail,
+        p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
-      LIMIT $4 OFFSET $5
+      LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [
-      provinceid,
-      districtid,
-      `%${name}%`,
-      validLimit,
-      offset,
-    ]);
+    const result = await dbExecution(query, [districtId, validLimit, offset]);
+    let rows = result?.rows || [];
 
     // Map images to full URLs
-    const rows = result.rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     return res.status(200).json({
       status: true,
@@ -390,10 +407,7 @@ export const query_house_data_byprovinceid_and_districtid = async (
       },
     });
   } catch (error) {
-    console.error(
-      "Error in query_house_data_byprovinceid_and_districtid:",
-      error
-    );
+    console.error("Error in query_house_data_byprovinceid_and_districtid:", error);
     return res.status(500).json({
       status: false,
       message: "Internal Server Error",
@@ -408,9 +422,8 @@ export const query_house_data_byprovinceid_and_districtid = async (
   }
 };
 
-// query by district id and village id
-export const query_house_data_districtid_and_villageid = async (req, res) => {
-  const { districtid, villageid, name = "", page = 0, limit = 20 } = req.body;
+export const queryHouseDataByVillageId = async (req, res) => {
+  const { villageId, page = 0, limit = 20 } = req.params;
 
   const validPage = Math.max(parseInt(page, 10), 0);
   const validLimit = Math.max(parseInt(limit, 10), 1);
@@ -421,18 +434,11 @@ export const query_house_data_districtid_and_villageid = async (req, res) => {
     // Count total matching records
     const countQuery = `
       SELECT COUNT(DISTINCT h.id) AS total
-      FROM public.tbhouse h
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      WHERE h.status = '1' 
-        AND h.districtid = $1 
-        AND j.villageid = $2
-        AND h.housename ILIKE $3
+      FROM public.tbhouse h 
+      WHERE h.status = '1'  
+        AND $1 = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[]);
     `;
-    const countResult = await dbExecution(countQuery, [
-      districtid,
-      villageid,
-      `%${name}%`,
-    ]);
+    const countResult = await dbExecution(countQuery, [villageId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
     if (total === 0) {
@@ -460,44 +466,49 @@ export const query_house_data_districtid_and_villageid = async (req, res) => {
         h.tel,
         h.contactnumber,
         h.locationvideo,
-        h.status,
         h.moredetail,
-        h.cdate,
         p.province,
         d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT hi.url) FILTER (WHERE hi.url IS NOT NULL), '{}') AS images
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        h.image,
+        h.cdate
       FROM public.tbhouse h
       INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
       INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tbhouseimage hi ON hi.id = h.id
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1' 
-        AND h.districtid = $1 
-        AND j.villageid = $2
-        AND h.housename ILIKE $3
+        AND $1 = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, h.contactnumber,
-        h.locationvideo, h.status, h.moredetail, h.cdate,
-        p.province, d.district
+        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+        h.contactnumber, h.locationvideo, h.moredetail,
+        p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
-      LIMIT $4 OFFSET $5
+      LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [
-      districtid,
-      villageid,
-      `%${name}%`,
-      validLimit,
-      offset,
-    ]);
+    const result = await dbExecution(query, [villageId, validLimit, offset]);
+    let rows = result?.rows || [];
 
     // Map images to full URLs
-    const rows = result.rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     return res.status(200).json({
       status: true,
@@ -526,59 +537,76 @@ export const query_house_data_districtid_and_villageid = async (req, res) => {
   }
 };
 
-// query by id
 
-export const query_house_dataone = async (req, res) => {
-  const id = req.body.id;
+// query by id
+export const queryHouseDataOne = async (req, res) => {
+  const { id } = req.params;
+  const baseUrl = "http://localhost:5151/";
 
   try {
-    const query = `SELECT 
-  h.id,
-  h.housename,
-  h.price1,
-  h.price2,
-  h.price3,
-  h.tel,
-  h.contactnumber,
-  h.locationvideo,
-  h.status,
-  h.moredetail,
-  h.cdate,
-  p.province,
-  d.district,
-  -- ✅ aggregate villages
-  COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-  -- ✅ aggregate images
-  COALESCE(ARRAY_AGG(DISTINCT hi.url) FILTER (WHERE hi.url IS NOT NULL), '{}') AS images
-FROM public.tbhouse h
-INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
-INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-LEFT JOIN public.tbhouseimage hi ON hi.id = h.id
-WHERE h.status = '1' and h.id=$1
-GROUP BY 
-  h.id, h.housename, h.price1, h.price2, h.price3,h.tel,h.contactnumber,
-  h.locationvideo, h.status, h.moredetail, h.cdate,
-  p.province, d.district
-ORDER BY h.cdate DESC
-LIMIT 50;
+    const query = `
+      SELECT 
+        h.id,
+        h.housename,
+        h.price1,
+        h.price2,
+        h.price3,
+        h.tel,
+        h.contactnumber,
+        h.locationvideo,
+        h.moredetail,
+        p.province,
+        d.district,
+        ARRAY_AGG(v.village ORDER BY v.village) AS villages,
+        h.image,
+        h.cdate
+      FROM public.tbhouse h
+      INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
+      INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
+      LEFT JOIN public.tbvillage v 
+        ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
+      WHERE h.status = '1' AND h.id = $1
+      GROUP BY 
+        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+        h.contactnumber, h.locationvideo, h.moredetail,
+        p.province, d.district, h.image, h.cdate;
     `;
 
     const result = await dbExecution(query, [id]);
+    let rows = result?.rows || [];
 
-    if (result?.rows?.length) {
-      return res.status(200).json({
-        status: true,
-        message: "Query data successful",
-        data: result.rows,
+    if (!rows.length) {
+      return res.status(404).json({
+        status: false,
+        message: "No data found",
+        data: [],
       });
     }
 
-    return res.status(404).json({
-      status: false,
-      message: "No data found",
-      data: [],
+    // Map images to full URLs
+    rows = rows.map((r) => {
+      let imgs = [];
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+      return {
+        ...r,
+        images: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Query data successful",
+      data: rows[0], // Return single record
     });
   } catch (error) {
     console.error("Error in query_house_dataone:", error);
@@ -590,141 +618,7 @@ LIMIT 50;
   }
 };
 
-// query house data by district_or_arean_or_village
-export const query_house_data_by_district_or_arean = async (req, res) => {
-  const {
-    province = "",
-    district = "",
-    arean = "",
-    village = "",
-    name = "",
-    page = 0,
-    limit = 20,
-  } = req.body;
-
-  const validPage = Math.max(parseInt(page, 10), 0);
-  const validLimit = Math.max(parseInt(limit, 10), 1);
-  const offset = validPage * validLimit;
-  const baseUrl = "http://localhost:5151/";
-
-  try {
-    // Count total matching records
-    const countQuery = `
-      SELECT COUNT(DISTINCT h.id) AS total
-      FROM public.tbhouse h
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
-      INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-      WHERE h.status = '1'
-        AND ($1 = '' OR p.province ILIKE $1)
-        AND ($2 = '' OR d.district ILIKE $2)
-        AND ($3 = '' OR v.arean ILIKE $3)
-        AND ($4 = '' OR j.villageid::text ILIKE $4)
-        AND ($5 = '' OR h.housename ILIKE $5)
-    `;
-    const countValues = [
-      `%${province}%`,
-      `%${district}%`,
-      `%${arean}%`,
-      `%${village}%`,
-      `%${name}%`,
-    ];
-    const countResult = await dbExecution(countQuery, countValues);
-    const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
-
-    if (total === 0) {
-      return res.status(404).json({
-        status: false,
-        message: "No data found",
-        data: [],
-        pagination: {
-          page: validPage,
-          limit: validLimit,
-          total,
-          totalPages: 0,
-        },
-      });
-    }
-
-    // Main query with pagination
-    const query = `
-      SELECT 
-        h.id,
-        h.housename,
-        h.price1,
-        h.price2,
-        h.price3,
-        h.tel,
-        h.contactnumber,
-        h.locationvideo,
-        h.status,
-        h.moredetail,
-        h.cdate,
-        p.province,
-        d.district,
-        COALESCE(ARRAY_AGG(DISTINCT v.arean) FILTER (WHERE v.arean IS NOT NULL), '{}') AS villages,
-        COALESCE(ARRAY_AGG(DISTINCT hi.url) FILTER (WHERE hi.url IS NOT NULL), '{}') AS images
-      FROM public.tbhouse h
-      INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
-      INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
-      LEFT JOIN public.tb_join_villageid j ON j.transactionid = h.id
-      LEFT JOIN public.tbvillage v ON v.villageid = j.villageid
-      LEFT JOIN public.tbhouseimage hi ON hi.id = h.id
-      WHERE h.status = '1'
-        AND ($1 = '' OR p.province ILIKE $1)
-        AND ($2 = '' OR d.district ILIKE $2)
-        AND ($3 = '' OR v.arean ILIKE $3)
-        AND ($4 = '' OR j.villageid::text ILIKE $4)
-        AND ($5 = '' OR h.housename ILIKE $5)
-      GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, h.contactnumber,
-        h.locationvideo, h.status, h.moredetail, h.cdate,
-        p.province, d.district
-      ORDER BY h.cdate DESC
-      LIMIT $6 OFFSET $7
-    `;
-
-    const queryValues = [...countValues, validLimit, offset];
-    const result = await dbExecution(query, queryValues);
-
-    // Map images to full URLs
-    const rows = result.rows.map((r) => ({
-      ...r,
-      images: r.images.map((img) => baseUrl + img),
-    }));
-
-    return res.status(200).json({
-      status: true,
-      message: "Query data successful",
-      data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
-    });
-  } catch (error) {
-    console.error(
-      "Error in query_house_data_by_district_or_arean_or_village:",
-      error
-    );
-    return res.status(500).json({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total: 0,
-        totalPages: 0,
-      },
-    });
-  }
-};
-
-export const update_active_status_house_data = async (req, res) => {
+export const updateActiveStatusHouseData = async (req, res) => {
   // done
   const { id, status } = req.body;
   try {
@@ -750,7 +644,7 @@ export const update_active_status_house_data = async (req, res) => {
   }
 };
 
-export const update_price_house_data = async (req, res) => {
+export const updatePriceHouseData = async (req, res) => {
   // done
 
   const { id, price } = req.body;
@@ -778,7 +672,7 @@ export const update_price_house_data = async (req, res) => {
   }
 };
 
-export const update_location_and_detail_house_data = async (req, res) => {
+export const updateLocationAndDetailHouseData = async (req, res) => {
   // done
   const { id, number, new_link, detail } = req.body;
   try {

@@ -1,13 +1,20 @@
 import Route from "express";
 import { verifyJWT } from "../../middleware/jwt.js";
-import { query_cream_dataall,search_cream_data, query_cream_dataone, insert_cream_data, delete_cream_data,reopen_cream_data_status_0_to_1 } from "../../controllers/cream/cream.controllers.js";
-import { uploadimage } from "../../middleware/cream.uploadimage.js";
+import {
+  queryCreamDataAll,
+  searchCreamData,
+  queryCreamDataOne,
+  insertCreamData,
+  deleteCreamData,
+  reopenCreamDataStatus0To1,
+} from "../../controllers/cream/cream.controllers.js";
+import { uploadImage } from "../../middleware/cream.uploadImage.js";
 const route = Route();
 
-route.get("/selectall", query_cream_dataall);
-route.post("/searchbyname", search_cream_data);
-route.post("/selectone", query_cream_dataone);
-route.post("/insert", uploadimage,insert_cream_data);
-route.put("/delete", delete_cream_data);
-route.put("/reopen", reopen_cream_data_status_0_to_1);
+route.get("/selectAll/:page/:limit", queryCreamDataAll); // done 100 % lawm os
+route.get("/searchByName/:name/:page/:limit", searchCreamData); // done 100 % lawm os
+route.get("/selectOne/:id", queryCreamDataOne); // done 100 % lawm os
+route.post("/insert", uploadImage, insertCreamData); // done 100 % lawm os
+route.put("/delete", deleteCreamData);  // yuav tau saib ntxiv
+route.put("/reopen", reopenCreamDataStatus0To1); // yuav tau saib ntxiv
 export default route;
