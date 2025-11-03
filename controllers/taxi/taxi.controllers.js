@@ -1,4 +1,6 @@
 import { dbExecution } from "../../config/dbConfig.js";
+import { QueryTopup } from "../class/class.controller.js";
+
 
 export const queryTaxiDataAll = async (req, res) => {
   const { page = 0, limit = 20 } = req.params;
@@ -83,16 +85,34 @@ export const queryTaxiDataAll = async (req, res) => {
       };
     });
 
-    return res.status(200).json({
+   const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+    // ✅ If page === 0 → also call top data function
+    let topData = null;
+    if (validPage === 0) {
+      try {
+        const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
+        topData = topResult?.data || topResult; // handle both formats
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
+
+    // ✅ Build combined response
+    const responseData = {
+      rows,
+      pagination,
+      ...(validPage === 0 && { topData }), // only include if page === 0
+    };
+
+     res.status(200).send({
       status: true,
-      message: "Query data successful",
-      data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: responseData,
     });
   } catch (error) {
     console.error("Error in query_taxi_dataall:", error);

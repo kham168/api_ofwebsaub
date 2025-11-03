@@ -1,4 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
+import { QueryTopup } from "../class/class.controller.js";
 
  export const queryKhoomKhoTshebDataAll = async (req, res) => {
   try {
@@ -61,17 +62,38 @@ import { dbExecution } from "../../config/dbConfig.js";
     });
 
     // ✅ Send response
-    res.status(200).send({
-      status: true,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages,
-      },
-    });
+    // Unified API response
+         const pagination = {
+         page: validPage,
+         limit: validLimit,
+         total,
+         totalPages: Math.ceil(total / validLimit),
+       };
+   
+       // ✅ If page === 0 → also call top data function
+       let topData = null;
+       if (validPage === 0) {
+         try {
+          const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
+           topData = topResult?.data || topResult; // handle both formats
+         } catch (e) {
+           console.warn("Failed to load top data:", e.message);
+         }
+       }
+   
+       // ✅ Build combined response
+       const responseData = {
+         rows,
+         pagination,
+         ...(validPage === 0 && { topData }), // only include if page === 0
+       };
+   
+       // ✅ Send success response
+       res.status(200).send({
+         status: true,
+         message: rows.length > 0 ? "Query successful" : "No data found",
+         data: responseData,
+       });
   } catch (error) {
     console.error("Error in queryKhoomKhoTshebDataAll:", error);
     res.status(500).send({

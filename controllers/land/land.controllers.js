@@ -1,6 +1,10 @@
+
 import { dbExecution } from "../../config/dbConfig.js";
- 
-   export const queryLandDataAll = async (req, res) => {
+import { QueryTopup } from "../class/class.controller.js";
+
+
+
+export const queryLandDataAll = async (req, res) => {
   try {
     const { page = 0, limit = 20 } = req.params;
 
@@ -9,7 +13,7 @@ import { dbExecution } from "../../config/dbConfig.js";
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
-    // ✅ Count total records
+    // ✅ Count total land records
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
       FROM public.tbland l
@@ -18,8 +22,8 @@ import { dbExecution } from "../../config/dbConfig.js";
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-    // ✅ Main query
-    const query = `
+    // ✅ Main land query with pagination
+    const landQuery = `
       SELECT 
         l.id,
         l.productname,
@@ -49,10 +53,10 @@ import { dbExecution } from "../../config/dbConfig.js";
       LIMIT $1 OFFSET $2;
     `;
 
-    const result = await dbExecution(query, [validLimit, offset]);
+    const landResult = await dbExecution(landQuery, [validLimit, offset]);
 
     // ✅ Format image URLs
-    const rows = result.rows.map((r) => {
+    const lands = (landResult.rows || []).map((r) => {
       let imgs = [];
       if (r.image) {
         if (Array.isArray(r.image)) {
@@ -72,24 +76,40 @@ import { dbExecution } from "../../config/dbConfig.js";
       };
     });
 
-    // ✅ Build response
-    const response = {
-      lands: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+    // ✅ Pagination info
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
     };
 
+    // ✅ If page === 0 → also call top data function
+    let topData = null;
+    if (validPage === 0) {
+      try {
+       const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
+        topData = topResult?.data || topResult; // handle both formats
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
+
+    // ✅ Build combined response
+    const responseData = {
+      lands,
+      pagination,
+      ...(validPage === 0 && { topData }), // only include if page === 0
+    };
+
+    // ✅ Send success response
     res.status(200).send({
       status: true,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: response,
+      message: lands.length > 0 ? "Query successful" : "No data found",
+      data: responseData,
     });
   } catch (error) {
-    console.error("Error in query_land_dataall:", error);
+    console.error("Error in queryLandDataAll:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -281,7 +301,6 @@ export const queryLandDataByDistrictId = async (req, res) => {
   }
 };
 
-
 export const queryLandDataByVillageId = async (req, res) => {
   try {
     const { villageId, page = 0, limit = 20 } = req.params;
@@ -390,9 +409,8 @@ export const queryLandDataByVillageId = async (req, res) => {
   }
 };
 
-
-  // insert data //    kho lawm
-   export const insertLandData = async (req, res) => {
+// insert data //    kho lawm
+export const insertLandData = async (req, res) => {
   const {
     id,
     ownername,
@@ -436,7 +454,10 @@ export const queryLandDataByVillageId = async (req, res) => {
             // fallback if JSON.parse fails
           }
         }
-        return trimmed.split(",").map((x) => x.trim()).filter(Boolean);
+        return trimmed
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
       }
       return [String(v).trim()];
     };
@@ -510,10 +531,8 @@ export const queryLandDataByVillageId = async (req, res) => {
   }
 };
 
-
-
 ///kho lawm
-  
+
 export const updateActiveStatusLandData = async (req, res) => {
   const { id, ownername, status } = req.body;
 
@@ -551,8 +570,7 @@ export const updateActiveStatusLandData = async (req, res) => {
   }
 };
 
-
-  // kho lawm
+// kho lawm
 export const updateSideAndPriceLandData = async (req, res) => {
   const { id, ownername, side, price } = req.body;
 

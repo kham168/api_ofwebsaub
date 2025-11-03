@@ -1,4 +1,6 @@
 import { dbExecution } from "../../config/dbConfig.js";
+import { QueryTopup } from "../class/class.controller.js";
+
 
 export const insertHouseData = async (req, res) => {
   const {
@@ -115,7 +117,7 @@ export const insertHouseData = async (req, res) => {
 
 export const queryHouseDataAll = async (req, res) => {
   try {
-    const { page = 0, limit = 20 } = req.query; // ✅ use query params
+    const { page, limit = 20 } = req.params; // ✅ use query params
 
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
@@ -184,22 +186,36 @@ export const queryHouseDataAll = async (req, res) => {
         images: imgs.map((img) => baseUrl + img),
       };
     });
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+    // ✅ If page === 0 → also call top data function
+    let topData = null;
+    if (validPage === 0) {
+      try {
+        const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
+        topData = topResult?.data || topResult; // handle both formats
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
 
-    const response = {
-      houses: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+    // ✅ Build combined response
+    const responseData = {
+      rows,
+      pagination,
+      ...(validPage === 0 && { topData }), // only include if page === 0
     };
 
-    return res.status(200).json({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: response,
+     res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: responseData,
     });
+
   } catch (error) {
     console.error("Error in query_house_dataall:", error);
     return res.status(500).json({
@@ -407,7 +423,10 @@ export const queryHouseDataByDistrictId = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error in query_house_data_byprovinceid_and_districtid:", error);
+    console.error(
+      "Error in query_house_data_byprovinceid_and_districtid:",
+      error
+    );
     return res.status(500).json({
       status: false,
       message: "Internal Server Error",
@@ -536,7 +555,6 @@ export const queryHouseDataByVillageId = async (req, res) => {
     });
   }
 };
-
 
 // query by id
 export const queryHouseDataOne = async (req, res) => {
