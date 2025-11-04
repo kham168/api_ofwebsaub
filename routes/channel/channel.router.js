@@ -8,7 +8,7 @@ import { queryChannelDataAll,queryChannelDataByOne,insertChannelDataDetail
 const route = Route();
 
 route.get("/selectAll", queryChannelDataAll);
-route.get("/selectOne/:id", queryChannelDataByOne);
+route.get("/selectOne", queryChannelDataByOne);
 route.post("/insert", insertChannelDataDetail);
 route.post("/insertVideo",insert_channel_video_url);
 route.post("/insertImage", uploadimage,insert_channel_image_url);

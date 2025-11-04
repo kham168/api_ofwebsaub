@@ -1,6 +1,4 @@
- 
 import { dbExecution } from "../../config/dbConfig.js";
- 
 
 // query image data or select top 15 of image
 export const queryChannelDataAll = async (req, res) => {
@@ -72,10 +70,11 @@ export const queryChannelDataAll = async (req, res) => {
   }
 };
 
-
 // query muas image data or select top 15 of image
 export const queryChannelDataByOne = async (req, res) => {
-  const { id } = req.params;
+  //const { id } = req.params;
+
+  const id = req.query.id ?? 0;
 
   if (!id) {
     return res.status(400).send({
@@ -134,7 +133,9 @@ export const queryChannelDataByOne = async (req, res) => {
       // Optionally make video URLs full too
       const video1 = r.video1 ? baseUrl + r.video1 : null;
       const video2 = r.video2 ? baseUrl + r.video2 : null;
-      const guidelinevideo = r.guidelinevideo ? baseUrl + r.guidelinevideo : null;
+      const guidelinevideo = r.guidelinevideo
+        ? baseUrl + r.guidelinevideo
+        : null;
 
       return {
         ...r,
@@ -161,15 +162,12 @@ export const queryChannelDataByOne = async (req, res) => {
   }
 };
 
- 
- 
 // insert channel data
-  
+
 export const insertChannelDataDetail = async (req, res) => {
-  const { id, channel, detail, ownername, peopleintorm, tel, path} = req.body;
+  const { id, channel, detail, ownername, peopleintorm, tel, path } = req.body;
 
-console.log("Received data:", { id });
-
+  console.log("Received data:", { id });
 
   try {
     const query = `
@@ -179,8 +177,17 @@ console.log("Received data:", { id });
       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(),$8)
       RETURNING *;
     `;
-  
-    const values = [id, channel, detail, ownername, peopleintorm, tel, "1", path];
+
+    const values = [
+      id,
+      channel,
+      detail,
+      ownername,
+      peopleintorm,
+      tel,
+      "1",
+      path,
+    ];
     const resultSingle = await dbExecution(query, values);
 
     if (resultSingle && resultSingle.rowCount > 0) {
@@ -206,14 +213,12 @@ console.log("Received data:", { id });
   }
 };
 
- 
- // insert into channel video url
+// insert into channel video url
 
 export const insert_channel_video_url = async (req, res) => {
-  const { id, url, } = req.body;
+  const { id, url } = req.body;
 
   try {
-    
     // Insert main taxi data
     const query = `	INSERT INTO public.tbchannelvideourl(id, url)VALUES ($1, $2)  RETURNING *;`;
     const values = [id, url];
@@ -232,7 +237,6 @@ export const insert_channel_video_url = async (req, res) => {
       message: "Insert data failed",
       data: null,
     });
-
   } catch (error) {
     console.error("Error in insert_taxi_data:", error);
     res.status(500).send({
@@ -243,7 +247,6 @@ export const insert_channel_video_url = async (req, res) => {
   }
 };
 
- 
 // insert channel image
 
 export const insert_channel_image_url = async (req, res) => {
@@ -259,7 +262,7 @@ export const insert_channel_image_url = async (req, res) => {
         resultSingle = await dbExecution(queryImage, [id, file.filename]);
       }
     }
-  
+
     if (resultSingle && resultSingle.rowCount > 0) {
       return res.status(200).send({
         status: true,
@@ -273,7 +276,6 @@ export const insert_channel_image_url = async (req, res) => {
       message: "Insert data failed",
       data: null,
     });
-
   } catch (error) {
     console.error("Error in insert_channel_data_detail:", error);
     return res.status(500).send({
@@ -284,11 +286,9 @@ export const insert_channel_image_url = async (req, res) => {
   }
 };
 
- 
 // update channel status
 
-
-export const update_channel_status = async (req, res) => { 
+export const update_channel_status = async (req, res) => {
   const { id, status } = req.body;
 
   if (!id || !status) {
@@ -326,12 +326,9 @@ export const update_channel_status = async (req, res) => {
   }
 };
 
- 
-
 // update channel detial data
 
-
-export const update_channel_detail = async (req, res) => { 
+export const update_channel_detail = async (req, res) => {
   const { id, detail } = req.body;
 
   if (!id || !detail) {
@@ -369,13 +366,9 @@ export const update_channel_detail = async (req, res) => {
   }
 };
 
-
- 
-
 // update channel people inform
 
-
-export const update_channel_people_inform = async (req, res) => { 
+export const update_channel_people_inform = async (req, res) => {
   const { id, peopleintorm } = req.body;
 
   if (!id || !peopleintorm) {
@@ -412,11 +405,10 @@ export const update_channel_people_inform = async (req, res) => {
     });
   }
 };
- 
 
 // delete channell Image url
 
- export const delete_channel_image_url = async (req, res) => { 
+export const delete_channel_image_url = async (req, res) => {
   const { id, url } = req.body;
 
   if (!id || !url) {
@@ -458,10 +450,9 @@ export const update_channel_people_inform = async (req, res) => {
   }
 };
 
-
 // Update channel video url
 
-export const update_channel_video_url = async (req, res) => { 
+export const update_channel_video_url = async (req, res) => {
   const { id, url } = req.body;
 
   if (!id || !url) {
@@ -501,8 +492,3 @@ export const update_channel_video_url = async (req, res) => {
     });
   }
 };
-
-
-
-
-
