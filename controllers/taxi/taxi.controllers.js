@@ -1,13 +1,17 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
-
 export const queryTaxiDataAll = async (req, res) => {
-  const { page = 0, limit = 20 } = req.params;
+  //const { page = 0, limit = 20 } = req.params;
 
-  const validPage = Math.max(parseInt(page, 10), 0);
-  const validLimit = Math.max(parseInt(limit, 10), 1);
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
+
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
+
   const baseUrl = "http://localhost:5151/";
 
   try {
@@ -25,7 +29,12 @@ export const queryTaxiDataAll = async (req, res) => {
         status: false,
         message: "No data found",
         data: [],
-        pagination: { page: validPage, limit: validLimit, total: 0, totalPages: 0 },
+        pagination: {
+          page: validPage,
+          limit: validLimit,
+          total: 0,
+          totalPages: 0,
+        },
       });
     }
 
@@ -85,7 +94,7 @@ export const queryTaxiDataAll = async (req, res) => {
       };
     });
 
-   const pagination = {
+    const pagination = {
       page: validPage,
       limit: validLimit,
       total,
@@ -109,7 +118,7 @@ export const queryTaxiDataAll = async (req, res) => {
       ...(validPage === 0 && { topData }), // only include if page === 0
     };
 
-     res.status(200).send({
+    res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: responseData,
@@ -120,20 +129,28 @@ export const queryTaxiDataAll = async (req, res) => {
       status: false,
       message: "Internal Server Error",
       data: [],
-      pagination: { page: validPage, limit: validLimit, total: 0, totalPages: 0 },
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total: 0,
+        totalPages: 0,
+      },
     });
   }
 };
 
-
-
 // search taxi data all or select top 15
 export const searchTaxiData = async (req, res) => {
-  const { name , page = 0, limit = 20 } = req.params;
+  //const { name , page = 0, limit = 20 } = req.params;
+  const name = req.query.name ?? 0;
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
 
+  // ✅ sanitize & convert
   const validPage = Math.max(parseInt(page, 10) || 0, 0);
-  const validLimit = Math.max(parseInt(limit, 10) || 1, 1);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
+
   const baseUrl = "http://localhost:5151/";
 
   try {
@@ -238,14 +255,19 @@ export const searchTaxiData = async (req, res) => {
     });
   }
 };
- 
 
 export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
-  const { districtId = "", page = 0, limit = 20 } = req.params;
+  //const { districtId = "", page = 0, limit = 20 } = req.params;
 
+  const districtId = req.query.districtId ?? 0;
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
+
+  // ✅ sanitize & convert
   const validPage = Math.max(parseInt(page, 10) || 0, 0);
-  const validLimit = Math.max(parseInt(limit, 10) || 1, 1);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
+
   const baseUrl = process.env.BASE_URL || "http://localhost:5151/";
 
   try {
@@ -264,7 +286,12 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
         status: false,
         message: "No data found",
         data: [],
-        pagination: { page: validPage, limit: validLimit, total, totalPages: 0 },
+        pagination: {
+          page: validPage,
+          limit: validLimit,
+          total,
+          totalPages: 0,
+        },
       });
     }
 
@@ -327,25 +354,34 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
         totalPages: Math.ceil(total / validLimit),
       },
     });
-
   } catch (error) {
     console.error("Error in queryTaxiByDistrictId:", error);
     res.status(500).json({
       status: false,
       message: "Internal Server Error",
       data: [],
-      pagination: { page: validPage, limit: validLimit, total: 0, totalPages: 0 },
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total: 0,
+        totalPages: 0,
+      },
     });
   }
 };
 
-
 export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
-  const { villageId, page = 0, limit = 20 } = req.params;
+  //const { villageId, page = 0, limit = 20 } = req.params;
 
-  const validPage = Math.max(parseInt(page, 10), 0);
-  const validLimit = Math.max(parseInt(limit, 10), 1);
+  const villageId = req.query.villageId ?? 0;
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
+
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
+
   const baseUrl = "http://localhost:5151/";
 
   try {
@@ -401,7 +437,7 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
     const result = await dbExecution(query, [villageId, validLimit, offset]);
 
     // ✅ Add full image URLs
-     const rows = result.rows.map((r) => {
+    const rows = result.rows.map((r) => {
       let imgs = [];
       if (r.image) {
         if (Array.isArray(r.image)) {
@@ -450,9 +486,10 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
 
 // query taxi data by id
 export const queryTaxiDataOne = async (req, res) => {
+  //const id = req.params.id;
 
-  const id = req.params.id;
-
+   const id = req.query.id ?? 0;
+    
   try {
     const query = `
        SELECT 
@@ -501,11 +538,8 @@ export const queryTaxiDataOne = async (req, res) => {
   }
 };
 
-
-
-
 // insert taxi data
- export const insert_taxi_data = async (req, res) => {
+export const insert_taxi_data = async (req, res) => {
   const {
     id,
     name,
@@ -531,28 +565,32 @@ export const queryTaxiDataOne = async (req, res) => {
     }
 
     // 🖼️ Collect uploaded images as an array
-    const imageArray = req.files && req.files.length > 0
-      ? req.files.map(file => file.filename)
-      : [];
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files.map((file) => file.filename)
+        : [];
 
     // 🏘️ Parse village input into array
     const parseVillageList = (v) => {
       if (!v) return [];
       if (Array.isArray(v))
-        return v.map(x => String(x).trim()).filter(Boolean);
+        return v.map((x) => String(x).trim()).filter(Boolean);
       if (typeof v === "string") {
         const trimmed = v.trim();
         if (trimmed.startsWith("[")) {
           try {
             const parsed = JSON.parse(trimmed);
             return Array.isArray(parsed)
-              ? parsed.map(x => String(x).trim()).filter(Boolean)
+              ? parsed.map((x) => String(x).trim()).filter(Boolean)
               : [];
           } catch (e) {
             // fallback if JSON parse fails
           }
         }
-        return trimmed.split(",").map(x => x.trim()).filter(Boolean);
+        return trimmed
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
       }
       return [String(v).trim()];
     };
@@ -578,9 +616,9 @@ export const queryTaxiDataOne = async (req, res) => {
       detail,
       province,
       district,
-      villageArray,   // 👈 array of villages
-      imageArray,     // 👈 array of images
-      "1",            // status
+      villageArray, // 👈 array of villages
+      imageArray, // 👈 array of images
+      "1", // status
       peopleid || null,
       turnofreason || null,
     ];
@@ -609,7 +647,6 @@ export const queryTaxiDataOne = async (req, res) => {
     });
   }
 };
-
 
 // delete taxi data || Update data status 1 to 0
 

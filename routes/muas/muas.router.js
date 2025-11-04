@@ -4,9 +4,9 @@ import { queryMuasDataAll,searchMuasData, queryMuasDataOne, insertMuasData, dele
 import { uploadImage } from "../../middleware/muas.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll/:page/:limit", queryMuasDataAll); // done 100 % lawm os
-route.get("/searchByName/:name/:page/:limit", searchMuasData); // done 100 % lawm os
-route.get("/selectOne/:id", queryMuasDataOne); // done 100 % lawm os
+route.get("/selectAll", queryMuasDataAll); // done 100 % lawm os
+route.get("/searchByName", searchMuasData); // done 100 % lawm os
+route.get("/selectOne", queryMuasDataOne); // done 100 % lawm os
 route.post("/insert",uploadImage, insertMuasData); // done 100 % lawm os
 route.put("/delete", deleteMuasData); // yuav tau saib ntxiv
 route.put("/reopen", reopenMuasDataStatus0To1); // yuav tau saib ntxiv

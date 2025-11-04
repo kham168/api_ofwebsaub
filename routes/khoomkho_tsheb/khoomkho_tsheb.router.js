@@ -4,9 +4,9 @@ import { queryKhoomKhoTshebDataAll,searchKhoomKhoTshebData, queryKhoomKhoTshebDa
 import { uploadImage } from "../../middleware/khoomkho_tsheb.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll/:page/:limit", queryKhoomKhoTshebDataAll); // tiav 100 % lawm os
-route.get("/selectOne/:id", queryKhoomKhoTshebDataOne);  // tiav 100 % lawm os
-route.get("/searchByName/:name/:page/:limit", searchKhoomKhoTshebData); // tiav 100 % lawm os
+route.get("/selectAll", queryKhoomKhoTshebDataAll); // tiav 100 % lawm os
+route.get("/selectOne", queryKhoomKhoTshebDataOne);  // tiav 100 % lawm os
+route.get("/searchByName", searchKhoomKhoTshebData); // tiav 100 % lawm os
 route.post("/insert", uploadImage,insertKhoomKhoTshebData); // tiav 100 % lawm os
 route.put("/delete", deleteKhoomKhoTshebData);  // yuav tau saib ntxiv
 route.put("/reopen", reopenKhoomKhoTshebDataStatus0To1); // yuav tau saib ntxiv

@@ -5,12 +5,14 @@ import { QueryTopup } from "../class/class.controller.js";
 export const queryTshuajDataAll = async (req, res) => {
   try {
     // Get pagination params from query
-    const { page = "0", limit = "15" } = req.query;
+    //const { page = "0", limit = "15" } = req.query;
 
-    // Validate and convert to numbers
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
-
     const offset = validPage * validLimit;
 
     // Count total rows first
@@ -43,37 +45,37 @@ export const queryTshuajDataAll = async (req, res) => {
     const rows = result?.rows || [];
 
     // Prepare unified response
-      const pagination = {
-          page: validPage,
-          limit: validLimit,
-          total,
-          totalPages: Math.ceil(total / validLimit),
-        };
-    
-        // ✅ If page === 0 → also call top data function
-        let topData = null;
-        if (validPage === 0) {
-          try {
-           const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
-            topData = topResult?.data || topResult; // handle both formats
-          } catch (e) {
-            console.warn("Failed to load top data:", e.message);
-          }
-        }
-    
-        // ✅ Build combined response
-        const responseData = {
-          rows,
-          pagination,
-          ...(validPage === 0 && { topData }), // only include if page === 0
-        };
-    
-        // ✅ Send success response
-        res.status(200).send({
-          status: true,
-          message: rows.length > 0 ? "Query successful" : "No data found",
-          data: responseData,
-        });
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    // ✅ If page === 0 → also call top data function
+    let topData = null;
+    if (validPage === 0) {
+      try {
+        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
+        topData = topResult?.data || topResult; // handle both formats
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
+
+    // ✅ Build combined response
+    const responseData = {
+      rows,
+      pagination,
+      ...(validPage === 0 && { topData }), // only include if page === 0
+    };
+
+    // ✅ Send success response
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: responseData,
+    });
   } catch (error) {
     console.error("Error in query_tshuaj_dataall:", error);
     res.status(500).send({
@@ -85,10 +87,14 @@ export const queryTshuajDataAll = async (req, res) => {
 };
 
 export const searchTshuajData = async (req, res) => {
-  try { 
-    const { name, page = "0", limit = "15" } = req.params;
+  try {
+    //const { name, page = "0", limit = "15" } = req.params;
 
-    // Validate pagination inputs
+    const name = req.query.name ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
@@ -151,7 +157,9 @@ export const searchTshuajData = async (req, res) => {
 
 // query tshuaj data by id
 export const queryTshuajDataOne = async (req, res) => {
-  const { id } = req.params;
+  //const { id } = req.params;
+
+  const id = req.query.id ?? 0;
 
   try {
     const query = `SELECT 

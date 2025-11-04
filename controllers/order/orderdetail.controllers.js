@@ -3,7 +3,10 @@ import { dbExecution } from "../../config/dbConfig.js";
 // query all order data by channel
 
 export const queryOrderDetailDataAllByChannel = async (req, res) => {
-  const [channel,status ]= req.params.channel;
+  //const [channel,status ]= req.params.channel;
+
+  const channel = req.query.channel ?? 0;
+  const status = req.query.status ?? 0;
 
   if (!channel || typeof channel !== "string") {
     return res.status(400).send({
@@ -23,7 +26,7 @@ confirmdate, sellstatus, sellname, selldate
       ORDER BY cdate DESC
       LIMIT 25
     `;
-    const resultSingle = await dbExecution(query, [channel,status]);
+    const resultSingle = await dbExecution(query, [channel, status]);
 
     const rows = resultSingle?.rows || [];
 
@@ -52,7 +55,14 @@ confirmdate, sellstatus, sellname, selldate
 // wuery order data by orderid
 
 export const queryOrderDetailDataOne = async (req, res) => {
-  const orderId = req.params.orderid;
+  //const orderId = req.params.orderid;
+
+  const orderId = req.query.orderId ?? 0;
+
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+  const offset = validPage * validLimit;
 
   if (!orderId || typeof orderId !== "string") {
     return res.status(400).send({
@@ -63,7 +73,6 @@ export const queryOrderDetailDataOne = async (req, res) => {
   }
 
   try {
- 
     const query = `
       SELECT  orderid, channel, productid, productname, price, custtel, 
 custcomment, donationid, paymentimage, cdate, staffconfirm, 

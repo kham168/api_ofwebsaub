@@ -1,13 +1,16 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
-// query muas data all or select top 15 
- export const queryMuasDataAll = async (req, res) => {
+// query muas data all or select top 15
+export const queryMuasDataAll = async (req, res) => {
   try {
     // Read pagination params from the query string
-    const { page = '0', limit = '15' } = req.query;
+    // const { page = '0', limit = '15' } = req.query;
 
-    // Validate and convert to integers
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
@@ -43,7 +46,7 @@ import { QueryTopup } from "../class/class.controller.js";
     const rows = result?.rows || [];
 
     // Build unified response
-     const pagination = {
+    const pagination = {
       page: validPage,
       limit: validLimit,
       total,
@@ -54,7 +57,7 @@ import { QueryTopup } from "../class/class.controller.js";
     let topData = null;
     if (validPage === 0) {
       try {
-       const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
+        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
         topData = topResult?.data || topResult; // handle both formats
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
@@ -85,13 +88,18 @@ import { QueryTopup } from "../class/class.controller.js";
 };
 
 export const searchMuasData = async (req, res) => {
-  try { 
-    const { name, page = '0', limit = '15' } = req.params;
+  try {
+   // const { name, page = "0", limit = "15" } = req.params;
 
     // Validate pagination
-    const validPage = Math.max(parseInt(page, 10) || 0, 0);
-    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
-    const offset = validPage * validLimit;
+    const name = req.query.name ?? 0;
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
+
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+  const offset = validPage * validLimit;
 
     // Validate name
     if (typeof name !== "string" || name.trim() === "") {
@@ -128,7 +136,11 @@ export const searchMuasData = async (req, res) => {
       LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(dataQuery, [`%${name}%`, validLimit, offset]);
+    const result = await dbExecution(dataQuery, [
+      `%${name}%`,
+      validLimit,
+      offset,
+    ]);
     const rows = result?.rows || [];
 
     // Send unified response
@@ -143,7 +155,6 @@ export const searchMuasData = async (req, res) => {
         totalPages,
       },
     });
-
   } catch (error) {
     console.error("Error in search_muas_data:", error);
     res.status(500).send({
@@ -154,10 +165,10 @@ export const searchMuasData = async (req, res) => {
   }
 };
 
-
- // query muas data by id
+// query muas data by id
 export const queryMuasDataOne = async (req, res) => {
-  const id = req.params.id;
+  //const id = req.params.id;
+   const id = req.query.id ?? 0;
 
   if (!id || typeof id !== "string") {
     return res.status(400).send({
@@ -206,10 +217,9 @@ export const queryMuasDataOne = async (req, res) => {
   }
 };
 
-  
 export const insertMuasData = async (req, res) => {
   const { id, name, price, tel, detail } = req.body;
-
+ 
   // Validate required fields
   if (!id || !name || !price || !detail) {
     return res.status(400).send({
@@ -221,9 +231,10 @@ export const insertMuasData = async (req, res) => {
 
   try {
     // 🖼️ Collect uploaded image filenames into an array
-    const imageArray = req.files && req.files.length > 0
-      ? req.files.map(file => file.filename)
-      : [];
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files.map((file) => file.filename)
+        : [];
 
     // 🧠 Insert data into tbmuas
     const query = `
@@ -240,8 +251,8 @@ export const insertMuasData = async (req, res) => {
       price,
       tel,
       detail,
-      imageArray,  // 👈 store array of images here
-      "1",         // active status
+      imageArray, // 👈 store array of images here
+      "1", // active status
     ];
 
     const result = await dbExecution(query, values);
@@ -268,7 +279,6 @@ export const insertMuasData = async (req, res) => {
     });
   }
 };
- 
 
 export const deleteMuasData = async (req, res) => {
   const { id } = req.body;
@@ -315,7 +325,7 @@ export const deleteMuasData = async (req, res) => {
   }
 };
 
-     // delete muas data
+// delete muas data
 export const reopenMuasDataStatus0To1 = async (req, res) => {
   const { id } = req.body;
 

@@ -1,15 +1,16 @@
-
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
-
-
 export const queryLandDataAll = async (req, res) => {
   try {
-    const { page = 0, limit = 20 } = req.params;
+    //const { page = 0, limit = 20 } = req.params;
 
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
@@ -88,7 +89,7 @@ export const queryLandDataAll = async (req, res) => {
     let topData = null;
     if (validPage === 0) {
       try {
-       const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
+        const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
         topData = topResult?.data || topResult; // handle both formats
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
@@ -119,7 +120,10 @@ export const queryLandDataAll = async (req, res) => {
 };
 
 export const queryLandDataOne = async (req, res) => {
-  const { id } = req.params;
+  //const { id } = req.params;
+
+  const id = req.query.id ?? 0;
+
   const baseUrl = "http://localhost:5151/";
 
   try {
@@ -197,7 +201,11 @@ export const queryLandDataOne = async (req, res) => {
 
 export const queryLandDataByDistrictId = async (req, res) => {
   try {
-    const { districtId, page = 0, limit = 20 } = req.params;
+    //   const { districtId, page = 0, limit = 20 } = req.params;
+
+    const districtId = req.query.districtId ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
 
     if (!districtId) {
       return res.status(400).send({
@@ -303,7 +311,11 @@ export const queryLandDataByDistrictId = async (req, res) => {
 
 export const queryLandDataByVillageId = async (req, res) => {
   try {
-    const { villageId, page = 0, limit = 20 } = req.params;
+    //  const { villageId, page = 0, limit = 20 } = req.params;
+
+    const villageId = req.query.villageId ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
 
     if (!villageId) {
       return res.status(400).send({

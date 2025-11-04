@@ -3,8 +3,10 @@ import { dbExecution } from "../../config/dbConfig.js";
 // search order data by tel
 
 export const querySearchOrderData = async (req, res) => {
-  const custTel = req.params.custTel;
+  //const custTel = req.params.custTel;
 
+   const custTel = req.query.custTel ?? 0;
+  
   if (!custTel || typeof custTel !== "string") {
     return res.status(400).send({ status: false, message: "Invalid custtel" });
   }
@@ -45,7 +47,7 @@ export const querySearchOrderData = async (req, res) => {
 
 export const insertOrderData = async (req, res) => {
   const { id, custTel, custName } = req.body;
-
+ 
   if (!id || !custTel || !custName) {
     return res.status(400).send({
       status: false,

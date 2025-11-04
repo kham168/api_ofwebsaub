@@ -4,10 +4,16 @@ import { QueryTopup } from "../class/class.controller.js";
 
 export const queryDormitoryDataAll = async (req, res) => {
   try {
-    const { page = 0, limit = 25 } = req.query;
-    const validPage = Math.max(parseInt(page), 0);
-    const validLimit = Math.max(parseInt(limit), 1);
+    // const { page = 0, limit = 25 } = req.query;
+
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
+
     const baseUrl = "http://localhost:5151/";
 
     // 🧮 Count total records
@@ -123,8 +129,17 @@ export const queryDormitoryDataAll = async (req, res) => {
 // search ny name. // kho lawm
 export const searchDormitoryData = async (req, res) => {
   try {
-    const { name } = req.params;
-    const { page = 0, limit = 25 } = req.query;
+    // const { name } = req.params;
+    //const { page = 0, limit = 25 } = req.query;
+
+    const name = req.query.name ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+    const offset = validPage * validLimit;
 
     if (!name || typeof name !== "string") {
       return res.status(400).send({
@@ -134,9 +149,6 @@ export const searchDormitoryData = async (req, res) => {
       });
     }
 
-    const validPage = Math.max(parseInt(page, 10) || 0, 0);
-    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
-    const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
     const countQuery = `
@@ -232,7 +244,16 @@ export const searchDormitoryData = async (req, res) => {
 // select data by provinceid and districtid   // kho lawm query_dormantal_data_by_provinceid_and_districtid
 export const queryDormitoryDataByDistrictId = async (req, res) => {
   try {
-    const { districtId, page = 0, limit = 25 } = req.params;
+    // const { districtId, page = 0, limit = 25 } = req.params;
+
+    const districtId = req.query.districtId ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+    const offset = validPage * validLimit;
 
     // 🧩 Validate input
     if (!districtId) {
@@ -243,9 +264,6 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
       });
     }
 
-    const validPage = Math.max(parseInt(page) || 0, 0);
-    const validLimit = Math.max(parseInt(limit) || 15, 1);
-    const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
     // 🧮 Count total
@@ -342,8 +360,16 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
 
 export const queryDormitoryDataByVillageId = async (req, res) => {
   try {
-    const { villageId, page = 0, limit = 20 } = req.params;
+    // const { villageId, page = 0, limit = 20 } = req.params;
 
+    const villageId = req.query.villageId ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+    const offset = validPage * validLimit;
     // 🧩 Validate input
     if (!villageId) {
       return res.status(400).send({
@@ -353,9 +379,6 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
       });
     }
 
-    const validPage = Math.max(parseInt(page) || 0, 0);
-    const validLimit = Math.max(parseInt(limit) || 20, 1);
-    const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
     // 🧮 Count query for pagination
@@ -457,8 +480,8 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
 // tsi tau rub mu siv
 export const queryDormitoryDataOne = async (req, res) => {
   try {
-    const { id } = req.params;
-
+    // const { id } = req.params;
+    const id = req.query.id ?? 0;
     // 🧩 Validate input
     if (!id) {
       return res.status(400).send({

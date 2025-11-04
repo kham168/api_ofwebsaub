@@ -1,7 +1,6 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
-
 export const insertHouseData = async (req, res) => {
   const {
     id,
@@ -117,11 +116,16 @@ export const insertHouseData = async (req, res) => {
 
 export const queryHouseDataAll = async (req, res) => {
   try {
-    const { page, limit = 20 } = req.params; // ✅ use query params
+    // const { page, limit = 20 } = req.params; // ✅ use query params
 
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
+
     const baseUrl = "http://localhost:5151/";
 
     // ✅ Count total records
@@ -210,12 +214,11 @@ export const queryHouseDataAll = async (req, res) => {
       ...(validPage === 0 && { topData }), // only include if page === 0
     };
 
-     res.status(200).send({
+    res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: responseData,
     });
-
   } catch (error) {
     console.error("Error in query_house_dataall:", error);
     return res.status(500).json({
@@ -229,9 +232,14 @@ export const queryHouseDataAll = async (req, res) => {
 // search by name
 export const searchHouseData = async (req, res) => {
   try {
-    const { name = "", page = 0, limit = 20 } = req.body; // or req.query if GET
-    const validPage = Math.max(parseInt(page, 10), 0);
-    const validLimit = Math.max(parseInt(limit, 10), 1);
+    // const { name = "", page = 0, limit = 20 } = req.body; // or req.query if GET
+    const name = req.query.name ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
@@ -325,10 +333,15 @@ export const searchHouseData = async (req, res) => {
 
 // query by provice id and district id
 export const queryHouseDataByDistrictId = async (req, res) => {
-  const { districtId, page = 0, limit = 20 } = req.params;
+  //const { districtId, page = 0, limit = 20 } = req.params;
 
-  const validPage = Math.max(parseInt(page, 10), 0);
-  const validLimit = Math.max(parseInt(limit, 10), 1);
+  const districtId = req.query.districtId ?? 0;
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
+
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
   const baseUrl = "http://localhost:5151/";
 
@@ -442,10 +455,15 @@ export const queryHouseDataByDistrictId = async (req, res) => {
 };
 
 export const queryHouseDataByVillageId = async (req, res) => {
-  const { villageId, page = 0, limit = 20 } = req.params;
+  //const { villageId, page = 0, limit = 20 } = req.params;
 
-  const validPage = Math.max(parseInt(page, 10), 0);
-  const validLimit = Math.max(parseInt(limit, 10), 1);
+  const villageId = req.query.villageId ?? 0;
+  const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
+
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
   const baseUrl = "http://localhost:5151/";
 
@@ -558,7 +576,9 @@ export const queryHouseDataByVillageId = async (req, res) => {
 
 // query by id
 export const queryHouseDataOne = async (req, res) => {
-  const { id } = req.params;
+  //const { id } = req.params;
+  const id = req.query.id ?? 0;
+
   const baseUrl = "http://localhost:5151/";
 
   try {

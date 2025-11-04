@@ -1,13 +1,17 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
- export const queryKhoomKhoTshebDataAll = async (req, res) => {
+export const queryKhoomKhoTshebDataAll = async (req, res) => {
   try {
     // ✅ Read from query params (not path params)
-    const { page = 0, limit = 25 } = req.query;
+    // const { page = 0, limit = 25 } = req.query;
 
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
-    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
     const baseUrl = "http://localhost:5151/";
@@ -63,37 +67,37 @@ import { QueryTopup } from "../class/class.controller.js";
 
     // ✅ Send response
     // Unified API response
-         const pagination = {
-         page: validPage,
-         limit: validLimit,
-         total,
-         totalPages: Math.ceil(total / validLimit),
-       };
-   
-       // ✅ If page === 0 → also call top data function
-       let topData = null;
-       if (validPage === 0) {
-         try {
-          const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
-           topData = topResult?.data || topResult; // handle both formats
-         } catch (e) {
-           console.warn("Failed to load top data:", e.message);
-         }
-       }
-   
-       // ✅ Build combined response
-       const responseData = {
-         rows,
-         pagination,
-         ...(validPage === 0 && { topData }), // only include if page === 0
-       };
-   
-       // ✅ Send success response
-       res.status(200).send({
-         status: true,
-         message: rows.length > 0 ? "Query successful" : "No data found",
-         data: responseData,
-       });
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    // ✅ If page === 0 → also call top data function
+    let topData = null;
+    if (validPage === 0) {
+      try {
+        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
+        topData = topResult?.data || topResult; // handle both formats
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
+
+    // ✅ Build combined response
+    const responseData = {
+      rows,
+      pagination,
+      ...(validPage === 0 && { topData }), // only include if page === 0
+    };
+
+    // ✅ Send success response
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: responseData,
+    });
   } catch (error) {
     console.error("Error in queryKhoomKhoTshebDataAll:", error);
     res.status(500).send({
@@ -103,24 +107,30 @@ import { QueryTopup } from "../class/class.controller.js";
     });
   }
 };
- 
+
 export const searchKhoomKhoTshebData = async (req, res) => {
   try {
-    const { name = "", page = 0, limit = 25 } = req.params;
+    // const { name = "", page = 0, limit = 25 } = req.params;
+
+    const name = req.query.name ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+    const offset = validPage * validLimit;
 
     // ✅ Validate name
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return res.status(400).send({
         status: false,
-        aaa:name,
+        aaa: name,
         message: "Invalid or missing name",
         data: [],
       });
     }
 
-    const validPage = Math.max(parseInt(page, 10) || 0, 0);
-    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
-    const offset = validPage * validLimit;
     const baseUrl = "http://localhost:5151/";
 
     // ✅ Count total matches (for pagination)
@@ -150,7 +160,8 @@ export const searchKhoomKhoTshebData = async (req, res) => {
       LIMIT $2 OFFSET $3;
     `;
 
-    let rows = (await dbExecution(query, [`%${name}%`, validLimit, offset]))?.rows || [];
+    let rows =
+      (await dbExecution(query, [`%${name}%`, validLimit, offset]))?.rows || [];
 
     // ✅ Safely parse images from Postgres array
     rows = rows.map((r) => {
@@ -194,10 +205,11 @@ export const searchKhoomKhoTshebData = async (req, res) => {
   }
 };
 
-
 // query khoomkho_tsheb data by id
 export const queryKhoomKhoTshebDataOne = async (req, res) => {
-  const id = req.params.id;
+  //const id = req.params.id;
+
+  const id = req.query.id ?? 0;
 
   if (!id || typeof id !== "string") {
     return res.status(400).send({
@@ -258,7 +270,8 @@ export const insertKhoomKhoTshebData = async (req, res) => {
   if (!id || !name || !price1 || !detail) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields: id, name, price1, and detail are required",
+      message:
+        "Missing required fields: id, name, price1, and detail are required",
       data: [],
     });
   }
@@ -316,7 +329,6 @@ export const insertKhoomKhoTshebData = async (req, res) => {
     });
   }
 };
-
 
 // delete khoomkho_tsheb data
 

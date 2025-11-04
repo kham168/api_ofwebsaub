@@ -15,17 +15,17 @@ import {
 import { uploadImage } from "../../middleware/dormitory.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll/:page/:limit", queryDormitoryDataAll); //done 100% lawm os
-route.get("/searchByName/:name/:page/:limit", searchDormitoryData); //done 100% lawm os
+route.get("/selectAll", queryDormitoryDataAll); //done 100% lawm os
+route.get("/searchByName", searchDormitoryData); //done 100% lawm os
 route.get(
-  "/selectByDistrictId/:districtId/:page/:limit",
+  "/selectByDistrictId",
   queryDormitoryDataByDistrictId
 ); //done 100% lawm os
 route.get(
-  "/selectByVillageId/:villageId/:page/:limit",
+  "/selectByVillageId",
   queryDormitoryDataByVillageId
 ); //done 100% lawm os
-route.get("/selectOne/:id", queryDormitoryDataOne); //done 100% lawm os
+route.get("/selectOne", queryDormitoryDataOne); //done 100% lawm os
 route.post("/insert", uploadImage, insertDormitoryData); //done 100% lawm os
 route.put("/updateActiveStatus", UpdateActiveStatusDormitoryData); // yuav tau saib ntxiv os
 route.put(

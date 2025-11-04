@@ -1,13 +1,15 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
-
 export const queryCreamDataAll = async (req, res) => {
   try {
     // Extract pagination params from query
-    const { page = "0", limit = "25" } = req.params;
+    //const { page = "0", limit = "25" } = req.params;
 
-    // Validate and convert to numbers
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
@@ -68,7 +70,7 @@ export const queryCreamDataAll = async (req, res) => {
     });
 
     // Unified API response
-      const pagination = {
+    const pagination = {
       page: validPage,
       limit: validLimit,
       total,
@@ -79,7 +81,7 @@ export const queryCreamDataAll = async (req, res) => {
     let topData = null;
     if (validPage === 0) {
       try {
-       const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
+        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
         topData = topResult?.data || topResult; // handle both formats
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
@@ -112,7 +114,16 @@ export const queryCreamDataAll = async (req, res) => {
 export const searchCreamData = async (req, res) => {
   try {
     // ✅ Get parameters from request
-    const { name = "", page = 0, limit = 25 } = req.params;
+    //  const { name = "", page = 0, limit = 25 } = req.params;
+
+    const name = req.query.name ?? 0;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
+
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+    const offset = validPage * validLimit;
 
     // ✅ Validate name
     if (!name || typeof name !== "string" || name.trim().length === 0) {
@@ -122,11 +133,6 @@ export const searchCreamData = async (req, res) => {
         data: [],
       });
     }
-
-    // ✅ Sanitize pagination inputs
-    const validPage = Math.max(parseInt(page, 10) || 0, 0);
-    const validLimit = Math.max(parseInt(limit, 10) || 25, 1);
-    const offset = validPage * validLimit;
 
     // ✅ Count total matching rows
     const countQuery = `
@@ -205,8 +211,8 @@ export const searchCreamData = async (req, res) => {
 
 export const queryCreamDataOne = async (req, res) => {
   try {
-    const { id } = req.params; // ✅ fixed destructuring
-
+    //const { id } = req.params; // ✅ fixed destructuring
+    const id = req.query.id ?? 0;
     // ✅ Validate ID
     if (!id || typeof id !== "string") {
       return res.status(400).send({
