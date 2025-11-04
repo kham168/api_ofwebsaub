@@ -1,26 +1,24 @@
- 
 import { dbExecution } from "../../config/dbConfig.js";
- 
 
 // search order data by tel
 
-export const query_search_order_data = async (req, res) => {
-  const custtel = req.body.custtel;
+export const querySearchOrderData = async (req, res) => {
+  const custTel = req.params.custTel;
 
-  if (!custtel || typeof custtel !== "string") {
+  if (!custTel || typeof custTel !== "string") {
     return res.status(400).send({ status: false, message: "Invalid custtel" });
   }
 
   try {
     const query = `
       SELECT orderid, custtel, custname, cdate
-      FROM public.tboder
+      FROM public.tborder
       WHERE custtel ILIKE $1
       ORDER BY cdate DESC
       LIMIT 5
     `;
 
-    const resultSingle = await dbExecution(query, [`%${custtel}%`]);
+    const resultSingle = await dbExecution(query, [`%${custTel}%`]);
 
     const rows = resultSingle?.rows || [];
 
@@ -38,45 +36,39 @@ export const query_search_order_data = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in query_search_order_data:", error);
+    console.error("Error in query search order data:", error);
     res.status(500).send({ status: false, message: "Internal Server Error" });
   }
 };
 
-
-
-
 // insert order data
 
+export const insertOrderData = async (req, res) => {
+  const { id, custTel, custName } = req.body;
 
-export const insert_order_data = async (req, res) => {
-  const { id, custtel, custname } = req.body;
-
-  if (!id || !custtel || !custname) {
+  if (!id || !custTel || !custName) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields",
     });
   }
 
-  const now = new Date();
-  const Date8 = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD string
+  //const now = new Date();
+  //const Date8 = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD string
 
   try {
     const query = `
-      INSERT INTO public.tboder(orderid, custtel, custname, cdate)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO public.tborder(orderid, custtel, custname, cdate)
+      VALUES ($1, $2, $3, NOW())
       RETURNING *
     `;
-    const values = [id, custtel, custname, Date8];
+    const values = [id, custTel, custName];
 
     const resultSingle = await dbExecution(query, values);
 
     if (resultSingle && resultSingle.rowCount > 0) {
-      // Call insert_orderdetail_data but don’t send res inside it
-      await insert_orderdetail_data(req, res, true);
+      await insertOrderDetailData(req, res, true);
 
-      // ✅ Send success response here
       return res.status(200).send({
         status: true,
         message: "Insert order data success",
@@ -90,46 +82,99 @@ export const insert_order_data = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in insert_order_data:", error);
-    return res.status(500).send({ status: false, message: "Internal Server Error" });
+    console.error("Error in insert order data:", error);
+    return res
+      .status(500)
+      .send({ status: false, message: "Internal Server Error" });
   }
 };
 
-export const insert_orderdetail_data = async (req, res, fromA = false) => {
-  const { id, channel, productid, productname, price, custtel, custcomment } = req.body;
+export const insertOrderDetailData = async (req, res, fromA = false) => {
+  const {
+    id,
+    channel,
+    productId,
+    productName,
+    price,
+    custTel,
+    custComment,
+    donationId,
+  } = req.body;
 
-  // Input validation
-  if (!id || !channel || !productid || !productname || !price || !custtel) {
-    if (!fromA) return res.status(400).send({ status: false, message: "Missing required fields" });
+  if (!id || !channel || !productId || !productName || !price || !custTel) {
+    if (!fromA)
+      return res.status(400).send({ status: false, message: "Missing required fields" });
     throw new Error("Missing required fields");
   }
 
   try {
+    const parseVillageList = (v) => {
+      if (!v) return [];
+      if (Array.isArray(v))
+        return v.map((x) => String(x).trim()).filter(Boolean);
+      if (typeof v === "string") {
+        const trimmed = v.trim();
+        if (trimmed.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            return Array.isArray(parsed)
+              ? parsed.map((x) => String(x).trim()).filter(Boolean)
+              : [];
+          } catch {}
+        }
+        return trimmed.split(",").map((x) => x.trim()).filter(Boolean);
+      }
+      return [String(v).trim()];
+    };
+
+    // ✅ Format donationIdArray as a Postgres array string: {5,3,4}
+    const donationIdArray = `{${parseVillageList(donationId).join(",")}}`;
+
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files.map((file) => file.filename || file.path || "").filter(Boolean)
+        : [];
+
     const query = `
-      INSERT INTO public.tboder_detail(orderid, channel, productid, productname, price, custtel, custcomment, cdate)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      INSERT INTO public.tborder_detail(
+        orderid, channel, productid, productname, price, custtel, custcomment, donationid, paymentimage, cdate
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
       RETURNING *
     `;
-    const values = [id, channel, productid, productname, price, custtel, custcomment];
+    const values = [
+      id,
+      channel,
+      productId,
+      productName,
+      price,
+      custTel,
+      custComment,
+      donationIdArray,
+      imageArray,
+    ];
+
     const resultSingle = await dbExecution(query, values);
 
     if (resultSingle && resultSingle.rowCount > 0) {
-      if (!fromA) { // called directly
+      if (!fromA) {
         return res.status(200).send({
           status: true,
           message: "Insert data successful",
           data: resultSingle.rows,
         });
       }
-      // called from insert_order_data, just return the result
       return resultSingle.rows;
     } else {
-      if (!fromA) return res.status(400).send({ status: false, message: "Insert data failed", data: null });
+      if (!fromA)
+        return res.status(400).send({ status: false, message: "Insert data failed", data: null });
       throw new Error("Insert data failed");
     }
   } catch (error) {
-    console.error("Error in insert_orderdetail_data:", error);
-    if (!fromA) return res.status(500).send({ status: false, message: "Internal Server Error" });
-    throw error; // propagate error to caller
+    console.error("Error in insert order detail data:", error);
+    if (!fromA)
+      return res.status(500).send({ status: false, message: "Internal Server Error" });
+    throw error;
   }
 };
+

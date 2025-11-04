@@ -1,13 +1,11 @@
-
 import { dbExecution } from "../../config/dbConfig.js";
 
 class queryTopData {
+  async getAllProductAData() {
+    try {
+      const baseUrl = "http://localhost:5151/";
 
-    async getAllProductAData() {
-  try {
-    const baseUrl = "http://localhost:5151/";
-
-    const tbcream = `
+      const tbcream = `
       SELECT 
         c.id,
         c.creamname AS name,
@@ -25,7 +23,7 @@ class queryTopData {
       LIMIT 1;
     `;
 
-    const tbkhoomkhotsheb = `
+      const tbkhoomkhotsheb = `
       SELECT 
         id,
         name,
@@ -42,7 +40,7 @@ class queryTopData {
       LIMIT 1;
     `;
 
-    const tbmuas = `
+      const tbmuas = `
       SELECT 
         m.id,
         m.name,
@@ -60,7 +58,7 @@ class queryTopData {
       LIMIT 1;
     `;
 
-    const tbtshuaj = `
+      const tbtshuaj = `
       SELECT 
         t.id,
         t.name,
@@ -77,34 +75,33 @@ class queryTopData {
       LIMIT 1;
     `;
 
-    // Execute all queries in parallel
-    const [creamRes, khoomRes, muasRes, tshuajRes] = await Promise.all([
-      dbExecution(tbcream, []),
-      dbExecution(tbkhoomkhotsheb, []),
-      dbExecution(tbmuas, []),
-      dbExecution(tbtshuaj, []),
-    ]);
+      // Execute all queries in parallel
+      const [creamRes, khoomRes, muasRes, tshuajRes] = await Promise.all([
+        dbExecution(tbcream, []),
+        dbExecution(tbkhoomkhotsheb, []),
+        dbExecution(tbmuas, []),
+        dbExecution(tbtshuaj, []),
+      ]);
 
-    const formatImage = (rows) =>
-      (rows || []).map((r) => ({
-        ...r,
-        image: r.image
-          ? r.image.split(",").map((img) => baseUrl + img.trim())
-          : [],
-      }));
+      const formatImage = (rows) =>
+        (rows || []).map((r) => ({
+          ...r,
+          image: r.image
+            ? r.image.split(",").map((img) => baseUrl + img.trim())
+            : [],
+        }));
 
-    return {
-      Cream: formatImage(creamRes?.rows),
-      KhoomKhoTsheb: formatImage(khoomRes?.rows),
-      Muas: formatImage(muasRes?.rows),
-      Tshuaj: formatImage(tshuajRes?.rows),
-    };
-  } catch (error) {
-    console.error("Error in getAllProductAData:", error);
-    throw error;
+      return {
+        Cream: formatImage(creamRes?.rows),
+        KhoomKhoTsheb: formatImage(khoomRes?.rows),
+        Muas: formatImage(muasRes?.rows),
+        Tshuaj: formatImage(tshuajRes?.rows),
+      };
+    } catch (error) {
+      console.error("Error in getAllProductAData:", error);
+      throw error;
+    }
   }
-}
-
 
   async getAllProductB(req, res) {
     try {
@@ -241,40 +238,42 @@ class queryTopData {
       `;
 
       // ⚙️ Execute all queries in parallel
-     const [dormitoryRes, houseRes, landRes, taxiRes] = await Promise.all([
-      dbExecution(tbdormitory, [limit]),
-      dbExecution(tbhouse, [limit]),
-      dbExecution(tbland, [limit]),
-      dbExecution(tbtaxi, [limit]),
-    ]);
+      const [dormitoryRes, houseRes, landRes, taxiRes] = await Promise.all([
+        dbExecution(tbdormitory, [limit]),
+        dbExecution(tbhouse, [limit]),
+        dbExecution(tbland, [limit]),
+        dbExecution(tbtaxi, [limit]),
+      ]);
 
-    const formatImage = (rows) =>
-      (rows || []).map((r) => ({
-        ...r,
-        image: r.image
-          ? r.image.split(",").map((img) => `${baseUrl}${img.trim()}`)
-          : [],
-      }));
+      const formatImage = (rows) =>
+        (rows || []).map((r) => ({
+          ...r,
+          image: r.image
+            ? r.image
+                .replace(/[{}]/g, "") // remove { and }
+                .split(",")
+                .map((img) => `${baseUrl}${img.trim()}`)
+            : [],
+        }));
 
-    return {
-      status: true,
-      data: {
-        Dormitory: formatImage(dormitoryRes?.rows),
-        House: formatImage(houseRes?.rows),
-        Land: formatImage(landRes?.rows),
-        Taxi: formatImage(taxiRes?.rows),
-      },
-    };
-  } catch (error) {
-    console.error("Error in getAllProductBData:", error);
-    return {
-      status: false,
-      message: "Internal Server Error",
-      data: {},
-    };
+      return {
+        status: true,
+        data: {
+          Dormitory: formatImage(dormitoryRes?.rows),
+          House: formatImage(houseRes?.rows),
+          Land: formatImage(landRes?.rows),
+          Taxi: formatImage(taxiRes?.rows),
+        },
+      };
+    } catch (error) {
+      console.error("Error in getAllProductBData:", error);
+      return {
+        status: false,
+        message: "Internal Server Error",
+        data: {},
+      };
+    }
   }
-}
 }
 
 export const QueryTopup = new queryTopData();
-

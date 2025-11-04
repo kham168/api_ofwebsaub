@@ -1,79 +1,92 @@
- 
 import { dbExecution } from "../../config/dbConfig.js";
- 
- // select all data
 
-export const query_profile_image_data_all = async (req, res) => {
+// select all data
+export const queryAdvertData = async (req, res) => {
+  const baseUrl = "http://localhost:5151/"; // base URL for image path
+
   try {
-    const query = `SELECT id, detail, url, status FROM public.tbprofileimage where status='1';`;
-    const resultSingle = await dbExecution(query, []); 
-    if (resultSingle) {
-      res.status(200).send({
-        status: true,
-        message: "query data success",
-        data: resultSingle?.rows,
+    const query = `
+      SELECT id, detail, image, url
+      FROM public.tbadvert
+      WHERE status = '1'
+      ORDER BY cdate DESC
+      LIMIT 7;
+    `;
+
+    const resultSingle = await dbExecution(query, []);
+
+    if (resultSingle?.rowCount > 0) {
+      // Map image paths to full URLs if needed
+      const data = resultSingle.rows.map((row) => {
+        let images = [];
+
+        // Handle text[] from PostgreSQL
+        if (Array.isArray(row.image)) {
+          images = row.image.map((img) => `${baseUrl}${img}`);
+        } else if (typeof row.image === "string" && row.image.startsWith("{")) {
+          // If stored as '{img1,img2}'
+          const clean = row.image
+            .replace(/[{}"]/g, "")
+            .split(",")
+            .filter(Boolean);
+          images = clean.map((img) => `${baseUrl}${img}`);
+        }
+
+        return {
+          ...row,
+          image: images,
+        };
       });
-    } else {
-      res.status(400).send({
-        status: false,
-        message: "query data fail",
-        data: resultSingle?.rows,
+
+      return res.status(200).send({
+        status: true,
+        message: "Query data successful",
+        data,
       });
     }
+
+    return res.status(404).send({
+      status: false,
+      message: "No data found",
+      data: [],
+    });
   } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error in queryAdvertData:", error);
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: null,
+    });
   }
 };
 
-
- 
-// query profile image data by id
-
-export const query_profile_image_data_by_id = async (req, res) => {
-    const { id } = req.body;
-  try {
-    const query = `SELECT id, detail, url, status FROM public.tbprofileimage where id=$1;`;
-    const resultSingle = await dbExecution(query, [id]); 
-    if (resultSingle) {
-      res.status(200).send({
-        status: true,
-        message: "query data success",
-        data: resultSingle?.rows,
-      });
-    } else {
-      res.status(400).send({
-        status: false,
-        message: "query data fail",
-        data: resultSingle?.rows,
-      });
-    }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-  
-    
 
 // insert profile image
-export const insert_profile_data_detail = async (req, res) => {
+export const insertAdvertDataDetail = async (req, res) => {
   const { id, detail } = req.body;
 
   try {
-    let resultSingle = null;
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files
+            .map((file) => file.filename || file.path || "")
+            .filter(Boolean)
+        : [];
 
-    // Insert images if any
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const queryImage = `
-          INSERT INTO public.tbprofileimage(id, detail, url, status)
-          VALUES ($1, $2, $3, $4)
-          RETURNING *;
-        `;
-        resultSingle = await dbExecution(queryImage, [id, detail, file.filename, "1"]);
-      }
-    }
+    // Convert imageArray into PostgreSQL array literal if you want {img1,img2}
+    const imageArrayString = `{${imageArray.join(",")}}`;
+
+    const query = `
+      INSERT INTO public.tbadvert(
+        id, detail, image, status, cdate
+      )
+      VALUES ($1, $2, $3, $4, NOW())
+      RETURNING *;
+    `;
+
+    const values = [id, detail, imageArrayString, "1"];
+
+    const resultSingle = await dbExecution(query, values);
 
     if (resultSingle && resultSingle.rowCount > 0) {
       return res.status(200).send({
@@ -88,9 +101,8 @@ export const insert_profile_data_detail = async (req, res) => {
       message: "Insert data failed",
       data: null,
     });
-
   } catch (error) {
-    console.error("Error in insert_channel_data_detail:", error);
+    console.error("Error in insertAdvertDataDetail:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -99,13 +111,9 @@ export const insert_profile_data_detail = async (req, res) => {
   }
 };
 
-
-
-
 // update profile data on detail row
 
- 
-  export const update_profile_image_data_detail_row = async (req, res) => {
+export const update_profile_image_data_detail_row = async (req, res) => {
   const { id, detail } = req.body;
 
   if (!id || !detail) {
@@ -118,7 +126,7 @@ export const insert_profile_data_detail = async (req, res) => {
 
   try {
     const query = `
-      UPDATE public.tbprofileimage
+      UPDATE public.tbadvert
       SET detail = $1
       WHERE id = $2
       RETURNING *;
@@ -148,11 +156,9 @@ export const insert_profile_data_detail = async (req, res) => {
   }
 };
 
-   
-
 // update profile status
 
-export const update_profile_image_status = async (req, res) => { 
+export const update_profile_image_status = async (req, res) => {
   const { id, status } = req.body;
 
   if (!id || !status) {
@@ -165,7 +171,7 @@ export const update_profile_image_status = async (req, res) => {
 
   try {
     const query = `
-      UPDATE public.tbprofileimage
+      UPDATE public.tbadvert
       SET status = $1
       WHERE id = $2
       RETURNING *;
@@ -194,7 +200,3 @@ export const update_profile_image_status = async (req, res) => {
     });
   }
 };
-
-
-
- 

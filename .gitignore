@@ -9,9 +9,4 @@
 /logs/*
 
 # Image folders (ignore everything inside them)
-landimage/*
-taxiimage/*
-tshuajimage/*
-houseimage/*
-creamimage/*
-mouaimage/*
+ 

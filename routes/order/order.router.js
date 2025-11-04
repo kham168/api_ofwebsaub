@@ -1,14 +1,15 @@
 import Route from "express";
-import { query_search_order_data,insert_order_data } from "../../controllers/order/order.controllers.js";
-import { query_orderdetail_dataall_by_channel,query_orderdetail_dataone,update_staffconfirm_data,update_sellstatus_data } from "../../controllers/order/orderdetail.controllers.js";
+import { querySearchOrderData,insertOrderData } from "../../controllers/order/order.controllers.js";
+import { queryOrderDetailDataAllByChannel,queryOrderDetailDataOne,updateStaffConfirmOrderData,updateSellStatusData } from "../../controllers/order/orderdetail.controllers.js";
+import { uploadImage } from "../../middleware/paymentImage.updoadImage.js";
 const route = Route();
 
-route.post("/searchorderdata", query_search_order_data);
-route.post("/insertorderdata", insert_order_data);
-route.post("/queryorderdetailbychannel", query_orderdetail_dataall_by_channel);  
-route.post("/queryorderdetailbyorderid", query_orderdetail_dataone); 
-route.put("/staffconfirm", update_staffconfirm_data); 
-route.put("/sellconfirm", update_sellstatus_data); 
+route.get("/searchByTel/:custTel", querySearchOrderData); //done 100% lawm os
+route.post("/insert",uploadImage, insertOrderData); // done 100% lawm os
+route.get("/selectAll/:channel/:status/:page/:limit", queryOrderDetailDataAllByChannel); // done 100% lawm os
+route.get("/selectOne/:orderid", queryOrderDetailDataOne); // done 100% lawm os
+route.put("/staffConfirm", updateStaffConfirmOrderData); // yuabb tau saib ntxiv os
+route.put("/sellConfirm", updateSellStatusData); // yuabb tau saib ntxiv os
 export default route;
 
 

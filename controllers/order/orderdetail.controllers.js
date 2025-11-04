@@ -1,11 +1,9 @@
- 
 import { dbExecution } from "../../config/dbConfig.js";
- 
 
 // query all order data by channel
 
-export const query_orderdetail_dataall_by_channel = async (req, res) => {
-  const channel = req.body.channel;
+export const queryOrderDetailDataAllByChannel = async (req, res) => {
+  const [channel,status ]= req.params.channel;
 
   if (!channel || typeof channel !== "string") {
     return res.status(400).send({
@@ -17,13 +15,15 @@ export const query_orderdetail_dataall_by_channel = async (req, res) => {
 
   try {
     const query = `
-      SELECT orderid, productid, productname, price, custtel, custcomment, cdate, staffconfirm, confirmdate, sellstatus, sellname, selldate
-      FROM public.tboder_detail
-      WHERE channel = $1
+      SELECT orderid, channel, productid, productname, price, custtel, 
+custcomment, donationid, paymentimage, cdate, staffconfirm,
+confirmdate, sellstatus, sellname, selldate
+      FROM public.tborder_detail
+      WHERE channel = $1 and sellstatus=$2
       ORDER BY cdate DESC
       LIMIT 25
     `;
-    const resultSingle = await dbExecution(query, [channel]);
+    const resultSingle = await dbExecution(query, [channel,status]);
 
     const rows = resultSingle?.rows || [];
 
@@ -41,7 +41,7 @@ export const query_orderdetail_dataall_by_channel = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in query_orderdetail_dataall_by_channel:", error);
+    console.error("Error in query order detail data all by channel:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -49,15 +49,12 @@ export const query_orderdetail_dataall_by_channel = async (req, res) => {
   }
 };
 
-
-
 // wuery order data by orderid
 
+export const queryOrderDetailDataOne = async (req, res) => {
+  const orderId = req.params.orderid;
 
- export const query_orderdetail_dataone = async (req, res) => {
-  const orderid = req.body.orderid;
-
-  if (!orderid || typeof orderid !== "string") {
+  if (!orderId || typeof orderId !== "string") {
     return res.status(400).send({
       status: false,
       message: "Invalid orderid",
@@ -66,12 +63,15 @@ export const query_orderdetail_dataall_by_channel = async (req, res) => {
   }
 
   try {
+ 
     const query = `
-      SELECT orderid, productid, productname, price, custtel, custcomment, cdate, staffconfirm, confirmdate, sellstatus, selldate
-      FROM public.tboder_detail
+      SELECT  orderid, channel, productid, productname, price, custtel, 
+custcomment, donationid, paymentimage, cdate, staffconfirm, 
+confirmdate, sellstatus, sellname, selldate
+      FROM public.tborder_detail
       WHERE orderid = $1
     `;
-    const resultSingle = await dbExecution(query, [orderid]);
+    const resultSingle = await dbExecution(query, [orderId]);
 
     const rows = resultSingle?.rows || [];
 
@@ -98,13 +98,12 @@ export const query_orderdetail_dataall_by_channel = async (req, res) => {
   }
 };
 
+//for when staff update or confirm for customer knwo that we are seeing order
 
-//for when staff update or confirm for customer knwo that we are seeing order 
+export const updateStaffConfirmOrderData = async (req, res) => {
+  const { orderId, staffConfirm } = req.body;
 
-export const update_staffconfirm_data = async (req, res) => {
-  const { orderid, staffconfirm } = req.body;
-
-  if (!orderid || !staffconfirm) {
+  if (!orderId || !staffConfirm) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields",
@@ -114,13 +113,13 @@ export const update_staffconfirm_data = async (req, res) => {
 
   try {
     const query = `
-      UPDATE public.tboder_detail
+      UPDATE public.tborder_detail
       SET staffconfirm = $2,
           confirmdate = NOW()
       WHERE orderid = $1
       RETURNING *
     `;
-    const values = [orderid, staffconfirm];
+    const values = [orderId, staffConfirm];
 
     const resultSingle = await dbExecution(query, values);
 
@@ -138,7 +137,7 @@ export const update_staffconfirm_data = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in update_staffconfirm_data:", error);
+    console.error("Error in update staff confirm data:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -149,11 +148,10 @@ export const update_staffconfirm_data = async (req, res) => {
 
 // for when sell confrim selling done 100%
 
+export const updateSellStatusData = async (req, res) => {
+  const { orderId, sellStatus, sellName } = req.body;
 
-export const update_sellstatus_data = async (req, res) => {
-  const { orderid, sellstatus, sellname } = req.body;
-
-  if (!orderid || !sellstatus || !sellname) {
+  if (!orderId || !sellStatus || !sellName) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields",
@@ -163,14 +161,14 @@ export const update_sellstatus_data = async (req, res) => {
 
   try {
     const query = `
-      UPDATE public.tboder_detail
+      UPDATE public.tborder_detail
       SET sellstatus = $2,
           sellname = $3,
           selldate = NOW()
       WHERE orderid = $1
       RETURNING *
     `;
-    const values = [orderid, sellstatus, sellname];
+    const values = [orderId, sellStatus, sellName];
 
     const resultSingle = await dbExecution(query, values);
 
@@ -188,7 +186,7 @@ export const update_sellstatus_data = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in update_sellstatus_data:", error);
+    console.error("Error in update sell status data:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
