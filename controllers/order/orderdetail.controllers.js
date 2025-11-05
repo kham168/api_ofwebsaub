@@ -58,12 +58,7 @@ export const queryOrderDetailDataOne = async (req, res) => {
   //const orderId = req.params.orderid;
 
   const orderId = req.query.orderId ?? 0;
-
-  // ✅ sanitize & convert
-  const validPage = Math.max(parseInt(page, 10) || 0, 0);
-  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
-  const offset = validPage * validLimit;
-
+  
   if (!orderId || typeof orderId !== "string") {
     return res.status(400).send({
       status: false,

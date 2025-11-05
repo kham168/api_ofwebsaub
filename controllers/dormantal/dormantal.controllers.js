@@ -65,25 +65,28 @@ export const queryDormitoryDataAll = async (req, res) => {
     let rows = result?.rows || [];
 
     // 🖼️ Map image URLs to full paths
-    rows = rows.map((r) => {
-      let imgs = [];
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
+   // 🖼️ Map image URLs to full paths
+rows = rows.map((r) => {
+  let imgs = [];
 
-      return {
-        ...r,
-        images: imgs.map((img) => baseUrl + img),
-      };
-    });
+  if (r.image) {
+    if (Array.isArray(r.image)) {
+      imgs = r.image;
+    } else if (typeof r.image === "string") {
+      imgs = r.image
+        .replace(/[{}]/g, "")
+        .split(",")
+        .map((i) => i.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return {
+    ...r,
+    image: imgs.map((img) => baseUrl + img),
+  };
+});
+ 
 
     const pagination = {
       page: validPage,
