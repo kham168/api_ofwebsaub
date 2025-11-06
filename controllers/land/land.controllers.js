@@ -54,15 +54,18 @@ export const queryLandDataAll = async (req, res) => {
       LIMIT $1 OFFSET $2;
     `;
 
-    const landResult = await dbExecution(landQuery, [validLimit, offset]);
+    // const landResult = await dbExecution(landQuery, [validLimit, offset]);
 
-    // ✅ Format image URLs
-    const lands = (landResult.rows || []).map((r) => {
+    let rows = (await dbExecution(landQuery, [validLimit, offset]))?.rows || [];
+
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -73,7 +76,7 @@ export const queryLandDataAll = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
@@ -97,18 +100,27 @@ export const queryLandDataAll = async (req, res) => {
     }
 
     // ✅ Build combined response
-    const responseData = {
-      lands,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
-    };
+    // const responseData = {
+    //   data: rows,
+    //   pagination,
+    //   ...(validPage === 0 && { topData }), // only include if page === 0
+    // };
 
-    // ✅ Send success response
-    res.status(200).send({
+    // // ✅ Send success response
+    // res.status(200).send({
+    //   status: true,
+    //   message: rows.length > 0 ? "Query successful" : "No data found",
+    //   data: responseData,
+    // });
+
+ res.status(200).send({
       status: true,
-      message: lands.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+      pagination,
+       ...(validPage === 0 && { topData }),
     });
+
   } catch (error) {
     console.error("Error in queryLandDataAll:", error);
     res.status(500).send({
@@ -156,18 +168,17 @@ export const queryLandDataOne = async (req, res) => {
       ORDER BY l.cdate DESC;
     `;
 
-    const result = await dbExecution(query, [id]);
+     let rows = (await dbExecution(query, [id]))?.rows || [];
 
-    if (result && result.rowCount > 0) {
-      // ✅ Parse images just like in queryLandDataAll
-      const row = result.rows[0];
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
       let imgs = [];
 
-      if (row.image) {
-        if (Array.isArray(row.image)) {
-          imgs = row.image;
-        } else if (typeof row.image === "string" && row.image.startsWith("{")) {
-          imgs = row.image
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
@@ -175,20 +186,19 @@ export const queryLandDataOne = async (req, res) => {
         }
       }
 
-      row.images = imgs.map((img) => baseUrl + img);
-
-      res.status(200).send({
-        status: true,
-        message: "Query data successful",
-        data: row,
-      });
-    } else {
-      res.status(404).send({
-        status: false,
-        message: "No record found with the given ID",
-        data: [],
-      });
-    }
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+ 
+   
+    // ✅ Build combined response
+     res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
     console.error("Error in query_land_dataone:", error);
     res.status(500).send({
@@ -266,10 +276,11 @@ export const queryLandDataByDistrictId = async (req, res) => {
     // ✅ Parse image arrays like before
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -280,25 +291,24 @@ export const queryLandDataByDistrictId = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    const response = {
-      lands: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+     const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
     };
 
     res.status(200).send({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: response,
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+      pagination, 
     });
+
   } catch (error) {
     console.error("Error in query_land_data_by_districtid:", error);
     res.status(500).send({
@@ -376,12 +386,13 @@ export const queryLandDataByVillageId = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
+   rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -392,24 +403,22 @@ export const queryLandDataByVillageId = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    const response = {
-      lands: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
     };
 
     res.status(200).send({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: response,
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+      pagination, 
     });
   } catch (error) {
     console.error("Error in query_land_data_by_villageid:", error);

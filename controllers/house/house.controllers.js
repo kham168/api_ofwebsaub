@@ -174,10 +174,11 @@ export const queryHouseDataAll = async (req, res) => {
     // ✅ Image parsing & full URLs
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -185,17 +186,13 @@ export const queryHouseDataAll = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
-    const pagination = {
-      page: validPage,
-      limit: validLimit,
-      total,
-      totalPages: Math.ceil(total / validLimit),
-    };
+
     // ✅ If page === 0 → also call top data function
     let topData = null;
     if (validPage === 0) {
@@ -207,17 +204,31 @@ export const queryHouseDataAll = async (req, res) => {
       }
     }
 
-    // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
     };
+
+    //  const responseData = {
+    //     rows,
+    //     pagination,
+    //     ...(validPage === 0 && { topData }), // only include if page === 0
+    //   };
+
+    //   res.status(200).send({
+    //     status: true,
+    //     message: rows.length > 0 ? "Query successful" : "No data found",
+    //     data: responseData,
+    //   });
 
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }),
     });
   } catch (error) {
     console.error("Error in query_house_dataall:", error);
@@ -289,10 +300,11 @@ export const searchHouseData = async (req, res) => {
     // ✅ Safe image handling
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -300,26 +312,25 @@ export const searchHouseData = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    const response = {
-      houses: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
     };
 
-    return res.status(200).json({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
-      data: response,
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+      pagination,
     });
   } catch (error) {
     console.error("Error in search_house_data:", error);
@@ -407,10 +418,11 @@ export const queryHouseDataByDistrictId = async (req, res) => {
     // Map images to full URLs
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -418,22 +430,25 @@ export const queryHouseDataByDistrictId = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    return res.status(200).json({
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error(
@@ -530,10 +545,11 @@ export const queryHouseDataByVillageId = async (req, res) => {
     // Map images to full URLs
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -541,22 +557,25 @@ export const queryHouseDataByVillageId = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    return res.status(200).json({
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in query_house_data_districtid_and_villageid:", error);
@@ -624,10 +643,11 @@ export const queryHouseDataOne = async (req, res) => {
     // Map images to full URLs
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -635,16 +655,17 @@ export const queryHouseDataOne = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    return res.status(200).json({
+    res.status(200).send({
       status: true,
-      message: "Query data successful",
-      data: rows[0], // Return single record
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
     });
   } catch (error) {
     console.error("Error in query_house_dataone:", error);

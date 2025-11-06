@@ -25,6 +25,7 @@ export const queryMuasDataAll = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
+    const baseUrl = "http://localhost:5151/";
     // Get paginated data
     const dataQuery = `
       SELECT 
@@ -42,10 +43,32 @@ export const queryMuasDataAll = async (req, res) => {
       LIMIT $1 OFFSET $2;
     `;
 
-    const result = await dbExecution(dataQuery, [validLimit, offset]);
-    const rows = result?.rows || [];
+    let rows = (await dbExecution(dataQuery, [validLimit, offset]))?.rows || [];
 
-    // Build unified response
+    // ✅ Safely parse images
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send response
+    // Unified API response
     const pagination = {
       page: validPage,
       limit: validLimit,
@@ -64,21 +87,15 @@ export const queryMuasDataAll = async (req, res) => {
       }
     }
 
-    // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
-    };
-
-    // ✅ Send success response
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }),
     });
   } catch (error) {
-    console.error("Error in query_muas_dataall:", error);
+    console.error("Error in query_muas dataall:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -89,17 +106,17 @@ export const queryMuasDataAll = async (req, res) => {
 
 export const searchMuasData = async (req, res) => {
   try {
-   // const { name, page = "0", limit = "15" } = req.params;
+    // const { name, page = "0", limit = "15" } = req.params;
 
     // Validate pagination
     const name = req.query.name ?? 0;
-  const page = req.query.page ?? 0;
-  const limit = req.query.limit ?? 15;
+    const page = req.query.page ?? 0;
+    const limit = req.query.limit ?? 15;
 
-  // ✅ sanitize & convert
-  const validPage = Math.max(parseInt(page, 10) || 0, 0);
-  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
-  const offset = validPage * validLimit;
+    // ✅ sanitize & convert
+    const validPage = Math.max(parseInt(page, 10) || 0, 0);
+    const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+    const offset = validPage * validLimit;
 
     // Validate name
     if (typeof name !== "string" || name.trim() === "") {
@@ -120,6 +137,8 @@ export const searchMuasData = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
+    const baseUrl = "http://localhost:5151/";
+
     // Fetch paginated search results
     const dataQuery = `
       SELECT 
@@ -136,24 +155,45 @@ export const searchMuasData = async (req, res) => {
       LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(dataQuery, [
-      `%${name}%`,
-      validLimit,
-      offset,
-    ]);
-    const rows = result?.rows || [];
+    let rows =
+      (await dbExecution(dataQuery, [`%${name}%`, validLimit, offset]))?.rows ||
+      [];
 
-    // Send unified response
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send final response
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
       status: true,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages,
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in search_muas_data:", error);
@@ -168,7 +208,7 @@ export const searchMuasData = async (req, res) => {
 // query muas data by id
 export const queryMuasDataOne = async (req, res) => {
   //const id = req.params.id;
-   const id = req.query.id ?? 0;
+  const id = req.query.id ?? 0;
 
   if (!id || typeof id !== "string") {
     return res.status(400).send({
@@ -177,6 +217,7 @@ export const queryMuasDataOne = async (req, res) => {
       data: [],
     });
   }
+  const baseUrl = "http://localhost:5151/";
 
   try {
     const query = `SELECT 
@@ -191,22 +232,37 @@ export const queryMuasDataOne = async (req, res) => {
       FROM public.tbmuas m 
       WHERE m.id = $1
     `;
-    const resultSingle = await dbExecution(query, [id]);
-    const rows = resultSingle?.rows || [];
+    let rows = (await dbExecution(query, [id]))?.rows || [];
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send final response
+
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
     console.error("Error in query_muas_dataone:", error);
     res.status(500).send({
@@ -219,7 +275,7 @@ export const queryMuasDataOne = async (req, res) => {
 
 export const insertMuasData = async (req, res) => {
   const { id, name, price, tel, detail } = req.body;
- 
+
   // Validate required fields
   if (!id || !name || !price || !detail) {
     return res.status(400).send({

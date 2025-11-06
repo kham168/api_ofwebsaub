@@ -65,21 +65,16 @@ export const queryTaxiDataAll = async (req, res) => {
     `;
 
     const result = await dbExecution(query, [validLimit, offset]);
+    let rows = result?.rows || [];
 
-    if (!result || !result.rows) {
-      return res.status(500).json({
-        status: false,
-        message: "Database query failed",
-        data: [],
-      });
-    }
-
-    const rows = result.rows.map((r) => {
+    // ✅ Proper image parsing
+    rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -90,17 +85,10 @@ export const queryTaxiDataAll = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    const pagination = {
-      page: validPage,
-      limit: validLimit,
-      total,
-      totalPages: Math.ceil(total / validLimit),
-    };
-    // ✅ If page === 0 → also call top data function
     let topData = null;
     if (validPage === 0) {
       try {
@@ -111,17 +99,29 @@ export const queryTaxiDataAll = async (req, res) => {
       }
     }
 
-    // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
+    const response = {
+      data: rows,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total,
+        totalPages: Math.ceil(total / validLimit),
+      },
+    };
+
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
     };
 
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }),
     });
   } catch (error) {
     console.error("Error in query_taxi_dataall:", error);
@@ -204,16 +204,18 @@ export const searchTaxiData = async (req, res) => {
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
     `;
-    const queryValues = [`%${name}%`, validLimit, offset];
-    const result = await dbExecution(query, queryValues);
+    // const queryValues = [`%${name}%`, validLimit, offset];
+    const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
+    let rows = result?.rows || [];
 
-    // ✅ Map images to full URLs
-    const rows = result.rows.map((r) => {
+    // ✅ Proper image parsing
+    rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -224,21 +226,22 @@ export const searchTaxiData = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    // ✅ Return successful result
-    return res.status(200).json({
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in searchTaxiData:", error);
@@ -322,13 +325,17 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
     `;
     const result = await dbExecution(query, [districtId, validLimit, offset]);
 
-    // ✅ Format rows
-    const rows = result.rows.map((r) => {
+    // const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
+    let rows = result?.rows || [];
+
+    // ✅ Proper image parsing
+    rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -339,20 +346,22 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    return res.status(200).json({
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in queryTaxiByDistrictId:", error);
@@ -437,12 +446,16 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
     const result = await dbExecution(query, [villageId, validLimit, offset]);
 
     // ✅ Add full image URLs
-    const rows = result.rows.map((r) => {
+    let rows = result?.rows || [];
+
+    // ✅ Proper image parsing
+    rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
@@ -453,20 +466,22 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
 
       return {
         ...r,
-        images: imgs.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    return res.status(200).json({
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in queryTaxiByDistrictIdAndVillageId:", error);
@@ -488,8 +503,10 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
 export const queryTaxiDataOne = async (req, res) => {
   //const id = req.params.id;
 
-   const id = req.query.id ?? 0;
-    
+  const id = req.query.id ?? 0;
+
+  const baseUrl = "http://localhost:5151/";
+
   try {
     const query = `
        SELECT 
@@ -513,21 +530,38 @@ export const queryTaxiDataOne = async (req, res) => {
         t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
         p.province, d.district, t.image 
     `;
-    const resultSingle = await dbExecution(query, [id]);
+    // const resultSingle = await dbExecution(query, [id]);
+    const result = await dbExecution(query, [id]);
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    let rows = result?.rows || [];
+
+    // ✅ Proper image parsing
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
     console.error("Error in query_taxi_dataone:", error);
     res.status(500).send({

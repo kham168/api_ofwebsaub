@@ -25,6 +25,7 @@ export const queryTshuajDataAll = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
+    const baseUrl = "http://localhost:5151/";
     // Now get paginated results
     const dataQuery = `
       SELECT 
@@ -41,10 +42,32 @@ export const queryTshuajDataAll = async (req, res) => {
       LIMIT $1 OFFSET $2;
     `;
 
-    const result = await dbExecution(dataQuery, [validLimit, offset]);
-    const rows = result?.rows || [];
+    let rows = (await dbExecution(dataQuery, [validLimit, offset]))?.rows || [];
 
-    // Prepare unified response
+    // ✅ Safely parse images
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send response
+    // Unified API response
     const pagination = {
       page: validPage,
       limit: validLimit,
@@ -64,17 +87,18 @@ export const queryTshuajDataAll = async (req, res) => {
     }
 
     // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
-    };
+    // const responseData = {
+    //   data: rows,
+    //   pagination,
+    //   ...(validPage === 0 && { topData }), // only include if page === 0
+    // };
 
-    // ✅ Send success response
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }),
     });
   } catch (error) {
     console.error("Error in query_tshuaj_dataall:", error);
@@ -109,6 +133,8 @@ export const searchTshuajData = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
+    const baseUrl = "http://localhost:5151/";
+
     // Query paginated search results
     const dataQuery = `
       SELECT 
@@ -126,24 +152,45 @@ export const searchTshuajData = async (req, res) => {
       LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(dataQuery, [
-      `%${name}%`,
-      validLimit,
-      offset,
-    ]);
-    const rows = result?.rows || [];
+    let rows =
+      (await dbExecution(dataQuery, [`%${name}%`, validLimit, offset]))?.rows ||
+      [];
 
-    // Build response
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send final response
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
       status: true,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages,
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in search_tshuaj_data:", error);
@@ -161,6 +208,8 @@ export const queryTshuajDataOne = async (req, res) => {
 
   const id = req.query.id ?? 0;
 
+  const baseUrl = "http://localhost:5151/";
+
   try {
     const query = `SELECT 
         t.id,
@@ -175,21 +224,37 @@ export const queryTshuajDataOne = async (req, res) => {
       WHERE t.id= $1; 
     `;
 
-    const resultSingle = await dbExecution(query, [id]);
+    let rows = (await dbExecution(query, [id]))?.rows || [];
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send final response
+
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
     console.error("Error in query_tshuaj_dataone:", error);
     res.status(500).send({

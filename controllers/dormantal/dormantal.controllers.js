@@ -65,28 +65,27 @@ export const queryDormitoryDataAll = async (req, res) => {
     let rows = result?.rows || [];
 
     // 🖼️ Map image URLs to full paths
-   // 🖼️ Map image URLs to full paths
-rows = rows.map((r) => {
-  let imgs = [];
+    // 🖼️ Map image URLs to full paths
+    rows = rows.map((r) => {
+      let imgs = [];
 
-  if (r.image) {
-    if (Array.isArray(r.image)) {
-      imgs = r.image;
-    } else if (typeof r.image === "string") {
-      imgs = r.image
-        .replace(/[{}]/g, "")
-        .split(",")
-        .map((i) => i.trim())
-        .filter(Boolean);
-    }
-  }
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
 
-  return {
-    ...r,
-    image: imgs.map((img) => baseUrl + img),
-  };
-});
- 
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
 
     const pagination = {
       page: validPage,
@@ -107,17 +106,25 @@ rows = rows.map((r) => {
     }
 
     // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
-    };
+    // const responseData = {
+    //   rows,
+    //   pagination,
+    //   ...(validPage === 0 && { topData }), // only include if page === 0
+    // };
 
-    // ✅ Send success response
+    // // ✅ Send success response
+    // res.status(200).send({
+    //   status: true,
+    //   message: rows.length > 0 ? "Query successful" : "No data found",
+    //   data: responseData,
+    // });
+
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }), // only include if page === 0
     });
   } catch (error) {
     console.error("Error in query_dormantal_dataall:", error);
@@ -206,33 +213,33 @@ export const searchDormitoryData = async (req, res) => {
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean);
-        } else if (typeof r.image === "string" && r.image.trim() !== "") {
-          imgs = [r.image];
         }
       }
 
       return {
         ...r,
-        images: imgs.map((img) => `${baseUrl}${img}`),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in searchDormitoryData:", error);
@@ -273,7 +280,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM public.tbdormitory d
-      WHERE d.status = '1' AND d.districtid = $2;
+      WHERE d.status = '1' AND d.districtid = $1;
     `;
     const countResult = await dbExecution(countQuery, [districtId]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
@@ -323,33 +330,34 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean);
-        } else if (typeof r.image === "string" && r.image.trim() !== "") {
-          imgs = [r.image];
         }
       }
 
       return {
         ...r,
-        images: imgs.map((img) => `${baseUrl}${img}`),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
+    // ✅ Send success response
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in query_dormitory_data_by_districtid:", error);
@@ -439,33 +447,33 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean);
-        } else if (typeof r.image === "string" && r.image.trim() !== "") {
-          imgs = [r.image];
         }
       }
 
       return {
         ...r,
-        images: imgs.map((img) => `${baseUrl}${img}`),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages: Math.ceil(total / validLimit),
-      },
+      pagination,
     });
   } catch (error) {
     console.error(
@@ -542,27 +550,25 @@ export const queryDormitoryDataOne = async (req, res) => {
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+        } else if (typeof r.image === "string") {
           imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean);
-        } else if (typeof r.image === "string" && r.image.trim() !== "") {
-          imgs = [r.image];
         }
       }
 
       return {
         ...r,
-        images: imgs.map((img) => `${baseUrl}${img}`),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    // ✅ Response
+    // ✅ Send success response
     res.status(200).send({
       status: true,
-      message: "Query data successful",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
     });
   } catch (error) {

@@ -88,18 +88,14 @@ export const queryCreamDataAll = async (req, res) => {
       }
     }
 
-    // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
-    };
-
     // ✅ Send success response
+
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }),
     });
   } catch (error) {
     console.error("Error in query_cream_dataall:", error);
@@ -187,17 +183,18 @@ export const searchCreamData = async (req, res) => {
       };
     });
 
-    // ✅ Final response
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
-      status: rows.length > 0,
-      message: rows.length > 0 ? "Query data success" : "No data found",
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages,
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in searchCreamData:", error);
@@ -245,12 +242,12 @@ export const queryCreamDataOne = async (req, res) => {
 
     // ✅ Parse images properly
     rows = rows.map((r) => {
-      let images = [];
+      let imgs = [];
       if (r.image) {
         if (Array.isArray(r.image)) {
-          images = r.image;
+          imgs = r.image;
         } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          images = r.image
+          imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
@@ -259,23 +256,16 @@ export const queryCreamDataOne = async (req, res) => {
       }
       return {
         ...r,
-        images: images.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data successful",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    // ✅ Final response
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
     console.error("Error in queryCreamDataOne:", error);
     res.status(500).send({

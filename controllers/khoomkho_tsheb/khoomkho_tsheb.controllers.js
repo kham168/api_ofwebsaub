@@ -47,21 +47,23 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
 
     // ✅ Safely parse images
     rows = rows.map((r) => {
-      let images = [];
+      let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
-          images = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          images = r.image
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: images.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
@@ -86,17 +88,18 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     }
 
     // ✅ Build combined response
-    const responseData = {
-      rows,
-      pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
-    };
+    // const responseData = {
+    //   data: rows,
+    //   pagination,
+    //   ...(validPage === 0 && { topData }), // only include if page === 0
+    // };
 
-    // ✅ Send success response
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      data: responseData,
+      data: rows,
+      pagination,
+      ...(validPage === 0 && { topData }),
     });
   } catch (error) {
     console.error("Error in queryKhoomKhoTshebDataAll:", error);
@@ -165,35 +168,39 @@ export const searchKhoomKhoTshebData = async (req, res) => {
 
     // ✅ Safely parse images from Postgres array
     rows = rows.map((r) => {
-      let images = [];
+      let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
-          images = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          images = r.image
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
             .replace(/[{}]/g, "")
             .split(",")
             .map((i) => i.trim())
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
-        images: images.map((img) => baseUrl + img),
+        image: imgs.map((img) => baseUrl + img),
       };
     });
 
     // ✅ Send final response
+      const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
     res.status(200).send({
       status: true,
-      message: rows.length > 0 ? "Query data successful" : "No data found",
+      message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination: {
-        page: validPage,
-        limit: validLimit,
-        total,
-        totalPages,
-      },
+      pagination,
     });
   } catch (error) {
     console.error("Error in searchKhoomKhoTshebData:", error);
@@ -219,6 +226,8 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     });
   }
 
+  const baseUrl = "http://localhost:5151/";
+
   try {
     const query = `SELECT 
         k.id,
@@ -232,24 +241,39 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
       FROM public.tbkhoomkhotsheb k where k.id= $1
     `;
 
-    const resultSingle = await dbExecution(query, [id]);
-    const rows = resultSingle?.rows || [];
+    let rows = (await dbExecution(query, [id]))?.rows || [];
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    // ✅ Safely parse images from Postgres array
+    rows = rows.map((r) => {
+      let imgs = [];
+
+      if (r.image) {
+        if (Array.isArray(r.image)) {
+          imgs = r.image;
+        } else if (typeof r.image === "string") {
+          imgs = r.image
+            .replace(/[{}]/g, "")
+            .split(",")
+            .map((i) => i.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return {
+        ...r,
+        image: imgs.map((img) => baseUrl + img),
+      };
+    });
+
+    // ✅ Send final response
+   
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
-    console.error("Error in query_khoomkho_tsheb_dataone:", error);
+    console.error("Error in query khoomkho tsheb dataone:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",

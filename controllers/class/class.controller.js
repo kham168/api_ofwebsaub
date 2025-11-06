@@ -87,21 +87,38 @@ class queryTopData {
         (rows || []).map((r) => ({
           ...r,
           image: r.image
-            ? r.image.split(",").map((img) => baseUrl + img.trim())
+            ? r.image
+                .replace(/[{}]/g, "") // remove { and }
+                .split(",")
+                .map((img) => `${baseUrl}${img.trim()}`)
             : [],
         }));
 
       return {
-        Cream: formatImage(creamRes?.rows),
-        KhoomKhoTsheb: formatImage(khoomRes?.rows),
-        Muas: formatImage(muasRes?.rows),
-        Tshuaj: formatImage(tshuajRes?.rows),
+        status: true,
+        data: {
+          Dormitory: formatImage(creamRes?.rows),
+          House: formatImage(khoomRes?.rows),
+          Land: formatImage(muasRes?.rows),
+          Taxi: formatImage(tshuajRes?.rows),
+        },
       };
     } catch (error) {
       console.error("Error in getAllProductAData:", error);
       throw error;
     }
   }
+
+
+
+
+
+
+
+
+
+
+
 
   async getAllProductB(req, res) {
     try {
