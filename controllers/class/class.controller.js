@@ -109,15 +109,7 @@ class queryTopData {
     }
   }
 
-
-
-
-
-
-
-
-
-
+ 
 
 
   async getAllProductB(req, res) {

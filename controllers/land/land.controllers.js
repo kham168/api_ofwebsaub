@@ -28,6 +28,8 @@ export const queryLandDataAll = async (req, res) => {
       SELECT 
         l.id,
         l.productname,
+        l.type,
+        l.squaremeters,
         l.area,
         l.price,
         l.tel,
@@ -47,7 +49,7 @@ export const queryLandDataAll = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1'
       GROUP BY 
-        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
@@ -113,14 +115,13 @@ export const queryLandDataAll = async (req, res) => {
     //   data: responseData,
     // });
 
- res.status(200).send({
+    res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-       ...(validPage === 0 && { topData }),
+      ...(validPage === 0 && { topData }),
     });
-
   } catch (error) {
     console.error("Error in queryLandDataAll:", error);
     res.status(500).send({
@@ -143,6 +144,7 @@ export const queryLandDataOne = async (req, res) => {
       SELECT 
         l.id,
         l.productname,
+        l.type,l.squaremeters, 
         l.area,
         l.price,
         l.tel,
@@ -162,13 +164,13 @@ export const queryLandDataOne = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1' AND l.id = $1
       GROUP BY 
-        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.id, l.productname, l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC;
     `;
 
-     let rows = (await dbExecution(query, [id]))?.rows || [];
+    let rows = (await dbExecution(query, [id]))?.rows || [];
 
     // ✅ Safely parse images from Postgres array
     rows = rows.map((r) => {
@@ -191,10 +193,9 @@ export const queryLandDataOne = async (req, res) => {
         image: imgs.map((img) => baseUrl + img),
       };
     });
- 
-   
+
     // ✅ Build combined response
-     res.status(200).send({
+    res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
@@ -244,6 +245,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
       SELECT 
         l.id,
         l.productname,
+        l.type,l.squaremeters, 
         l.area,
         l.price,
         l.tel,
@@ -263,7 +265,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1' AND l.districtid = $1
       GROUP BY 
-        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
@@ -295,7 +297,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
       };
     });
 
-     const pagination = {
+    const pagination = {
       page: validPage,
       limit: validLimit,
       total,
@@ -306,9 +308,8 @@ export const queryLandDataByDistrictId = async (req, res) => {
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination, 
+      pagination,
     });
-
   } catch (error) {
     console.error("Error in query_land_data_by_districtid:", error);
     res.status(500).send({
@@ -355,6 +356,7 @@ export const queryLandDataByVillageId = async (req, res) => {
       SELECT 
         l.id,
         l.productname,
+        l.type,l.squaremeters, 
         l.area,
         l.price,
         l.tel,
@@ -375,7 +377,7 @@ export const queryLandDataByVillageId = async (req, res) => {
       WHERE l.status = '1'
       AND $1 = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       GROUP BY 
-        l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.id, l.productname, l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
@@ -386,7 +388,7 @@ export const queryLandDataByVillageId = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-   rows = rows.map((r) => {
+    rows = rows.map((r) => {
       let imgs = [];
 
       if (r.image) {
@@ -418,7 +420,7 @@ export const queryLandDataByVillageId = async (req, res) => {
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      pagination, 
+      pagination,
     });
   } catch (error) {
     console.error("Error in query_land_data_by_villageid:", error);
@@ -436,6 +438,8 @@ export const insertLandData = async (req, res) => {
     id,
     ownername,
     productname,
+    type,
+    squaremeters,
     area,
     price,
     tel,
@@ -494,7 +498,7 @@ export const insertLandData = async (req, res) => {
     // ✅ Build SQL Query
     const query = `
       INSERT INTO public.tbland(
-        id, ownername, productname, area, price, tel, contactnumber,
+        id, ownername, productname, type, squaremeters, area, price, tel, contactnumber,
         locationurl, locationvideo, moredetail,
         province, district, village, image,
         status, cdate
@@ -502,8 +506,8 @@ export const insertLandData = async (req, res) => {
       VALUES (
         $1, $2, $3, $4, $5, $6, $7,
         $8, $9, $10,
-        $11, $12, $13::text[], $14::text[],
-        $15, NOW()
+        $11, $12,$13,$14, $15::text[], $16::text[],
+        $17, NOW()
       )
       RETURNING *;
     `;
@@ -512,6 +516,8 @@ export const insertLandData = async (req, res) => {
       id,
       ownername,
       productname,
+      type,
+      squaremeters,
       area,
       price,
       tel,
