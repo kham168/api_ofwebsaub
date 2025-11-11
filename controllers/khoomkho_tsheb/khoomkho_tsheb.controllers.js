@@ -29,14 +29,14 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     // ✅ Fetch data
     const query = `
       SELECT 
-        id,
+        id,type,
         name,
         "Price1",
         "Price2",
         tel,
         detail,
-        donation,
-        image
+        locationgps,
+        image,donation
       FROM public.tbkhoomkhotsheb
       WHERE status = '1'
       ORDER BY cdate DESC
@@ -149,14 +149,15 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     // ✅ Fetch paginated matching data
     const query = `
       SELECT 
-        id,
+        id,type,
         name,
         "Price1",
         "Price2",
         tel,
         detail,
-        donation,
-        image
+        locationgps,
+        image,
+        donation
       FROM public.tbkhoomkhotsheb
       WHERE status = '1' AND name ILIKE $1
       ORDER BY cdate DESC
@@ -230,14 +231,15 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
 
   try {
     const query = `SELECT 
-        k.id,
+        k.id,type,
         k.name,
         k."Price1",
         k."Price2",
         k.tel,
-        k.detail,
-        k.donation,
-        k.image
+        k.detail, 
+        k.locationgps,
+        ,k.image
+        k.donation
       FROM public.tbkhoomkhotsheb k where k.id= $1
     `;
 
@@ -288,7 +290,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
 //id, url)
 //VALUES (?, ?);
 export const insertKhoomKhoTshebData = async (req, res) => {
-  const { id, name, price1, price2, tel, detail, donation } = req.body;
+  const { id,type, name, price1, price2, tel, detail, locationgps } = req.body;
 
   // ✅ Validate required fields
   if (!id || !name || !price1 || !detail) {
@@ -310,21 +312,22 @@ export const insertKhoomKhoTshebData = async (req, res) => {
     // ✅ Build query for inserting data directly into tbkhoomkhotsheb
     const query = `
       INSERT INTO public.tbkhoomkhotsheb(
-        id, name, "Price1", "Price2", tel, detail, image, status, donation, cdate
+        id, type, name, "Price1", "Price2", tel, detail, locationgps, image, status, cdate
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
       RETURNING *;
     `;
 
     const values = [
       id,
+      type,
       name,
       price1,
       price2 || null,
       tel || "",
       detail,
+      locationgps,
       imageArray,
-      donation || "",
     ];
 
     const result = await dbExecution(query, values);
