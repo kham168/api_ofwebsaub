@@ -21,17 +21,18 @@ export const queryChannelDataAll = async (req, res) => {
         video1,
         video2,
         guidelinevideo,
-        peoplecarimagepath,qr,
+        peoplecarimagepath,
+        qr,
         cdate
       FROM public.tbchanneldetail
-      WHERE status = '1';
+      WHERE status = '1' 
+      ORDER BY id ASC;
     `;
 
     const result = await dbExecution(query, []);
     const rows = result?.rows || [];
 
     const formatted = rows.map((r) => {
-      // 🧩 Convert `pathproductdetail` string → array
       const pathProductDetailArray = r.pathproductdetail
         ? r.pathproductdetail
             .split(",")
@@ -39,7 +40,6 @@ export const queryChannelDataAll = async (req, res) => {
             .filter(Boolean)
         : [];
 
-      // 🧩 Convert `image` string → array and prepend baseUrl
       const imageArray = r.image
         ? r.image
             .split(",")
@@ -48,10 +48,13 @@ export const queryChannelDataAll = async (req, res) => {
             .map((img) => baseUrl + img)
         : [];
 
+      const qrUrl = r.qr ? baseUrl + r.qr : null;
+
       return {
         ...r,
         pathproductdetail: pathProductDetailArray,
         image: imageArray,
+        qr: qrUrl,
       };
     });
 
@@ -320,10 +323,11 @@ export const update_channel_image = async (req, res) => {
     let paramIndex = 1;
 
     if (imageArray !== null) {
-      fields.push(`image = $${paramIndex}`);
-      values.push(imageArray); // only works if column type is text[]
-      paramIndex++;
-    }
+  const imageString = imageArray.join(",");   // store as comma-separated string
+  fields.push(`image = $${paramIndex}`);
+  values.push(imageString);
+  paramIndex++;
+}
 
     if (qrImage !== null) {
       fields.push(`qr = $${paramIndex}`);
