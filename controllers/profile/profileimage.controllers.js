@@ -6,7 +6,7 @@ export const queryAdvertData = async (req, res) => {
 
   try {
     const query = `
-      SELECT id, detail, image, url
+      SELECT id, detail, image
       FROM public.tbadvert
       WHERE status = '1'
       ORDER BY cdate DESC
@@ -79,8 +79,7 @@ export const insertAdvertDataDetail = async (req, res) => {
     const query = `
       INSERT INTO public.tbadvert(
         id, detail, image, status, cdate
-      )
-      VALUES ($1, $2, $3, $4, NOW())
+      ) VALUES ($1, $2, $3, $4, NOW())
       RETURNING *;
     `;
 
@@ -111,27 +110,56 @@ export const insertAdvertDataDetail = async (req, res) => {
   }
 };
 
-// update profile data on detail row
+export const updateProfileDataDetail = async (req, res) => {
+  const { id, detail, status } = req.body;
 
-export const update_profile_image_data_detail_row = async (req, res) => {
-  const { id, detail } = req.body;
-
-  if (!id || !detail) {
+  // id is required, others optional
+  if (!id) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields: id or detail",
+      message: "Missing required field: id",
       data: null,
     });
   }
 
   try {
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    // Update only if NOT null/empty
+    if (detail != null && detail !== "") {
+      fields.push(`detail = $${paramIndex}`);
+      values.push(detail);
+      paramIndex++;
+    }
+
+    if (status != null && status !== "") {
+      fields.push(`status = $${paramIndex}`);
+      values.push(status);
+      paramIndex++;
+    }
+
+    // If user sent nothing to update
+    if (fields.length === 0) {
+      return res.status(400).send({
+        status: false,
+        message: "No update fields provided",
+        data: null,
+      });
+    }
+
+    // Add id as last parameter
+    values.push(id);
+
     const query = `
       UPDATE public.tbadvert
-      SET detail = $1
-      WHERE id = $2
+      SET ${fields.join(", ")}
+      WHERE id = $${paramIndex}
       RETURNING *;
     `;
-    const resultSingle = await dbExecution(query, [detail, id]);
+
+    const resultSingle = await dbExecution(query, values);
 
     if (resultSingle && resultSingle.rowCount > 0) {
       return res.status(200).send({
@@ -147,7 +175,7 @@ export const update_profile_image_data_detail_row = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in update_profile_image_data_detail_row:", error);
+    console.error("Error in update data:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -156,47 +184,3 @@ export const update_profile_image_data_detail_row = async (req, res) => {
   }
 };
 
-// update profile status
-
-export const update_profile_image_status = async (req, res) => {
-  const { id, status } = req.body;
-
-  if (!id || !status) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields: id or detail",
-      data: null,
-    });
-  }
-
-  try {
-    const query = `
-      UPDATE public.tbadvert
-      SET status = $1
-      WHERE id = $2
-      RETURNING *;
-    `;
-    const resultSingle = await dbExecution(query, [status, id]);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to update",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in update_profile_image_data_detail_row:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};

@@ -9,9 +9,6 @@ class queryTopData {
       SELECT 
         c.id,
         c.creamname AS name,
-        c."Price1",
-        c."Price2",
-        c."Price3",
         c.tel,
         c.detail,
         c.donation,
@@ -27,8 +24,6 @@ class queryTopData {
       SELECT 
         id,
         name,
-        "Price1",
-        "Price2",
         tel,
         detail,
         donation,
@@ -44,9 +39,6 @@ class queryTopData {
       SELECT 
         m.id,
         m.name,
-        m.price AS "Price1",
-        NULL AS "Price2",
-        NULL AS "Price3",
         m.tel,
         m.detail,
         m.donation,
@@ -62,8 +54,6 @@ class queryTopData {
       SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
         t.tel,
         t.detail,
         t.donation,
@@ -109,7 +99,6 @@ class queryTopData {
     }
   }
 
- 
 
 
   async getAllProductB(req, res) {
@@ -122,9 +111,6 @@ class queryTopData {
         SELECT 
           d.id,
           d.dormantalname AS name,
-          d.price1,
-          d.price2,
-          d.price3,
           d.type,
           d.totalroom,
           d.activeroom,
@@ -159,9 +145,6 @@ class queryTopData {
         SELECT 
           h.id,
           h.housename AS name,
-          h.price1,
-          h.price2,
-          h.price3,
           h.tel,
           h.contactnumber,
           h.locationvideo,
@@ -192,7 +175,6 @@ class queryTopData {
           l.id,
           l.productname AS name,
           l.area,
-          l.price,
           l.tel,
           l.contactnumber,
           l.locationurl,
@@ -223,8 +205,6 @@ class queryTopData {
         SELECT 
           t.id,
           t.name,
-          t."Price1",
-          t."Price2",
           t.tel,
           t.detail,
           p.province,

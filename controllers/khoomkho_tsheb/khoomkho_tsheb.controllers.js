@@ -87,13 +87,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
       }
     }
 
-    // ✅ Build combined response
-    // const responseData = {
-    //   data: rows,
-    //   pagination,
-    //   ...(validPage === 0 && { topData }), // only include if page === 0
-    // };
-
+    
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
@@ -284,11 +278,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
   }
 };
 
-// insert khoomkho_tsheb data
-
-//INSERT INTO public.tbkhoomkho_tshebimage(
-//id, url)
-//VALUES (?, ?);
+ 
 export const insertKhoomKhoTshebData = async (req, res) => {
   const { id,type, name, price1, price2, tel, detail, locationgps } = req.body;
 
@@ -324,7 +314,7 @@ export const insertKhoomKhoTshebData = async (req, res) => {
       name,
       price1,
       price2 || null,
-      tel || "",
+      tel || null,
       detail,
       locationgps,
       imageArray,

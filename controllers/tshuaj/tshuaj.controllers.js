@@ -85,13 +85,7 @@ export const queryTshuajDataAll = async (req, res) => {
         console.warn("Failed to load top data:", e.message);
       }
     }
-
-    // ✅ Build combined response
-    // const responseData = {
-    //   data: rows,
-    //   pagination,
-    //   ...(validPage === 0 && { topData }), // only include if page === 0
-    // };
+ 
 
     res.status(200).send({
       status: true,

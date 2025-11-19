@@ -31,7 +31,6 @@ export const queryCreamDataAll = async (req, res) => {
         c.creamname,
         c."Price1",
         c."Price2",
-        c."Price3",
         c.tel,
         c.detail,
         c.donation,
@@ -147,7 +146,6 @@ export const searchCreamData = async (req, res) => {
         c.creamname,
         c."Price1",
         c."Price2",
-        c."Price3",
         c.tel,
         c.detail,
         c.donation,
@@ -225,7 +223,6 @@ export const queryCreamDataOne = async (req, res) => {
         c.creamname,
         c."Price1",
         c."Price2",
-        c."Price3",
         c.tel,
         c.detail,
         c.donation,
@@ -278,7 +275,7 @@ export const queryCreamDataOne = async (req, res) => {
 
 // insert cream data
 export const insertCreamData = async (req, res) => {
-  const { id, creamName, price1, price2, price3, tel, detail, donation } =
+  const { id, creamName, price1, price2, tel, detail, donation } =
     req.body;
 
   if (!id || !creamName || !price1 || !detail) {
@@ -299,10 +296,10 @@ export const insertCreamData = async (req, res) => {
     // 🧠 Insert into tbcream
     const query = `
       INSERT INTO public.tbcream (
-        id, creamname, "Price1", "Price2", "Price3", 
+        id, creamname, "Price1", "Price2",
         tel, detail, image, donation, status, cdate
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8::text[], $9, $10, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7::text[], $8, $9, NOW())
       RETURNING *;
     `;
 
@@ -311,7 +308,6 @@ export const insertCreamData = async (req, res) => {
       creamName,
       price1,
       price2,
-      price3,
       tel,
       detail,
       imageArray, // 👈 image array here

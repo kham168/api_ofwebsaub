@@ -500,7 +500,7 @@ export const insertLandData = async (req, res) => {
       INSERT INTO public.tbland(
         id, ownername, productname, type, squaremeters, area, price, tel, contactnumber,
         locationurl, locationvideo, moredetail,
-        province, district, village, image,
+        provinceid, districtid, villageid, image,
         status, cdate
       )
       VALUES (

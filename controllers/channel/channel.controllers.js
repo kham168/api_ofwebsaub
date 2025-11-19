@@ -11,7 +11,7 @@ export const queryChannelDataAll = async (req, res) => {
         channel,
         detail,
         ownername,
-        peopleintorm,
+        peopleinform,
         tel,
         email,
         status,
@@ -21,7 +21,7 @@ export const queryChannelDataAll = async (req, res) => {
         video1,
         video2,
         guidelinevideo,
-        peoplecarimagepath,
+        peoplecarimagepath,qr,
         cdate
       FROM public.tbchanneldetail
       WHERE status = '1';
@@ -93,7 +93,7 @@ export const queryChannelDataByOne = async (req, res) => {
         channel,
         detail,
         ownername,
-        peopleintorm,
+        peopleinform,
         tel,
         email,
         status,
@@ -103,7 +103,7 @@ export const queryChannelDataByOne = async (req, res) => {
         video1,
         video2,
         guidelinevideo,
-        peoplecarimagepath,
+        peoplecarimagepath,qr,
         cdate
       FROM public.tbchanneldetail
       WHERE id = $1 AND status = '1';
@@ -165,14 +165,15 @@ export const queryChannelDataByOne = async (req, res) => {
 // insert channel data
 
 export const insertChannelDataDetail = async (req, res) => {
-  const { id, channel, detail, ownername, peopleintorm, tel, path } = req.body;
+  const { id, channel, detail, ownerName, peopleInformation, tel, path } =
+    req.body;
 
   console.log("Received data:", { id });
 
   try {
     const query = `
       INSERT INTO public.tbchanneldetail(
-        id, channel, detail, ownername, peopleintorm, tel, status, cdate,path
+        id, channel, detail, ownername, peopleinform, tel, status, cdate,path
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(),$8)
       RETURNING *;
@@ -182,86 +183,13 @@ export const insertChannelDataDetail = async (req, res) => {
       id,
       channel,
       detail,
-      ownername,
-      peopleintorm,
+      ownerName,
+      peopleInformation,
       tel,
-      "1",
+      "0",
       path,
     ];
     const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: resultSingle.rows,
-      });
-    }
-
-    return res.status(400).send({
-      status: false,
-      message: "Insert data failed",
-      data: null,
-    });
-  } catch (error) {
-    console.error("Error in insert_channel_data_detail:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
-
-// insert into channel video url
-
-export const insert_channel_video_url = async (req, res) => {
-  const { id, url } = req.body;
-
-  try {
-    // Insert main taxi data
-    const query = `	INSERT INTO public.tbchannelvideourl(id, url)VALUES ($1, $2)  RETURNING *;`;
-    const values = [id, url];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: resultSingle.rows,
-      });
-    }
-
-    return res.status(400).send({
-      status: false,
-      message: "Insert data failed",
-      data: null,
-    });
-  } catch (error) {
-    console.error("Error in insert_taxi_data:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
-
-// insert channel image
-
-export const insert_channel_image_url = async (req, res) => {
-  const { id } = req.body;
-
-  try {
-    let resultSingle = null;
-
-    // Insert images if any
-    if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const queryImage = `INSERT INTO public.tbchannelimage(id, url)VALUES ($1, $2) RETURNING *;`;
-        resultSingle = await dbExecution(queryImage, [id, file.filename]);
-      }
-    }
 
     if (resultSingle && resultSingle.rowCount > 0) {
       return res.status(200).send({
@@ -317,7 +245,7 @@ export const update_channel_status = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in update_profile_image_data_detail_row:", error);
+    console.error("Error in update data:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -357,7 +285,7 @@ export const update_channel_detail = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error in update_profile_image_data_detail_row:", error);
+    console.error("Error in update data:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -366,125 +294,95 @@ export const update_channel_detail = async (req, res) => {
   }
 };
 
-// update channel people inform
+export const update_channel_image = async (req, res) => {
+  const { id, video1, video2, guidelineVideo } = req.body;
 
-export const update_channel_people_inform = async (req, res) => {
-  const { id, peopleintorm } = req.body;
-
-  if (!id || !peopleintorm) {
+  if (!id) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields: id or detail",
+      message: "Missing required field: id",
       data: null,
     });
   }
 
-  try {
-    const query = `UPDATE public.tbchanneldetail SET peopleintorm=$1 WHERE id=$2 RETURNING *;`;
-    const resultSingle = await dbExecution(query, [peopleintorm, id]);
+  //const images = req.files?.files || null;   // array of images
+  //const qrFile = req.files?.file || null;    // array with 1 file
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
+  const imageArray = req.files?.files
+    ? req.files.files.map((f) => f.filename)
+    : null;
+
+  const qrImage = req.files?.file ? req.files.file[0].filename : null;
+
+  try {
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (imageArray !== null) {
+      fields.push(`image = $${paramIndex}`);
+      values.push(imageArray); // only works if column type is text[]
+      paramIndex++;
+    }
+
+    if (qrImage !== null) {
+      fields.push(`qr = $${paramIndex}`);
+      values.push(qrImage);
+      paramIndex++;
+    }
+
+    if (video1) {
+      fields.push(`video1 = $${paramIndex}`);
+      values.push(video1);
+      paramIndex++;
+    }
+
+    if (video2) {
+      fields.push(`video2 = $${paramIndex}`);
+      values.push(video2);
+      paramIndex++;
+    }
+
+    if (guidelineVideo) {
+      fields.push(`guidelinevideo = $${paramIndex}`);
+      values.push(guidelineVideo);
+      paramIndex++;
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).send({
         status: false,
-        message: "No record found to update",
+        message: "No data provided to update",
         data: null,
       });
     }
-  } catch (error) {
-    console.error("Error in update_profile_image_data_detail_row:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
 
-// delete channell Image url
+    values.push(id);
 
-export const delete_channel_image_url = async (req, res) => {
-  const { id, url } = req.body;
-
-  if (!id || !url) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields: id or url",
-      data: null,
-    });
-  }
-
-  try {
     const query = `
-      DELETE FROM public.tbchannelimage
-      WHERE id = $1 AND url = $2
+      UPDATE public.tbchanneldetail
+      SET ${fields.join(", ")}
+      WHERE id = $${paramIndex}
       RETURNING *;
     `;
-    const resultSingle = await dbExecution(query, [id, url]);
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Delete successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to delete",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in delete_channel_image_url:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
+    const resultSingle = await dbExecution(query, values);
 
-// Update channel video url
-
-export const update_channel_video_url = async (req, res) => {
-  const { id, url } = req.body;
-
-  if (!id || !url) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields: id or detail",
-      data: null,
-    });
-  }
-
-  try {
-    const query = `UPDATE public.tbchannelvideourl
-	SET url=$1
-	WHERE id=$2
-      RETURNING *;`;
-    const resultSingle = await dbExecution(query, [url, id]);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
+    if (resultSingle?.rowCount > 0) {
       return res.status(200).send({
         status: true,
         message: "Update successful",
         data: resultSingle.rows,
       });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to update",
-        data: null,
-      });
     }
+
+    return res.status(404).send({
+      status: false,
+      message: "No record found to update",
+      data: null,
+    });
   } catch (error) {
-    console.error("Error in update_profile_image_data_detail_row:", error);
+    console.error("Error in update_channel_image:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
