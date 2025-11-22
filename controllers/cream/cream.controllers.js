@@ -3,18 +3,14 @@ import { QueryTopup } from "../class/class.controller.js";
 
 export const queryCreamDataAll = async (req, res) => {
   try {
-    // Extract pagination params from query
-    //const { page = "0", limit = "25" } = req.params;
-
     const page = req.query.page ?? 0;
     const limit = req.query.limit ?? 15;
 
-    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
-    // Count total available records
+    // Count total
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM public.tbcream c
@@ -22,7 +18,22 @@ export const queryCreamDataAll = async (req, res) => {
     `;
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
-    const totalPages = Math.ceil(total / validLimit);
+
+    // ✅ Query QR image
+    const qrQuery = `
+      SELECT qr 
+      FROM public.tbchanneldetail 
+      WHERE id = '1' 
+      LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+
+    // Base URL
+    const baseUrl = "http://localhost:5151/";
+
+    // Convert QR to full URL
+    const qrimage = qrRaw ? baseUrl + qrRaw : null;
 
     // Fetch paginated cream data
     const dataQuery = `
@@ -44,14 +55,10 @@ export const queryCreamDataAll = async (req, res) => {
     const result = await dbExecution(dataQuery, [validLimit, offset]);
     let rows = result?.rows || [];
 
-    // Base URL for image mapping
-    const baseUrl = "http://localhost:5151/";
-
-    // Append full URLs to images
+    // Format images
     rows = rows.map((r) => {
       let imgs = [];
       if (r.image) {
-        // PostgreSQL returns arrays as strings like "{a,b,c}"
         if (Array.isArray(r.image)) {
           imgs = r.image;
         } else if (typeof r.image === "string" && r.image.startsWith("{")) {
@@ -68,7 +75,6 @@ export const queryCreamDataAll = async (req, res) => {
       };
     });
 
-    // Unified API response
     const pagination = {
       page: validPage,
       limit: validLimit,
@@ -76,28 +82,27 @@ export const queryCreamDataAll = async (req, res) => {
       totalPages: Math.ceil(total / validLimit),
     };
 
-    // ✅ If page === 0 → also call top data function
     let topData = null;
     if (validPage === 0) {
       try {
-        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
-        topData = topResult?.data || topResult; // handle both formats
+        const topResult = await QueryTopup.getAllProductAData();
+        topData = topResult?.data || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }
     }
 
-    // ✅ Send success response
-
+    // Final Output
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrimage, // ⬅️ HERE!
       data: rows,
       pagination,
       ...(validPage === 0 && { topData }),
     });
   } catch (error) {
-    console.error("Error in query_cream_dataall:", error);
+    console.error("Error in queryCreamDataAll:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -108,19 +113,15 @@ export const queryCreamDataAll = async (req, res) => {
 
 export const searchCreamData = async (req, res) => {
   try {
-    // ✅ Get parameters from request
-    //  const { name = "", page = 0, limit = 25 } = req.params;
-
-    const name = req.query.name ?? 0;
+    const name = req.query.name ?? "";
     const page = req.query.page ?? 0;
     const limit = req.query.limit ?? 15;
 
-    // ✅ sanitize & convert
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
-    // ✅ Validate name
+    // Validate name
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return res.status(400).send({
         status: false,
@@ -129,7 +130,7 @@ export const searchCreamData = async (req, res) => {
       });
     }
 
-    // ✅ Count total matching rows
+    // Count total
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM public.tbcream c
@@ -137,9 +138,22 @@ export const searchCreamData = async (req, res) => {
     `;
     const countResult = await dbExecution(countQuery, [`%${name}%`]);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
-    const totalPages = Math.ceil(total / validLimit);
 
-    // ✅ Main data query (with pagination)
+    // Base URL for images + QR
+    const baseUrl = "http://localhost:5151/";
+
+    // Query QR image
+    const qrQuery = `
+      SELECT qr 
+      FROM public.tbchanneldetail 
+      WHERE id = '1' 
+      LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrimage = qrRaw ? baseUrl + qrRaw : null;
+
+    // Main search query
     const query = `
       SELECT 
         c.id,
@@ -151,19 +165,19 @@ export const searchCreamData = async (req, res) => {
         c.donation,
         c.image
       FROM public.tbcream c
-      WHERE c.status = '1' AND c.creamname ILIKE $1
+      WHERE c.status = '1' 
+        AND c.creamname ILIKE $1
       ORDER BY c.cdate DESC
       LIMIT $2 OFFSET $3;
     `;
+
     const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
     let rows = result?.rows || [];
 
-    // ✅ Base URL for images
-    const baseUrl = "http://localhost:5151/";
-
-    // ✅ Parse image array safely
+    // Format image URLs
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
@@ -175,6 +189,7 @@ export const searchCreamData = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
         image: imgs.map((img) => baseUrl + img),
@@ -188,9 +203,11 @@ export const searchCreamData = async (req, res) => {
       totalPages: Math.ceil(total / validLimit),
     };
 
+    // Final response (with qrimage)
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrimage,
       data: rows,
       pagination,
     });
@@ -206,10 +223,12 @@ export const searchCreamData = async (req, res) => {
 
 export const queryCreamDataOne = async (req, res) => {
   try {
-    //const { id } = req.params; // ✅ fixed destructuring
-    const id = req.query.id ?? 0;
-    // ✅ Validate ID
-    if (!id || typeof id !== "string") {
+    const baseUrl = "http://localhost:5151/";
+    const id = req.query.id ?? "";
+
+    // Validate ID
+    const validId = id.toString().trim();
+    if (!validId) {
       return res.status(400).send({
         status: false,
         message: "Invalid or missing ID",
@@ -217,6 +236,18 @@ export const queryCreamDataOne = async (req, res) => {
       });
     }
 
+    // Query QR image
+    const qrQuery = `
+      SELECT qr 
+      FROM public.tbchanneldetail 
+      WHERE id = '1'
+      LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrImage = qrRaw ? baseUrl + qrRaw : null;
+
+    // Main query
     const query = `
       SELECT 
         c.id,
@@ -228,18 +259,26 @@ export const queryCreamDataOne = async (req, res) => {
         c.donation,
         c.image
       FROM public.tbcream c 
-      WHERE c.id = $1 AND c.status = '1'
+      WHERE c.id = $1 AND c.status = '1';
     `;
 
-    const result = await dbExecution(query, [id]);
+    const result = await dbExecution(query, [validId]);
     let rows = result?.rows || [];
 
-    // ✅ Base URL for image mapping
-    const baseUrl = "http://localhost:5151/";
+    // If no data
+    if (rows.length === 0) {
+      return res.status(404).send({
+        status: false,
+        message: "No data found",
+        qrimage: qrImage,
+        data: [],
+      });
+    }
 
-    // ✅ Parse images properly
+    // Parse images
     rows = rows.map((r) => {
       let imgs = [];
+
       if (r.image) {
         if (Array.isArray(r.image)) {
           imgs = r.image;
@@ -251,23 +290,26 @@ export const queryCreamDataOne = async (req, res) => {
             .filter(Boolean);
         }
       }
+
       return {
         ...r,
         image: imgs.map((img) => baseUrl + img),
       };
     });
 
-    // ✅ Final response
-    res.status(200).send({
+    // Final response (QR at top level)
+    return res.status(200).send({
       status: true,
-      message: rows.length > 0 ? "Query successful" : "No data found",
+      message: "Query successful",
+      qrimage: qrImage,
       data: rows,
     });
   } catch (error) {
     console.error("Error in queryCreamDataOne:", error);
-    res.status(500).send({
+    return res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrimage: null,
       data: [],
     });
   }
@@ -275,8 +317,7 @@ export const queryCreamDataOne = async (req, res) => {
 
 // insert cream data
 export const insertCreamData = async (req, res) => {
-  const { id, creamName, price1, price2, tel, detail, donation } =
-    req.body;
+  const { id, creamName, price1, price2, tel, detail, donation } = req.body;
 
   if (!id || !creamName || !price1 || !detail) {
     return res.status(400).send({

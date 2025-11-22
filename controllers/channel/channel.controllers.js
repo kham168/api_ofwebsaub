@@ -22,7 +22,6 @@ export const queryChannelDataAll = async (req, res) => {
         video2,
         guidelinevideo,
         peoplecarimagepath,
-        qr,
         cdate
       FROM public.tbchanneldetail
       WHERE status = '1' 
@@ -54,7 +53,6 @@ export const queryChannelDataAll = async (req, res) => {
         ...r,
         pathproductdetail: pathProductDetailArray,
         image: imageArray,
-        qr: qrUrl,
       };
     });
 

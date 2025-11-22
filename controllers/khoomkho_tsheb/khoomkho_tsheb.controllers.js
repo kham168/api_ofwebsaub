@@ -3,20 +3,17 @@ import { QueryTopup } from "../class/class.controller.js";
 
 export const queryKhoomKhoTshebDataAll = async (req, res) => {
   try {
-    // ✅ Read from query params (not path params)
-    // const { page = 0, limit = 25 } = req.query;
-
     const page = req.query.page ?? 0;
     const limit = req.query.limit ?? 15;
 
-    // ✅ sanitize & convert
+    // sanitize numbers
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
     const baseUrl = "http://localhost:5151/";
 
-    // ✅ Count total rows
+    // Count total
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM public.tbkhoomkhotsheb
@@ -26,17 +23,28 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
     const totalPages = Math.ceil(total / validLimit);
 
-    // ✅ Fetch data
+    // Query QR image
+    const qrQuery = `
+      SELECT qr FROM public.tbchanneldetail 
+      WHERE id = '4' LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrimage = qrRaw ? baseUrl + qrRaw : null;
+
+    // Query paginated data
     const query = `
       SELECT 
-        id,type,
+        id,
+        type,
         name,
         "Price1",
         "Price2",
         tel,
         detail,
         locationgps,
-        image,donation
+        image,
+        donation
       FROM public.tbkhoomkhotsheb
       WHERE status = '1'
       ORDER BY cdate DESC
@@ -45,7 +53,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
 
     let rows = (await dbExecution(query, [validLimit, offset]))?.rows || [];
 
-    // ✅ Safely parse images
+    // Convert image array
     rows = rows.map((r) => {
       let imgs = [];
 
@@ -67,30 +75,30 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
       };
     });
 
-    // ✅ Send response
-    // Unified API response
+    // Pagination object
     const pagination = {
       page: validPage,
       limit: validLimit,
       total,
-      totalPages: Math.ceil(total / validLimit),
+      totalPages,
     };
 
-    // ✅ If page === 0 → also call top data function
+    // Optional topData for page 0
     let topData = null;
     if (validPage === 0) {
       try {
-        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
-        topData = topResult?.data || topResult; // handle both formats
+        const topResult = await QueryTopup.getAllProductAData();
+        topData = topResult?.data || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }
     }
 
-    
+    // FINAL RESPONSE
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrimage,
       data: rows,
       pagination,
       ...(validPage === 0 && { topData }),
@@ -100,6 +108,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrimage: null,
       data: [],
     });
   }
@@ -139,6 +148,15 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     const countResult = await dbExecution(countQuery, [`%${name}%`]);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
     const totalPages = Math.ceil(total / validLimit);
+
+    // Query QR image
+    const qrQuery = `
+      SELECT qr FROM public.tbchanneldetail 
+      WHERE id = '4' LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrimage = qrRaw ? baseUrl + qrRaw : null;
 
     // ✅ Fetch paginated matching data
     const query = `
@@ -184,7 +202,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     });
 
     // ✅ Send final response
-      const pagination = {
+    const pagination = {
       page: validPage,
       limit: validLimit,
       total,
@@ -194,6 +212,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrimage,
       data: rows,
       pagination,
     });
@@ -202,6 +221,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrimage: null,
       data: [],
     });
   }
@@ -220,8 +240,16 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
       data: [],
     });
   }
-
   const baseUrl = "http://localhost:5151/";
+
+  // Query QR image
+  const qrQuery = `
+      SELECT qr FROM public.tbchanneldetail 
+      WHERE id = '4' LIMIT 1;
+    `;
+  const qrResult = await dbExecution(qrQuery, []);
+  const qrRaw = qrResult.rows[0]?.qr || null;
+  const qrimage = qrRaw ? baseUrl + qrRaw : null;
 
   try {
     const query = `SELECT 
@@ -262,10 +290,11 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     });
 
     // ✅ Send final response
-   
+
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrimage,
       data: rows,
     });
   } catch (error) {
@@ -273,14 +302,14 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrimage: null,
       data: [],
     });
   }
 };
 
- 
 export const insertKhoomKhoTshebData = async (req, res) => {
-  const { id,type, name, price1, price2, tel, detail, locationgps } = req.body;
+  const { id, type, name, price1, price2, tel, detail, locationgps } = req.body;
 
   // ✅ Validate required fields
   if (!id || !name || !price1 || !detail) {
@@ -303,8 +332,7 @@ export const insertKhoomKhoTshebData = async (req, res) => {
     const query = `
       INSERT INTO public.tbkhoomkhotsheb(
         id, type, name, "Price1", "Price2", tel, detail, locationgps, image, status, cdate
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
       RETURNING *;
     `;
 

@@ -26,6 +26,18 @@ export const queryMuasDataAll = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     const baseUrl = "http://localhost:5151/";
+
+    // Query QR image
+    const qrQuery = `
+      SELECT qr 
+      FROM public.tbchanneldetail 
+      WHERE id = '1'
+      LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrImage = qrRaw ? baseUrl + qrRaw : null;
+
     // Get paginated data
     const dataQuery = `
       SELECT 
@@ -90,6 +102,7 @@ export const queryMuasDataAll = async (req, res) => {
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrImage,
       data: rows,
       pagination,
       ...(validPage === 0 && { topData }),
@@ -99,6 +112,7 @@ export const queryMuasDataAll = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrImage: null,
       data: [],
     });
   }
@@ -138,6 +152,17 @@ export const searchMuasData = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     const baseUrl = "http://localhost:5151/";
+
+    // Query QR image
+    const qrQuery = `
+      SELECT qr 
+      FROM public.tbchanneldetail 
+      WHERE id = '1'
+      LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrImage = qrRaw ? baseUrl + qrRaw : null;
 
     // Fetch paginated search results
     const dataQuery = `
@@ -192,6 +217,7 @@ export const searchMuasData = async (req, res) => {
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrImage,
       data: rows,
       pagination,
     });
@@ -200,6 +226,7 @@ export const searchMuasData = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrImage: null,
       data: [],
     });
   }
@@ -217,7 +244,19 @@ export const queryMuasDataOne = async (req, res) => {
       data: [],
     });
   }
+
   const baseUrl = "http://localhost:5151/";
+
+     // Query QR image
+    const qrQuery = `
+      SELECT qr 
+      FROM public.tbchanneldetail 
+      WHERE id = '1'
+      LIMIT 1;
+    `;
+    const qrResult = await dbExecution(qrQuery, []);
+    const qrRaw = qrResult.rows[0]?.qr || null;
+    const qrImage = qrRaw ? baseUrl + qrRaw : null;
 
   try {
     const query = `SELECT 
@@ -261,6 +300,7 @@ export const queryMuasDataOne = async (req, res) => {
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
+      qrImage,
       data: rows,
     });
   } catch (error) {
@@ -268,6 +308,7 @@ export const queryMuasDataOne = async (req, res) => {
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
+      qrImage: null,
       data: [],
     });
   }
