@@ -733,66 +733,6 @@ export const UpdateActiveStatusDormitoryData = async (req, res) => {
   }
 };
 
-// kho lawm
-
-export const UpdateDormitoryRoomAndActiveRoomData = async (req, res) => {
-  // done
-
-  const { id, dormantal_type, totalroom, number_roomactive } = req.body;
-
-  try {
-    const query = `update public.tbdormantalroom set type=$1, totalroom=$2, activeroom=$3 where id=$4 RETURNING *`;
-    let values = [dormantal_type, totalroom, number_roomactive, id];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "updadte data fail",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
-export const UpdateDormitoryPricePerRoomData = async (req, res) => {
-  // done
-
-  const { id, price1, price2, price3 } = req.body;
-
-  try {
-    const query = `update public.tbdormantalroom set price1=$1, price2=$2, price3=$3 where id=$4 RETURNING *`;
-    let values = [price1, price2, price3, id];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "updadte data fail",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
-
 // kho lawm // hai dormantal ce tsi ua lo yog tsi muaj viewnumber lawm
 
 export const UpdateViewNumberOfThisId = async (req, res) => {
@@ -827,5 +767,119 @@ export const UpdateViewNumberOfThisId = async (req, res) => {
   } catch (error) {
     console.error("Error in testdda:", error);
     res.status(500).send("Internal Server Error");
+  }
+};
+
+export const updateProductData = async (req, res) => {
+  const {
+    id,
+    dormantalname,
+    price1,
+    price2,
+    price3,
+    type,
+    totalroom,
+    activeroom,
+    locationvideo,
+    tel,
+    contactnumber,
+    moredetail,
+    provinceid,
+    districtid,
+    villageid,
+    plan_on_next_month,
+  } = req.body;
+
+  //const villageIdArray = Array.isArray(villageid) ? villageid : [];
+
+  try {
+    if (!id) {
+      return res.status(400).send({
+        status: false,
+        message: "Missing product ID",
+        data: null,
+      });
+    }
+
+    let updateFields = [];
+    let values = [];
+    let index = 1;
+
+    // Helper to avoid repeating checks
+    const pushUpdate = (column, value) => {
+      if (value !== undefined && value !== null && value !== "") {
+        updateFields.push(`${column} = $${index++}`);
+        values.push(value);
+      }
+    };
+
+    // Use helper for all fields
+    pushUpdate("dormantalname", dormantalname);
+    pushUpdate("price1", price1);
+    pushUpdate("price2", price2);
+    pushUpdate("price3", price3);
+    pushUpdate("type", type);
+    pushUpdate("totalroom", totalroom);
+    pushUpdate("activeroom", activeroom);
+    pushUpdate("locationvideo", locationvideo);
+    pushUpdate("tel", tel);
+    pushUpdate("contactnumber", contactnumber);
+    pushUpdate("moredetail", moredetail);
+    pushUpdate("provinceid", provinceid);
+    pushUpdate("districtid", districtid);
+    pushUpdate("plan_on_next_month", plan_on_next_month);
+ 
+    // Village list (array)
+    let villageIdArray = null;
+    if (Array.isArray(villageid) && villageid.length > 0) {
+      villageIdArray = `{${villageid.join(",")}}`;
+    }
+
+    // Only push if there’s data
+    if (villageIdArray) {
+      updateFields.push(`villageid = $${index++}`);
+      values.push(villageIdArray);
+    }
+
+    // If nothing to update
+    if (updateFields.length === 0) {
+      return res.status(400).send({
+        status: false,
+        message: "No fields provided to update",
+        data: null,
+      });
+    }
+
+    values.push(id);
+
+    const query = `
+      UPDATE public.tbdormitory
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Update successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(404).send({
+      status: false,
+      message: "Product not found",
+      data: null,
+    });
+  } catch (error) {
+    console.error("Error updating product:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };

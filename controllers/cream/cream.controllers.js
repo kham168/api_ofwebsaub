@@ -381,60 +381,79 @@ export const insertCreamData = async (req, res) => {
   }
 };
 
-// delet cream data  ||  update status 1 to 0
-
-export const deleteCreamData = async (req, res) => {
-  const { id } = req.body;
+export const updateProductData = async (req, res) => {
+  const { id, bland, creamName, Price1, Price2, tel, detail, donation } =
+    req.body;
 
   try {
-    const query = `UPDATE public.tbcream SET status='0' WHERE <condition> WHERE id =$1 RETURNING *`;
-    const values = [id];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    if (!id) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "Missing product ID",
         data: null,
       });
     }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
 
-// re-open cream data status 0 to 1
+    let updateFields = [];
+    let values = [];
+    let index = 1;
 
-export const reopenCreamDataStatus0To1 = async (req, res) => {
-  const { id } = req.body;
+    const pushUpdate = (column, value) => {
+      if (value !== undefined && value !== null && value !== "") {
+        updateFields.push(`${column} = $${index++}`);
+        values.push(value);
+      }
+    };
 
-  try {
-    const query = `UPDATE public.tbcream SET status='1' WHERE <condition> WHERE id =$1 RETURNING *`;
-    const values = [id];
-    const resultSingle = await dbExecution(query, values);
+    // Add fields only if NOT empty string
+    pushUpdate("bland", bland);
+    pushUpdate("creamname", creamName);
+    pushUpdate(`"Price1"`, Price1);
+    pushUpdate(`"Price2"`, Price2);
+    pushUpdate("tel", tel);
+    pushUpdate("detail", detail);
+    pushUpdate("donation", donation);
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    // If nothing to update
+    if (updateFields.length === 0) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "No fields provided to update",
         data: null,
       });
     }
+
+    values.push(id);
+
+    const query = `
+      UPDATE public.tbcream
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Update successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(404).send({
+      status: false,
+      message: "Product not found",
+      data: null,
+    });
+
   } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error updating product:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };

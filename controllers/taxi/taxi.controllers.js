@@ -277,8 +277,7 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
     // ✅ Count total records
     const countQuery = `
       SELECT COUNT(DISTINCT t.id) AS total
-      FROM public.tbtaxi t
-      WHERE t.status = '1'
+      FROM public.tbtaxi t  WHERE t.status = '1'
         AND ($1 = '' OR t.districtid::text = $1);
     `;
     const countResult = await dbExecution(countQuery, [districtId]);
@@ -682,60 +681,96 @@ export const insert_taxi_data = async (req, res) => {
   }
 };
 
-// delete taxi data || Update data status 1 to 0
-
-export const delete_taxi_data = async (req, res) => {
-  const { id } = req.body;
-
+export const updateProductData = async (req, res) => {
   try {
-    const query = `UPDATE public.tbtaxi SET status='0' WHERE id =$1 RETURNING *`;
-    const values = [id];
-    const resultSingle = await dbExecution(query, values);
+    const {
+      id,
+      name,
+      Price1,
+      Price2,
+      tel,
+      detail,
+      provinceId,
+      districtId,
+      villageId,
+      peopleId,
+    } = req.body;
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    if (!id) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "Missing product ID",
         data: null,
       });
     }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
+    // Handle village ID array
+    let villageIdArray = null;
+    if (Array.isArray(villageId) && villageId.length > 0) {
+      villageIdArray = `{${villageId.join(",")}}`;
+    }
+    let updateFields = [];
+    let values = [];
+    let index = 1;
 
-// re-open taxi data status 1 to 0
+    // Helper for adding fields
+    const addField = (column, value) => {
+      if (value !== undefined && value !== null && value !== "") {
+        updateFields.push(`${column} = $${index++}`);
+        values.push(value);
+      }
+    };
 
-export const reopen_taxi_data_status_0_to_1 = async (req, res) => {
-  const { id } = req.body;
+    // Add all updatable fields
+    addField("name", name);
+    addField('"Price1"', Price1);
+    addField('"Price2"', Price2);
+    addField("tel", tel);
+    addField("detail", detail);
+    addField("provinceid", provinceId);
+    addField("districtid", districtId);
+    addField("villageid", villageIdArray);
+    addField("peopleid", peopleId);
 
-  try {
-    const query = `UPDATE public.tbtaxi SET status='1' WHERE id =$1 RETURNING *`;
-    const values = [id];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    // If nothing to update
+    if (updateFields.length === 0) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "No fields provided to update",
         data: null,
       });
     }
+
+    // ID last
+    values.push(id);
+
+    const query = `
+      UPDATE public.tbtaxi
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Update successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(404).send({
+      status: false,
+      message: "Product not found",
+      data: null,
+    });
   } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error updating product:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };

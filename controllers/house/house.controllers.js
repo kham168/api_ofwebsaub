@@ -4,14 +4,14 @@ import { QueryTopup } from "../class/class.controller.js";
 export const insertHouseData = async (req, res) => {
   const {
     id,
-    housename,
+    houseName,
     price1,
     price2,
     price3,
     tel,
-    contactnumber,
-    locationvideo,
-    moredetail,
+    contactNumber,
+    locationVideo,
+    moreDetail,
     province,
     district,
     village,
@@ -49,7 +49,7 @@ export const insertHouseData = async (req, res) => {
   const villageArray = parseVillageList(village);
 
   // ✅ Validate required fields
-  if (!id || !housename || !price1 || !tel) {
+  if (!id || !houseName || !price1 || !tel) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields",
@@ -74,15 +74,15 @@ export const insertHouseData = async (req, res) => {
 
     const values = [
       id,
-      housename,
+      houseName,
       price1,
       price2,
       price3,
       tel,
-      contactnumber,
-      locationvideo,
+      contactNumber,
+      locationVideo,
       "1", // status active
-      moredetail,
+      moreDetail,
       province,
       district,
       villageArray,
@@ -210,18 +210,6 @@ export const queryHouseDataAll = async (req, res) => {
       total,
       totalPages: Math.ceil(total / validLimit),
     };
-
-    //  const responseData = {
-    //     rows,
-    //     pagination,
-    //     ...(validPage === 0 && { topData }), // only include if page === 0
-    //   };
-
-    //   res.status(200).send({
-    //     status: true,
-    //     message: rows.length > 0 ? "Query successful" : "No data found",
-    //     data: responseData,
-    //   });
 
     res.status(200).send({
       status: true,
@@ -677,82 +665,109 @@ export const queryHouseDataOne = async (req, res) => {
   }
 };
 
-export const updateActiveStatusHouseData = async (req, res) => {
-  // done
-  const { id, status } = req.body;
+export const updateProductData = async (req, res) => {
   try {
-    const query = `UPDATE public.tbhouse SET status=$1 WHERE id=$2 RETURNING *`;
-    let values = [status, id];
-    const resultSingle = await dbExecution(query, values);
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    const {
+      id,
+      housename,
+      price1,
+      price2,
+      price3,
+      tel,
+      contactnumber,
+      locationvideo,
+      moredetail,
+      provinceid,
+      districtid,
+      villageid,
+    } = req.body;
+
+    if (!id) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "Missing product ID",
         data: null,
       });
     }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+
+    // Arrays for dynamic update
+    let updateFields = [];
+    let values = [];
+    let index = 1;
+
+    // Helper function to push field
+   const addField = (column, value) => {
+  if (value !== undefined && value !== null && value !== "") {
+    updateFields.push(`${column} = $${index++}`);
+    values.push(value);
   }
 };
 
-export const updatePriceHouseData = async (req, res) => {
-  // done
 
-  const { id, price } = req.body;
+    // Add each field only if it is not null
+    addField("housename", housename);
+    addField("price1", price1);
+    addField("price2", price2);
+    addField("price3", price3);
+    addField("tel", tel);
+    addField("contactnumber", contactnumber);
+    addField("locationvideo", locationvideo);
+    addField("moredetail", moredetail);
+    addField("provinceid", provinceid);
+    addField("districtid", districtid);
 
-  try {
-    const query = `UPDATE public.tbhouse SET  price1=$1 WHERE id=$2 RETURNING *`;
-    let values = [price, id];
-    const resultSingle = await dbExecution(query, values);
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+     // Village list (array)
+    let villageIdArray = null;
+    if (Array.isArray(villageid) && villageid.length > 0) {
+      villageIdArray = `{${villageid.join(",")}}`;
+    }
+
+    // Only push if there’s data
+    if (villageIdArray) {
+      updateFields.push(`villageid = $${index++}`);
+      values.push(villageIdArray);
+    }
+
+    // No fields to update
+    if (updateFields.length === 0) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "No fields provided to update",
         data: null,
       });
     }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
 
-export const updateLocationAndDetailHouseData = async (req, res) => {
-  // done
-  const { id, number, new_link, detail } = req.body;
-  try {
-    const query = `UPDATE public.tbhouse SET contactnumber=$1, locationvideo=$2, moredetail=$3 WHERE id=$4 RETURNING *`;
-    let values = [number, new_link, detail, id];
-    const resultSingle = await dbExecution(query, values);
-    if (resultSingle && resultSingle.rowCount > 0) {
+    // Add ID as final parameter
+    values.push(id);
+
+    const query = `
+      UPDATE public.tbhouse
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
       return res.status(200).send({
         status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "updadte data fail",
-        data: null,
+        message: "Update successful",
+        data: result.rows,
       });
     }
+
+    return res.status(404).send({
+      status: false,
+      message: "Product not found",
+      data: null,
+    });
   } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error updating product:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };

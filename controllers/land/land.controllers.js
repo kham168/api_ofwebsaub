@@ -101,20 +101,6 @@ export const queryLandDataAll = async (req, res) => {
       }
     }
 
-    // ✅ Build combined response
-    // const responseData = {
-    //   data: rows,
-    //   pagination,
-    //   ...(validPage === 0 && { topData }), // only include if page === 0
-    // };
-
-    // // ✅ Send success response
-    // res.status(200).send({
-    //   status: true,
-    //   message: rows.length > 0 ? "Query successful" : "No data found",
-    //   data: responseData,
-    // });
-
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
@@ -557,120 +543,113 @@ export const insertLandData = async (req, res) => {
     });
   }
 };
-
-///kho lawm
-
-export const updateActiveStatusLandData = async (req, res) => {
-  const { id, ownername, status } = req.body;
-
+export const updateProductData = async (req, res) => {
   try {
-    const query = `
-      UPDATE public.tbland
-      SET status = $1
-      WHERE id = $2 AND ownername = $3
-      RETURNING *;
-    `;
+    const {
+      id,
+      ownername,
+      productname,
+      type,
+      squaremeters,
+      area,
+      price,
+      tel,
+      contactnumber,
+      locationurl,
+      locationvideo,
+      moredetail,
+      provinceid,
+      districtid,
+      villageid,
+    } = req.body;
 
-    const values = [status, id, ownername];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
+    if (!id) {
+      return res.status(400).send({
         status: false,
-        message: "No record found to update",
+        message: "Missing product ID",
         data: null,
       });
     }
+
+   //const villageIdArray = parseVillageList(villageid);
+// Village list (array)
+let villageIdArray = null;
+if (Array.isArray(villageid) && villageid.length > 0) {
+  villageIdArray = `{${villageid.join(",")}}`;
+}
+
+// Build dynamic update
+let updateFields = [];
+let values = [];
+let index = 1;
+
+// Helper to add fields
+const addField = (column, value) => {
+  if (value !== undefined && value !== null && value !== "") {
+    updateFields.push(`${column} = $${index++}`);
+    values.push(value);
+  }
+};
+
+// Add fields automatically
+addField("ownername", ownername);
+addField("productname", productname);
+addField("type", type);
+addField("squaremeters", squaremeters);
+addField("area", area);
+addField("price", price);
+addField("tel", tel);
+addField("contactnumber", contactnumber);
+addField("locationurl", locationurl);
+addField("locationvideo", locationvideo);
+addField("moredetail", moredetail);
+addField("provinceid", provinceid);
+addField("districtid", districtid);
+addField("villageid", villageIdArray);
+
+
+    // No data provided
+    if (updateFields.length === 0) {
+      return res.status(400).send({
+        status: false,
+        message: "No fields provided to update",
+        data: null,
+      });
+    }
+
+    // ID last
+    values.push(id);
+
+    const query = `
+      UPDATE public.tbland
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Update successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(404).send({
+      status: false,
+      message: "Product not found",
+      data: null,
+    });
+
   } catch (error) {
-    console.error("Error in update_active_status_land_data:", error);
-    res.status(500).send({
+    console.error("Error updating product:", error);
+    return res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      data: null,
+      error: error.message,
     });
   }
 };
 
-// kho lawm
-export const updateSideAndPriceLandData = async (req, res) => {
-  const { id, ownername, side, price } = req.body;
-
-  try {
-    const query = `
-      UPDATE public.tbland
-      SET area = $1,
-          price = $2
-      WHERE id = $3 AND ownername = $4
-      RETURNING *;
-    `;
-
-    const values = [side, price, id, ownername];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to update",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in update_side_and_price_land_data:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
-
-// kho lawm
-export const updateNewLinkAndDetailLandData = async (req, res) => {
-  const { id, ownername, new_link, detail } = req.body;
-
-  try {
-    const query = `
-      UPDATE public.tbland
-      SET locationurl = $1,
-          moredetail = $2
-      WHERE id = $3 AND ownername = $4
-      RETURNING *;
-    `;
-
-    const values = [new_link, detail, id, ownername];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to update",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in update_new_link_and_detail_land_data:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};

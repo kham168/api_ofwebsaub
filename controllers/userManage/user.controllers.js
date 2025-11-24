@@ -186,7 +186,7 @@ export const userLogin = async (req, res) => {
     });
   }
 };
- export const updateUserData = async (req, res) => {
+export const updateUserData = async (req, res) => {
   const { id, status, type } = req.body;
 
   try {
@@ -258,3 +258,47 @@ export const userLogin = async (req, res) => {
   }
 };
 
+export const updateProductStatus = async (req, res) => {
+  const { id, status, turnofreason, channel } = req.body;
+
+  try {
+    if (channel === "1") {
+      const query = `UPDATE public.tbcream SET status=$2 WHERE id =$1 RETURNING *`;
+    } else if (channel === "2") {
+      const query = `UPDATE public.tbdormitory SET status=$2 WHERE id=$1 RETURNING *`;
+    } else if (channel === "3") {
+      const query = `UPDATE public.tbhouse SET status=$2 WHERE id=$1 RETURNING *`;
+    } else if (channel === "4") {
+      const query = `UPDATE public.tbkhoomkhotsheb SET status=$2 WHERE id =$1 RETURNING *`;
+    } else if (channel === "5") {
+      const query = `UPDATE public.tbland SET status = $2 WHERE id = $1 RETURNING *; `;
+    } else if (channel === "6") {
+      const query = `UPDATE public.tbtshuaj SET status=$2 WHERE id =$1 RETURNING *`;
+    } else if (channel === "7") {
+      const query = `UPDATE public.tbtaxi SET status=$2,turnofreason=$3 WHERE id =$1 RETURNING *`;
+    } else if (channel === "8") {
+      const query = `UPDATE public.tbmuas SET status = $2 WHERE id = $1 RETURNING *`;
+    }
+    
+    const values = [id, status, turnofreason];
+
+    const resultSingle = await dbExecution(query, values);
+
+    if (resultSingle && resultSingle.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "updadte data successfull",
+        data: resultSingle?.rows,
+      });
+    } else {
+      return res.status(400).send({
+        status: false,
+        message: "updadte data fail",
+        data: null,
+      });
+    }
+  } catch (error) {
+    console.error("Error in testdda:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};

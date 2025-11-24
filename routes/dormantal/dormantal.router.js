@@ -8,31 +8,19 @@ import {
   queryDormitoryDataOne,
   insertDormitoryData,
   UpdateActiveStatusDormitoryData,
-  UpdateDormitoryRoomAndActiveRoomData,
-  UpdateDormitoryPricePerRoomData,
   UpdateViewNumberOfThisId,
+  updateProductData,
 } from "../../controllers/dormantal/dormantal.controllers.js";
 import { uploadImage } from "../../middleware/dormitory.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll", queryDormitoryDataAll); //done 100% lawm os
-route.get("/searchByName", searchDormitoryData); //done 100% lawm os
-route.get(
-  "/selectByDistrictId",
-  queryDormitoryDataByDistrictId
-); //done 100% lawm os
-route.get(
-  "/selectByVillageId",
-  queryDormitoryDataByVillageId
-); //done 100% lawm os
-route.get("/selectOne", queryDormitoryDataOne); //done 100% lawm os
-route.post("/insert", uploadImage, insertDormitoryData); //done 100% lawm os
-route.put("/updateActiveStatus", UpdateActiveStatusDormitoryData); // yuav tau saib ntxiv os
-route.put(
-  "/updateTypeAndTotalRoomAndActiveRoom",
-  UpdateDormitoryRoomAndActiveRoomData
-); // yuav tau saib ntxiv os
-route.put("/updatePrice", UpdateDormitoryPricePerRoomData); // yuav tau saib ntxiv os
-route.put("/updateViewNumberOfThisId", UpdateViewNumberOfThisId); //yuam tau saib ntxiv os
-
+route.get("/selectAll", queryDormitoryDataAll);
+route.get("/searchByName", searchDormitoryData);
+route.get("/selectByDistrictId", queryDormitoryDataByDistrictId);
+route.get("/selectByVillageId", queryDormitoryDataByVillageId);
+route.get("/selectOne", queryDormitoryDataOne);
+route.post("/insert", uploadImage, insertDormitoryData);
+route.put("/updateActiveStatus", UpdateActiveStatusDormitoryData);
+route.put("/updateViewNumberOfThisId", UpdateViewNumberOfThisId);
+route.put("/updateData", updateProductData);
 export default route;

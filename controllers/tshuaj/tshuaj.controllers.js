@@ -228,14 +228,14 @@ export const queryTshuajDataOne = async (req, res) => {
 
   const baseUrl = "http://localhost:5151/";
 
-     // Query QR image
-    const qrQuery = `
+  // Query QR image
+  const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 
       WHERE id = '6' LIMIT 1;
     `;
-    const qrResult = await dbExecution(qrQuery, []);
-    const qrRaw = qrResult.rows[0]?.qr || null;
-    const qrImage = qrRaw ? baseUrl + qrRaw : null;
+  const qrResult = await dbExecution(qrQuery, []);
+  const qrRaw = qrResult.rows[0]?.qr || null;
+  const qrImage = qrRaw ? baseUrl + qrRaw : null;
 
   try {
     const query = `SELECT 
@@ -362,60 +362,79 @@ export const insertTshuajData = async (req, res) => {
   }
 };
 
-// delete tshuaj data || update data status 1 to 0
-
-export const deleteTshuajData = async (req, res) => {
-  const { id } = req.body;
+export const updateProductData = async (req, res) => {
+  const { id, name, Price1, Price2, tel, detail, donation } = req.body;
 
   try {
-    const query = `UPDATE public.tbtshuaj SET status='0' WHERE id =$1 RETURNING *`;
-    const values = [id];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    if (!id) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "Missing product ID",
         data: null,
       });
     }
-  } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
-  }
-};
+ 
+    let updateFields = [];
+    let values = [];
+    let index = 1;
 
-// re-open tshuaj data status 0 to 1
+    const addField = (column, value) => {
+      if (value !== undefined && value !== null && value !== "") {
+        updateFields.push(`${column} = $${index++}`);
+        values.push(value);
+      }
+    };
 
-export const reopenTshuajDataStatus0To1 = async (req, res) => {
-  const { id } = req.body;
+    addField("name", name);
+    addField(`"Price1"`, Price1);
+    addField(`"Price2"`, Price2);
+    addField("tel", tel);
+    addField("detail", detail);
+    addField("donation", donation);
 
-  try {
-    const query = `UPDATE public.tbtshuaj SET status='1' WHERE id =$1 RETURNING *`;
-    const values = [id];
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "updadte data successfull",
-        data: resultSingle?.rows,
-      });
-    } else {
+    if (updateFields.length === 0) {
       return res.status(400).send({
         status: false,
-        message: "updadte data fail",
+        message: "No valid fields provided to update",
         data: null,
       });
     }
+
+    values.push(id);
+
+    const query = `
+      UPDATE public.tbtshuaj
+      SET ${updateFields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *
+    `;
+
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Update successful",
+        data: result.rows,
+      });
+    } else {
+      return res.status(404).send({
+        status: false,
+        message: "Product not found",
+        data: null,
+      });
+    }
+
   } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error updating product:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
+
+
+ 
+ 
