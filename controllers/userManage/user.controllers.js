@@ -186,6 +186,7 @@ export const userLogin = async (req, res) => {
     });
   }
 };
+
 export const updateUserData = async (req, res) => {
   const { id, status, type } = req.body;
 
@@ -279,7 +280,7 @@ export const updateProductStatus = async (req, res) => {
     } else if (channel === "8") {
       const query = `UPDATE public.tbmuas SET status = $2 WHERE id = $1 RETURNING *`;
     }
-    
+
     const values = [id, status, turnofreason];
 
     const resultSingle = await dbExecution(query, values);

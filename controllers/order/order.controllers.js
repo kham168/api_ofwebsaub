@@ -1,45 +1,95 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // search order data by tel
-
 export const querySearchOrderData = async (req, res) => {
-  //const custTel = req.params.custTel;
+  const tel = req.query.tel ?? "";
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 5;
 
-   const custTel = req.query.custTel ?? 0;
-  
-  if (!custTel || typeof custTel !== "string") {
-    return res.status(400).send({ status: false, message: "Invalid custtel" });
+  if (!tel || typeof tel !== "string") {
+    return res.status(400).send({
+      status: false,
+      message: "Invalid telephone",
+      data: [],
+    });
   }
 
+  const validPage = Math.max(page, 0);
+  const validLimit = Math.max(limit, 1);
+  const offset = validPage * validLimit;
+
+  const baseUrl = "http://localhost:5151/";
+
   try {
+    // Count query
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM public.tborder_detail 
+      WHERE custtel LIKE $1
+    `;
+    const countResult = await dbExecution(countQuery, [`%${tel}%`]);
+    const total = parseInt(countResult.rows[0]?.total || 0, 10);
+
+    // Main query
     const query = `
-      SELECT orderid, custtel, custname, cdate
-      FROM public.tborder
-      WHERE custtel ILIKE $1
+      SELECT orderid, channel, productid, productname, price, qty, custtel,
+             custcomment, paymentimage, cdate, staffconfirm,
+             confirmdate, sellcomment, sellstatus, sellname, selldate
+      FROM public.tborder_detail 
+      WHERE custtel LIKE $1
       ORDER BY cdate DESC
-      LIMIT 5
+      LIMIT $2 OFFSET $3
     `;
 
-    const resultSingle = await dbExecution(query, [`%${custTel}%`]);
+    const result = await dbExecution(query, [
+      `%${tel}%`,
+      validLimit,
+      offset,
+    ]);
 
-    const rows = resultSingle?.rows || [];
+    const rows = result?.rows || [];
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    // Fix/format payment image
+    const formattedRows = rows.map((item) => {
+      let img = item.paymentimage;
+
+      if (!img) {
+        item.paymentimage = null;
+        return item;
+      }
+
+      // Remove { }, quotes
+      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+
+      const imgList = img.split(",").map((i) => i.trim());
+
+      if (imgList.length === 1) {
+        item.paymentimage = baseUrl + imgList[0];
+      } else {
+        item.paymentimage = imgList.map((i) => baseUrl + i);
+      }
+
+      return item;
+    });
+
+    return res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: formattedRows,
+      pagination: {
+        page: validPage,
+        limit: validLimit,
+        total,
+        totalPages: Math.ceil(total / validLimit),
+      },
+    });
+
   } catch (error) {
-    console.error("Error in query search order data:", error);
-    res.status(500).send({ status: false, message: "Internal Server Error" });
+    console.error("Error in querySearchOrderData:", error);
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -54,15 +104,11 @@ export const insertOrderData = async (req, res) => {
       message: "Missing required fields",
     });
   }
-
-  //const now = new Date();
-  //const Date8 = now.toISOString().slice(0, 10).replace(/-/g, ""); // YYYYMMDD string
-
+  
   try {
     const query = `
       INSERT INTO public.tborder(orderid, custtel, custname, cdate)
-      VALUES ($1, $2, $3, NOW())
-      RETURNING *
+      VALUES ($1, $2, $3, NOW()) RETURNING *
     `;
     const values = [id, custTel, custName];
 
@@ -98,9 +144,9 @@ export const insertOrderDetailData = async (req, res, fromA = false) => {
     productId,
     productName,
     price,
+    qty,
     custTel,
     custComment,
-    donationId,
   } = req.body;
 
   if (!id || !channel || !productId || !productName || !price || !custTel) {
@@ -110,39 +156,16 @@ export const insertOrderDetailData = async (req, res, fromA = false) => {
   }
 
   try {
-    const parseVillageList = (v) => {
-      if (!v) return [];
-      if (Array.isArray(v))
-        return v.map((x) => String(x).trim()).filter(Boolean);
-      if (typeof v === "string") {
-        const trimmed = v.trim();
-        if (trimmed.startsWith("[")) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            return Array.isArray(parsed)
-              ? parsed.map((x) => String(x).trim()).filter(Boolean)
-              : [];
-          } catch {}
-        }
-        return trimmed.split(",").map((x) => x.trim()).filter(Boolean);
-      }
-      return [String(v).trim()];
-    };
-
-    // ✅ Format donationIdArray as a Postgres array string: {5,3,4}
-    const donationIdArray = `{${parseVillageList(donationId).join(",")}}`;
-
-    const imageArray =
+    
+      const imageArray =
       req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename || file.path || "").filter(Boolean)
+        ? req.files.map((file) => file.filename)
         : [];
 
     const query = `
       INSERT INTO public.tborder_detail(
-        orderid, channel, productid, productname, price, custtel, custcomment, donationid, paymentimage, cdate
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-      RETURNING *
+        orderid, channel, productid, productname, price, qty, custtel, custcomment, paymentimage, cdate, staffconfirm, sellstatus
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(),'0','0')  RETURNING *
     `;
     const values = [
       id,
@@ -150,9 +173,9 @@ export const insertOrderDetailData = async (req, res, fromA = false) => {
       productId,
       productName,
       price,
+      qty,
       custTel,
       custComment,
-      donationIdArray,
       imageArray,
     ];
 

@@ -1,12 +1,11 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // query all order data by channel
-
-export const queryOrderDetailDataAllByChannel = async (req, res) => {
-  //const [channel,status ]= req.params.channel;
-
-  const channel = req.query.channel ?? 0;
-  const status = req.query.status ?? 0;
+export const queryOrderDetailDataAllByChannelAndSellStatus = async (req, res) => {
+  const channel = req.query.channel ?? "";
+  const status = req.query.status ?? "";
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 15;
 
   if (!channel || typeof channel !== "string") {
     return res.status(400).send({
@@ -16,33 +15,187 @@ export const queryOrderDetailDataAllByChannel = async (req, res) => {
     });
   }
 
+  const validPage = Math.max(page, 0);
+  const validLimit = Math.max(limit, 1);
+  const offset = validPage * validLimit;
+
+  const baseUrl = "http://localhost:5151/";
+
   try {
-    const query = `
-      SELECT orderid, channel, productid, productname, price, custtel, 
-custcomment, donationid, paymentimage, cdate, staffconfirm,
-confirmdate, sellstatus, sellname, selldate
-      FROM public.tborder_detail
-      WHERE channel = $1 and sellstatus=$2
-      ORDER BY cdate DESC
-      LIMIT 25
+    // Count Query
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM public.tborder_detail 
+      WHERE channel = $1 
+      AND staffconfirm='1' 
+      AND sellstatus = $2
     `;
-    const resultSingle = await dbExecution(query, [channel, status]);
+    const countResult = await dbExecution(countQuery, [channel, status]);
+    const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
-    const rows = resultSingle?.rows || [];
+    // Main Query
+    const query = `
+      SELECT orderid, channel, productid, productname, price, qty, custtel,
+             custcomment, paymentimage, cdate, staffconfirm,
+             confirmdate, sellcomment, sellstatus, sellname, selldate
+      FROM public.tborder_detail 
+      WHERE channel = $1
+        AND staffconfirm='1'
+        AND sellstatus = $2
+      ORDER BY cdate DESC
+      LIMIT $3 OFFSET $4
+    `;
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
-        status: false,
-        message: "No data found",
-        data: [],
-      });
-    }
+    const result = await dbExecution(query, [
+      channel,
+      status,
+      validLimit,
+      offset,
+    ]);
+
+    const rows = result?.rows || [];
+
+    // Format image URLs properly
+    const formattedRows = rows.map((item) => {
+      let img = item.paymentimage;
+
+      if (!img) {
+        item.paymentimage = null;
+        return item;
+      }
+
+      // Clean { } and quotes
+      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+
+      const imgList = img.split(",").map((i) => i.trim());
+
+      if (imgList.length === 1) {
+        item.paymentimage = baseUrl + imgList[0];
+      } else {
+        item.paymentimage = imgList.map((i) => baseUrl + i);
+      }
+
+      return item;
+    });
+
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    return res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: formattedRows, // ← FIXED
+      pagination,
+    });
+
+  } catch (error) {
+    console.error("Error in query order detail data all by channel:", error);
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+
+// query all order data by channel
+export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (req, res) => {
+
+  const channel = req.query.channel ?? "";
+  const status = req.query.status ?? "";
+  const page = parseInt(req.query.page) || 0;
+  const limit = parseInt(req.query.limit) || 15;
+
+  if (!channel || typeof channel !== "string") {
+    return res.status(400).send({
+      status: false,
+      message: "Invalid channel",
+      data: [],
+    });
+  }
+
+  
+  const validPage = Math.max(page, 0);
+  const validLimit = Math.max(limit, 1);
+  const offset = validPage * validLimit;
+
+  const baseUrl = "http://localhost:5151/";
+
+  try {
+    // Count Query
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM public.tborder_detail 
+      WHERE channel = $1 
+      AND staffconfirm=$2
+      AND sellstatus='0'
+    `;
+    const countResult = await dbExecution(countQuery, [channel, status]);
+    const total = parseInt(countResult.rows[0]?.total || 0, 10);
+
+    // Main Query
+    const query = `
+      SELECT orderid, channel, productid, productname, price, qty, custtel,
+             custcomment, paymentimage, cdate, staffconfirm,
+             confirmdate, sellcomment, sellstatus, sellname, selldate
+      FROM public.tborder_detail 
+      WHERE channel = $1 
+        AND staffconfirm=$2
+        AND sellstatus='0'
+      ORDER BY cdate DESC
+      LIMIT $3 OFFSET $4
+    `;
+
+    const result = await dbExecution(query, [
+      channel,
+      status,
+      validLimit,
+      offset,
+    ]);
+
+    const rows = result?.rows || [];
+
+    // Format image URLs properly
+    const formattedRows = rows.map((item) => {
+      let img = item.paymentimage;
+
+      if (!img) {
+        item.paymentimage = null;
+        return item;
+      }
+
+      // Clean { } and quotes
+      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+
+      const imgList = img.split(",").map((i) => i.trim());
+
+      if (imgList.length === 1) {
+        item.paymentimage = baseUrl + imgList[0];
+      } else {
+        item.paymentimage = imgList.map((i) => baseUrl + i);
+      }
+
+      return item;
+    });
+
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    return res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: formattedRows, // ← FIXED
+      pagination,
+    });
+
   } catch (error) {
     console.error("Error in query order detail data all by channel:", error);
     res.status(500).send({
@@ -55,46 +208,73 @@ confirmdate, sellstatus, sellname, selldate
 // wuery order data by orderid
 
 export const queryOrderDetailDataOne = async (req, res) => {
-  //const orderId = req.params.orderid;
-
   const orderId = req.query.orderId ?? 0;
-  
+
   if (!orderId || typeof orderId !== "string") {
     return res.status(400).send({
       status: false,
-      message: "Invalid orderid",
+      message: "Invalid orderId",
       data: [],
     });
   }
 
+  const baseUrl = "http://localhost:5151/";
+
   try {
     const query = `
-      SELECT  orderid, channel, productid, productname, price, custtel, 
-custcomment, donationid, paymentimage, cdate, staffconfirm, 
-confirmdate, sellstatus, sellname, selldate
-      FROM public.tborder_detail
+      SELECT orderid, channel, productid, productname, price, qty, custtel,
+        custcomment, paymentimage, cdate, staffconfirm,
+        confirmdate, sellcomment, sellstatus, sellname, selldate
+      FROM public.tborder_detail 
       WHERE orderid = $1
     `;
-    const resultSingle = await dbExecution(query, [orderId]);
 
+    const resultSingle = await dbExecution(query, [orderId]);
     const rows = resultSingle?.rows || [];
 
-    if (rows.length > 0) {
-      res.status(200).send({
-        status: true,
-        message: "Query data success",
-        data: rows,
-      });
-    } else {
-      res.status(200).send({
+    if (rows.length === 0) {
+      return res.status(200).send({
         status: false,
         message: "No data found",
         data: [],
       });
     }
+
+    // 🔥 FIXED: clean image format
+    const formattedRows = rows.map((item) => {
+      let img = item.paymentimage;
+
+      if (!img) {
+        item.paymentimage = null;
+        return item;
+      }
+
+      // Remove wrapping braces and quotes → {"img.jpg"} → img.jpg
+      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+
+      // If multiple: img1.jpg,img2.jpg
+      const imgList = img.split(",").map((i) => i.trim());
+
+      // Convert 1 image → string
+      if (imgList.length === 1) {
+        item.paymentimage = baseUrl + imgList[0];
+      }
+      // Convert multiple → array
+      else {
+        item.paymentimage = imgList.map((i) => baseUrl + i);
+      }
+
+      return item;
+    });
+
+    return res.status(200).send({
+      status: true,
+      message: "Query data success",
+      data: formattedRows,
+    });
   } catch (error) {
-    console.error("Error in query_orderdetail_dataone:", error);
-    res.status(500).send({
+    console.error("Error in query order detail data", error);
+    return res.status(500).send({
       status: false,
       message: "Internal Server Error",
       data: [],
@@ -102,99 +282,79 @@ confirmdate, sellstatus, sellname, selldate
   }
 };
 
-//for when staff update or confirm for customer knwo that we are seeing order
+export const updateOrderListStatus = async (req, res) => {
+  const { orderId, staffConfirm, sellStatus, sellComment, sellName } = req.body;
 
-export const updateStaffConfirmOrderData = async (req, res) => {
-  const { orderId, staffConfirm } = req.body;
-
-  if (!orderId || !staffConfirm) {
+  if (!orderId) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields",
-      data: [],
+      message: "Missing orderId",
     });
   }
 
   try {
-    const query = `
-      UPDATE public.tborder_detail
-      SET staffconfirm = $2,
-          confirmdate = NOW()
-      WHERE orderid = $1
-      RETURNING *
-    `;
-    const values = [orderId, staffConfirm];
+    let query = "";
+    let values = [];
 
-    const resultSingle = await dbExecution(query, values);
+    // 1️⃣ Seller updating sale result (must have BOTH fields)
+    if (
+      sellStatus && sellName &&
+      sellStatus.trim() !== "" &&
+      sellName.trim() !== ""
+    ) {
+      query = `
+        UPDATE public.tborder_detail
+        SET sellstatus  = $2, 
+            sellcomment = $3,
+            sellname    = $4,
+            selldate    = NOW()
+        WHERE orderid = $1
+        RETURNING *
+      `;
+      values = [orderId, sellStatus, sellComment, sellName];
+    }
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(200).send({
+    // 2️⃣ Staff confirming sale
+    else if (staffConfirm !== undefined && staffConfirm !== null) {
+      query = `
+        UPDATE public.tborder_detail
+        SET staffconfirm = $2,
+            confirmdate = NOW()
+        WHERE orderid = $1
+        RETURNING *
+      `;
+      values = [orderId, staffConfirm];
+    }
+
+    else {
+      return res.status(400).send({
         status: false,
-        message: "No data updated",
-        data: [],
+        message: "No valid fields provided",
       });
     }
+
+    const result = await dbExecution(query, values);
+
+    if (result.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Update successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(200).send({
+      status: false,
+      message: "No rows updated",
+      data: [],
+    });
+
   } catch (error) {
-    console.error("Error in update staff confirm data:", error);
-    res.status(500).send({
+    console.error("Error in updateOrderListStatus:", error);
+    return res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      data: [],
     });
   }
 };
 
-// for when sell confrim selling done 100%
-
-export const updateSellStatusData = async (req, res) => {
-  const { orderId, sellStatus, sellName } = req.body;
-
-  if (!orderId || !sellStatus || !sellName) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields",
-      data: [],
-    });
-  }
-
-  try {
-    const query = `
-      UPDATE public.tborder_detail
-      SET sellstatus = $2,
-          sellname = $3,
-          selldate = NOW()
-      WHERE orderid = $1
-      RETURNING *
-    `;
-    const values = [orderId, sellStatus, sellName];
-
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update data successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(200).send({
-        status: false,
-        message: "No data updated",
-        data: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error in update sell status data:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-    });
-  }
-};
