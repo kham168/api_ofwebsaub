@@ -308,8 +308,7 @@ export const updateOrderListStatus = async (req, res) => {
             sellcomment = $3,
             sellname    = $4,
             selldate    = NOW()
-        WHERE orderid = $1
-        RETURNING *
+        WHERE orderid = $1 RETURNING *
       `;
       values = [orderId, sellStatus, sellComment, sellName];
     }
@@ -320,8 +319,7 @@ export const updateOrderListStatus = async (req, res) => {
         UPDATE public.tborder_detail
         SET staffconfirm = $2,
             confirmdate = NOW()
-        WHERE orderid = $1
-        RETURNING *
+        WHERE orderid = $1 RETURNING *
       `;
       values = [orderId, staffConfirm];
     }

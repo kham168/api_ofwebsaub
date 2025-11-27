@@ -94,112 +94,83 @@ export const querySearchOrderData = async (req, res) => {
 };
 
 // insert order data
-
-export const insertOrderData = async (req, res) => {
-  const { id, custTel, custName } = req.body;
- 
-  if (!id || !custTel || !custName) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields",
-    });
-  }
-  
+  export const insertOrderDetailData = async (req, res) => {
   try {
-    const query = `
-      INSERT INTO public.tborder(orderid, custtel, custname, cdate)
-      VALUES ($1, $2, $3, NOW()) RETURNING *
-    `;
-    const values = [id, custTel, custName];
-
-    const resultSingle = await dbExecution(query, values);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      await insertOrderDetailData(req, res, true);
-
-      return res.status(200).send({
-        status: true,
-        message: "Insert order data success",
-        data: resultSingle.rows[0],
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert data failed",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in insert order data:", error);
-    return res
-      .status(500)
-      .send({ status: false, message: "Internal Server Error" });
-  }
-};
-
-export const insertOrderDetailData = async (req, res, fromA = false) => {
-  const {
-    id,
-    channel,
-    productId,
-    productName,
-    price,
-    qty,
-    custTel,
-    custComment,
-  } = req.body;
-
-  if (!id || !channel || !productId || !productName || !price || !custTel) {
-    if (!fromA)
-      return res.status(400).send({ status: false, message: "Missing required fields" });
-    throw new Error("Missing required fields");
-  }
-
-  try {
-    
-      const imageArray =
-      req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename)
-        : [];
-
-    const query = `
-      INSERT INTO public.tborder_detail(
-        orderid, channel, productid, productname, price, qty, custtel, custcomment, paymentimage, cdate, staffconfirm, sellstatus
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(),'0','0')  RETURNING *
-    `;
-    const values = [
+    const {
       id,
+      shipping,
+      delivery,
       channel,
       productId,
       productName,
       price,
       qty,
       custTel,
+      custname,
+      custComment,
+    } = req.body;
+
+    // Validate required fields
+    if (!id || !channel || !productId || !productName || !price || !custTel) {
+      return res.status(400).send({
+        status: false,
+        message: "Missing required fields",
+      });
+    }
+
+    // Handle uploaded images
+    const imageArray = req.files?.length
+      ? req.files.map((file) => file.filename)
+      : [];
+
+    const query = `
+      INSERT INTO public.tborder_detail (
+        orderid, shipping, delivery, channel, productid, productname, price, qty,
+        custtel, custname, custcomment, paymentimage, cdate, staffconfirm, sellstatus
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8,
+        $9, $10, $11, $12, NOW(), '0', '0'
+      )
+      RETURNING *;
+    `;
+
+    const values = [
+      id,
+      shipping,
+      delivery,
+      channel,
+      productId,
+      productName,
+      price,
+      qty,
+      custTel,
+      custname,
       custComment,
       imageArray,
     ];
 
-    const resultSingle = await dbExecution(query, values);
+    const result = await dbExecution(query, values);
 
-    if (resultSingle && resultSingle.rowCount > 0) {
-      if (!fromA) {
-        return res.status(200).send({
-          status: true,
-          message: "Insert data successful",
-          data: resultSingle.rows,
-        });
-      }
-      return resultSingle.rows;
-    } else {
-      if (!fromA)
-        return res.status(400).send({ status: false, message: "Insert data failed", data: null });
-      throw new Error("Insert data failed");
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Insert data successful",
+        data: result.rows,
+      });
     }
+
+    return res.status(400).send({
+      status: false,
+      message: "Insert data failed",
+    });
+
   } catch (error) {
     console.error("Error in insert order detail data:", error);
-    if (!fromA)
-      return res.status(500).send({ status: false, message: "Internal Server Error" });
-    throw error;
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+    });
   }
 };
+
 
