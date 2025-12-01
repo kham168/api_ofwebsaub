@@ -85,10 +85,12 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
 
     // Optional topData for page 0
     let topData = null;
+
     if (validPage === 0) {
       try {
         const topResult = await QueryTopup.getAllProductAData();
-        topData = topResult?.data || topResult;
+
+        topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }
@@ -460,4 +462,3 @@ export const updateProductData = async (req, res) => {
     });
   }
 };
-

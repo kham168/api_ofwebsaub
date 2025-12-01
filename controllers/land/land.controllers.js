@@ -92,10 +92,12 @@ export const queryLandDataAll = async (req, res) => {
 
     // ✅ If page === 0 → also call top data function
     let topData = null;
+
     if (validPage === 0) {
       try {
-        const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
-        topData = topResult?.data || topResult; // handle both formats
+        const topResult = await QueryTopup.getAllProductB();
+
+        topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }
@@ -571,42 +573,41 @@ export const updateProductData = async (req, res) => {
       });
     }
 
-   //const villageIdArray = parseVillageList(villageid);
-// Village list (array)
-let villageIdArray = null;
-if (Array.isArray(villageid) && villageid.length > 0) {
-  villageIdArray = `{${villageid.join(",")}}`;
-}
+    //const villageIdArray = parseVillageList(villageid);
+    // Village list (array)
+    let villageIdArray = null;
+    if (Array.isArray(villageid) && villageid.length > 0) {
+      villageIdArray = `{${villageid.join(",")}}`;
+    }
 
-// Build dynamic update
-let updateFields = [];
-let values = [];
-let index = 1;
+    // Build dynamic update
+    let updateFields = [];
+    let values = [];
+    let index = 1;
 
-// Helper to add fields
-const addField = (column, value) => {
-  if (value !== undefined && value !== null && value !== "") {
-    updateFields.push(`${column} = $${index++}`);
-    values.push(value);
-  }
-};
+    // Helper to add fields
+    const addField = (column, value) => {
+      if (value !== undefined && value !== null && value !== "") {
+        updateFields.push(`${column} = $${index++}`);
+        values.push(value);
+      }
+    };
 
-// Add fields automatically
-addField("ownername", ownername);
-addField("productname", productname);
-addField("type", type);
-addField("squaremeters", squaremeters);
-addField("area", area);
-addField("price", price);
-addField("tel", tel);
-addField("contactnumber", contactnumber);
-addField("locationurl", locationurl);
-addField("locationvideo", locationvideo);
-addField("moredetail", moredetail);
-addField("provinceid", provinceid);
-addField("districtid", districtid);
-addField("villageid", villageIdArray);
-
+    // Add fields automatically
+    addField("ownername", ownername);
+    addField("productname", productname);
+    addField("type", type);
+    addField("squaremeters", squaremeters);
+    addField("area", area);
+    addField("price", price);
+    addField("tel", tel);
+    addField("contactnumber", contactnumber);
+    addField("locationurl", locationurl);
+    addField("locationvideo", locationvideo);
+    addField("moredetail", moredetail);
+    addField("provinceid", provinceid);
+    addField("districtid", districtid);
+    addField("villageid", villageIdArray);
 
     // No data provided
     if (updateFields.length === 0) {
@@ -642,7 +643,6 @@ addField("villageid", villageIdArray);
       message: "Product not found",
       data: null,
     });
-
   } catch (error) {
     console.error("Error updating product:", error);
     return res.status(500).send({
@@ -652,4 +652,3 @@ addField("villageid", villageIdArray);
     });
   }
 };
-

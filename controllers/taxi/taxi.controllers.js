@@ -90,10 +90,12 @@ export const queryTaxiDataAll = async (req, res) => {
     });
 
     let topData = null;
+
     if (validPage === 0) {
       try {
-        const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
-        topData = topResult?.data || topResult; // handle both formats
+        const topResult = await QueryTopup.getAllProductB();
+
+        topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }

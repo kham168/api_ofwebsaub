@@ -194,11 +194,14 @@ export const queryHouseDataAll = async (req, res) => {
     });
 
     // ✅ If page === 0 → also call top data function
+
     let topData = null;
+
     if (validPage === 0) {
       try {
-        const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
-        topData = topResult?.data || topResult; // handle both formats
+        const topResult = await QueryTopup.getAllProductB();
+
+        topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }
@@ -696,13 +699,12 @@ export const updateProductData = async (req, res) => {
     let index = 1;
 
     // Helper function to push field
-   const addField = (column, value) => {
-  if (value !== undefined && value !== null && value !== "") {
-    updateFields.push(`${column} = $${index++}`);
-    values.push(value);
-  }
-};
-
+    const addField = (column, value) => {
+      if (value !== undefined && value !== null && value !== "") {
+        updateFields.push(`${column} = $${index++}`);
+        values.push(value);
+      }
+    };
 
     // Add each field only if it is not null
     addField("housename", housename);
@@ -716,7 +718,7 @@ export const updateProductData = async (req, res) => {
     addField("provinceid", provinceid);
     addField("districtid", districtid);
 
-     // Village list (array)
+    // Village list (array)
     let villageIdArray = null;
     if (Array.isArray(villageid) && villageid.length > 0) {
       villageIdArray = `{${villageid.join(",")}}`;

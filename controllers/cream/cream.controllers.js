@@ -83,10 +83,12 @@ export const queryCreamDataAll = async (req, res) => {
     };
 
     let topData = null;
+
     if (validPage === 0) {
       try {
         const topResult = await QueryTopup.getAllProductAData();
-        topData = topResult?.data || topResult;
+
+        topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
       }
@@ -447,7 +449,6 @@ export const updateProductData = async (req, res) => {
       message: "Product not found",
       data: null,
     });
-
   } catch (error) {
     console.error("Error updating product:", error);
     return res.status(500).send({

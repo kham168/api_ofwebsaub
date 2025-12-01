@@ -1,71 +1,43 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
-class queryTopData {
+class queryTopData { 
   async getAllProductAData() {
     try {
       const baseUrl = "http://localhost:5151/";
 
       const tbcream = `
-      SELECT 
-        c.id,
-        c.creamname AS name,
-        c.tel,
-        c.detail,
-        c.donation,
-        c.image,
-        'cream/selectAll' AS path
-      FROM public.tbcream c
-      WHERE c.status = '1'
-      ORDER BY c.cdate DESC
-      LIMIT 1;
-    `;
+        SELECT id, creamname AS name, tel, detail, donation, image
+        FROM public.tbcream
+        WHERE status = '1'
+        ORDER BY cdate DESC
+        LIMIT 1;
+      `;
 
       const tbkhoomkhotsheb = `
-      SELECT 
-        id,
-        name,
-        tel,
-        detail,
-        donation,
-        image,
-        'khoomKhoTsheb/selectAll' AS path
-      FROM public.tbkhoomkhotsheb
-      WHERE status = '1'
-      ORDER BY cdate DESC
-      LIMIT 1;
-    `;
+        SELECT id, name, tel, detail, donation, image
+        FROM public.tbkhoomkhotsheb
+        WHERE status = '1'
+        ORDER BY cdate DESC
+        LIMIT 1;
+      `;
 
       const tbmuas = `
-      SELECT 
-        m.id,
-        m.name,
-        m.tel,
-        m.detail,
-        m.donation,
-        m.image,
-        'muas/selectAll' AS path
-      FROM public.tbmuas m
-      WHERE m.status = '1'
-      ORDER BY m.id DESC
-      LIMIT 1;
-    `;
+        SELECT id, name, tel, detail, donation, image
+        FROM public.tbmuas
+        WHERE status = '1'
+        ORDER BY id DESC
+        LIMIT 1;
+      `;
 
       const tbtshuaj = `
-      SELECT 
-        t.id,
-        t.name,
-        t.tel,
-        t.detail,
-        t.donation,
-        t.image,
-        'tshuaj/selectAll' AS path
-      FROM public.tbtshuaj t
-      WHERE t.status = '1'
-      ORDER BY t.id DESC
-      LIMIT 1;
-    `;
+        SELECT id, name, tel, detail, donation, image
+        FROM public.tbtshuaj
+        WHERE status = '1'
+        ORDER BY id DESC
+        LIMIT 1;
+      `;
 
-      // Execute all queries in parallel
+      // Run queries in parallel
       const [creamRes, khoomRes, muasRes, tshuajRes] = await Promise.all([
         dbExecution(tbcream, []),
         dbExecution(tbkhoomkhotsheb, []),
@@ -77,28 +49,27 @@ class queryTopData {
         (rows || []).map((r) => ({
           ...r,
           image: r.image
-            ? r.image
-                .replace(/[{}]/g, "") // remove { and }
-                .split(",")
-                .map((img) => `${baseUrl}${img.trim()}`)
+            ? r.image.replace(/[{}]/g, "").split(",").map((img) => `${baseUrl}${img.trim()}`)
             : [],
         }));
 
+      // Combine into one array
+      const mergedTopData = [
+        ...formatImage(creamRes?.rows),
+        ...formatImage(khoomRes?.rows),
+        ...formatImage(muasRes?.rows),
+        ...formatImage(tshuajRes?.rows),
+      ];
+
       return {
-        status: true,
-        data: {
-          Dormitory: formatImage(creamRes?.rows),
-          House: formatImage(khoomRes?.rows),
-          Land: formatImage(muasRes?.rows),
-          Taxi: formatImage(tshuajRes?.rows),
-        },
+        topData: mergedTopData,
       };
+
     } catch (error) {
       console.error("Error in getAllProductAData:", error);
       throw error;
     }
-  }
-
+  } 
 
 
   async getAllProductB(req, res) {
@@ -123,7 +94,6 @@ class queryTopData {
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           d.image,
           d.plan_on_next_month,
-          'dormitory/selectAll' AS path,
           d.cdate
         FROM public.tbdormitory d
         INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
@@ -153,7 +123,6 @@ class queryTopData {
           d.district,
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           h.image,
-          'house/selectAll' AS path,
           h.cdate
         FROM public.tbhouse h
         INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
@@ -184,7 +153,6 @@ class queryTopData {
           d.district,
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           l.image,
-          'land/selectAll' AS path,
           l.cdate
         FROM public.tbland l
         INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
@@ -211,7 +179,6 @@ class queryTopData {
           d.district,
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           t.image,
-          'taxi/selectAll' AS path,
           t.cdate
         FROM public.tbtaxi t
         INNER JOIN public.tbdistrict d ON d.districtid = t.districtid
@@ -245,14 +212,25 @@ class queryTopData {
             : [],
         }));
 
+      // return {
+      //   status: true,
+      //   data: {
+      //     Dormitory: formatImage(dormitoryRes?.rows),
+      //     House: formatImage(houseRes?.rows),
+      //     Land: formatImage(landRes?.rows),
+      //     Taxi: formatImage(taxiRes?.rows),
+      //   },
+      // };
+
+         const mergedTopData = [
+        ...formatImage(dormitoryRes?.rows),
+        ...formatImage(houseRes?.rows),
+        ...formatImage(landRes?.rows),
+        ...formatImage(taxiRes?.rows),
+      ];
+
       return {
-        status: true,
-        data: {
-          Dormitory: formatImage(dormitoryRes?.rows),
-          House: formatImage(houseRes?.rows),
-          Land: formatImage(landRes?.rows),
-          Taxi: formatImage(taxiRes?.rows),
-        },
+        topData: mergedTopData,
       };
     } catch (error) {
       console.error("Error in getAllProductBData:", error);
