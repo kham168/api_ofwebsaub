@@ -6,7 +6,7 @@ class queryTopData {
       const baseUrl = "http://localhost:5151/";
 
       const tbcream = `
-        SELECT id, creamname AS name, tel, detail, donation, image
+        SELECT '1' as channelid, id, creamname AS name, tel, detail, donation, image
         FROM public.tbcream
         WHERE status = '1'
         ORDER BY cdate DESC
@@ -14,7 +14,7 @@ class queryTopData {
       `;
 
       const tbkhoomkhotsheb = `
-        SELECT id, name, tel, detail, donation, image
+        SELECT '4' as channelid,id, name, tel, detail, donation, image
         FROM public.tbkhoomkhotsheb
         WHERE status = '1'
         ORDER BY cdate DESC
@@ -22,7 +22,7 @@ class queryTopData {
       `;
 
       const tbmuas = `
-        SELECT id, name, tel, detail, donation, image
+        SELECT '8' as channelid, id, name, tel, detail, donation, image
         FROM public.tbmuas
         WHERE status = '1'
         ORDER BY id DESC
@@ -30,7 +30,7 @@ class queryTopData {
       `;
 
       const tbtshuaj = `
-        SELECT id, name, tel, detail, donation, image
+        SELECT '6' as channelid, id, name, tel, detail, donation, image
         FROM public.tbtshuaj
         WHERE status = '1'
         ORDER BY id DESC
@@ -80,6 +80,7 @@ class queryTopData {
       // 🏘️ 1. Dormitory
       const tbdormitory = `
         SELECT 
+          '2' as channelid,
           d.id,
           d.dormantalname AS name,
           d.type,
@@ -113,6 +114,7 @@ class queryTopData {
       // 🏠 2. House
       const tbhouse = `
         SELECT 
+          '3' as channelid,
           h.id,
           h.housename AS name,
           h.tel,
@@ -141,6 +143,7 @@ class queryTopData {
       // 🏞️ 3. Land
       const tbland = `
         SELECT 
+          '5' as channelid,
           l.id,
           l.productname AS name,
           l.area,
@@ -171,6 +174,7 @@ class queryTopData {
       // 🚕 4. Taxi
       const tbtaxi = `
         SELECT 
+          '7' as channelid,
           t.id,
           t.name,
           t.tel,
@@ -211,17 +215,7 @@ class queryTopData {
                 .map((img) => `${baseUrl}${img.trim()}`)
             : [],
         }));
-
-      // return {
-      //   status: true,
-      //   data: {
-      //     Dormitory: formatImage(dormitoryRes?.rows),
-      //     House: formatImage(houseRes?.rows),
-      //     Land: formatImage(landRes?.rows),
-      //     Taxi: formatImage(taxiRes?.rows),
-      //   },
-      // };
-
+ 
          const mergedTopData = [
         ...formatImage(dormitoryRes?.rows),
         ...formatImage(houseRes?.rows),
