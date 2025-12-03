@@ -38,8 +38,8 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
         id,
         type,
         name,
-        "Price1",
-        "Price2",
+        price1,
+        price2,
         tel,
         detail,
         locationgps,
@@ -165,8 +165,8 @@ export const searchKhoomKhoTshebData = async (req, res) => {
       SELECT 
         id,type,
         name,
-        "Price1",
-        "Price2",
+        price1,
+        price2,
         tel,
         detail,
         locationgps,
@@ -257,8 +257,8 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     const query = `SELECT 
         k.id,type,
         k.name,
-        k."Price1",
-        k."Price2",
+        k.price1,
+        k.price2,
         k.tel,
         k.detail, 
         k.locationgps,
@@ -333,7 +333,7 @@ export const insertKhoomKhoTshebData = async (req, res) => {
     // ✅ Build query for inserting data directly into tbkhoomkhotsheb
     const query = `
       INSERT INTO public.tbkhoomkhotsheb(
-        id, type, name, "Price1", "Price2", tel, detail, locationgps, image, status, cdate
+        id, type, name, price1, price2, tel, detail, locationgps, image, status, cdate
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
       RETURNING *;
     `;
@@ -413,8 +413,8 @@ export const updateProductData = async (req, res) => {
 
     addField("type", type);
     addField("name", name);
-    addField(`"Price1"`, Price1);
-    addField(`"Price2"`, Price2);
+    addField(`price1`, Price1);
+    addField(`price2`, Price2);
     addField("tel", tel);
     addField("detail", detail);
     addField("locationgps", locationGps);

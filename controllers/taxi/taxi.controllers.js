@@ -43,8 +43,8 @@ export const queryTaxiDataAll = async (req, res) => {
       SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         p.province,
@@ -58,7 +58,7 @@ export const queryTaxiDataAll = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1'
       GROUP BY 
-        t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
+        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $1 OFFSET $2;
@@ -186,8 +186,8 @@ export const searchTaxiData = async (req, res) => {
       SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         p.province,
@@ -201,7 +201,7 @@ export const searchTaxiData = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and t.name ILIKE $1
       GROUP BY 
-        t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
+        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
@@ -304,8 +304,8 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
      SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         p.province,
@@ -319,7 +319,7 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and t.districtid = $1
       GROUP BY 
-        t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
+        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
@@ -423,8 +423,8 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
        SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         p.province,
@@ -438,7 +438,7 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and $1 = ANY( string_to_array(t.villageid, ',') )
       GROUP BY 
-        t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
+        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
@@ -513,8 +513,8 @@ export const queryTaxiDataOne = async (req, res) => {
        SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         p.province,
@@ -528,7 +528,7 @@ export const queryTaxiDataOne = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and t.id= $1
       GROUP BY 
-        t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
+        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image 
     `;
     // const resultSingle = await dbExecution(query, [id]);
@@ -635,7 +635,7 @@ export const insert_taxi_data = async (req, res) => {
     // 🧠 Insert main data
     const query = `
       INSERT INTO public.tbtaxi(
-        id, name, "Price1", "Price2", tel, detail, province, district, village, image, 
+        id, name, price1, price2, tel, detail, province, district, village, image, 
         status, peopleid, turnofreason, cdate
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10::text[], $11, $12, $13, NOW())
@@ -724,8 +724,8 @@ export const updateProductData = async (req, res) => {
 
     // Add all updatable fields
     addField("name", name);
-    addField('"Price1"', Price1);
-    addField('"Price2"', Price2);
+    addField('price1', Price1);
+    addField('price2', Price2);
     addField("tel", tel);
     addField("detail", detail);
     addField("provinceid", provinceId);

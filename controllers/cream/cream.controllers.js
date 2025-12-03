@@ -40,8 +40,8 @@ export const queryCreamDataAll = async (req, res) => {
       SELECT 
         c.id,
         c.creamname,
-        c."Price1",
-        c."Price2",
+        c.price1,
+        c.price2,
         c.tel,
         c.detail,
         c.donation,
@@ -160,8 +160,8 @@ export const searchCreamData = async (req, res) => {
       SELECT 
         c.id,
         c.creamname,
-        c."Price1",
-        c."Price2",
+        c.price1,
+        c.price2,
         c.tel,
         c.detail,
         c.donation,
@@ -254,8 +254,8 @@ export const queryCreamDataOne = async (req, res) => {
       SELECT 
         c.id,
         c.creamname,
-        c."Price1",
-        c."Price2",
+        c.price1,
+        c.price2,
         c.tel,
         c.detail,
         c.donation,
@@ -339,7 +339,7 @@ export const insertCreamData = async (req, res) => {
     // 🧠 Insert into tbcream
     const query = `
       INSERT INTO public.tbcream (
-        id, creamname, "Price1", "Price2",
+        id, creamname, price1, price2,
         tel, detail, image, donation, status, cdate
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7::text[], $8, $9, NOW())
@@ -410,8 +410,8 @@ export const updateProductData = async (req, res) => {
     // Add fields only if NOT empty string
     pushUpdate("bland", bland);
     pushUpdate("creamname", creamName);
-    pushUpdate(`"Price1"`, Price1);
-    pushUpdate(`"Price2"`, Price2);
+    pushUpdate(`price1`, Price1);
+    pushUpdate(`price2`, Price2);
     pushUpdate("tel", tel);
     pushUpdate("detail", detail);
     pushUpdate("donation", donation);

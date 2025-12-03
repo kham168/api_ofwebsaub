@@ -43,8 +43,8 @@ export const queryTshuajDataAll = async (req, res) => {
       SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         t.donation,
@@ -158,8 +158,8 @@ export const searchTshuajData = async (req, res) => {
       SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         t.donation,
@@ -243,8 +243,8 @@ export const queryTshuajDataOne = async (req, res) => {
     const query = `SELECT 
         t.id,
         t.name,
-        t."Price1",
-        t."Price2",
+        t.price1,
+        t.price2,
         t.tel,
         t.detail,
         t.donation,
@@ -320,7 +320,7 @@ export const insertTshuajData = async (req, res) => {
     // ✅ Insert into main table directly
     const query = `
       INSERT INTO public.tbtshuaj(
-        id, name, "Price1", "Price2", tel, detail, image, status, donation, cdate
+        id, name, price1, price2, tel, detail, image, status, donation, cdate
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
       RETURNING *;
@@ -388,8 +388,8 @@ export const updateProductData = async (req, res) => {
     };
 
     addField("name", name);
-    addField(`"Price1"`, Price1);
-    addField(`"Price2"`, Price2);
+    addField(`price1`, Price1);
+    addField(`price2`, Price2);
     addField("tel", tel);
     addField("detail", detail);
     addField("donation", donation);
