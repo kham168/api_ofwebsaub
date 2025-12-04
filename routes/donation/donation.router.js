@@ -1,18 +1,24 @@
 import Route from "express";
 import { verifyJWT } from "../../middleware/jwt.js";
 import {
-  queryKhoomKhoTshebDataAll,
-  searchKhoomKhoTshebData,
-  queryKhoomKhoTshebDataOne,
-  insertKhoomKhoTshebData,
-  updateProductData,
-} from "../../controllers/khoomkho_tsheb/khoomkho_tsheb.controllers.js";
-import { uploadImage } from "../../middleware/khoomkho_tsheb.uploadimage.js";
+  queryDonationListAll,
+  queryCustomerDonationList,
+  searchDonationLogByCustomerTel,
+  customerDonation,
+  insertDonationList,
+  insertBankAccountForDonation,
+  updateDonationMainInformation01,
+  updateDonationMainInformation02,
+} from "../../controllers/donation/donation.controllers.js";
+import { uploadImage } from "../../middleware/donationa.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll", queryKhoomKhoTshebDataAll);
-route.get("/selectOne", queryKhoomKhoTshebDataOne);
-route.get("/searchByName", searchKhoomKhoTshebData);
-route.post("/insert", uploadImage, insertKhoomKhoTshebData);
-route.put("/updateData", updateProductData);
+route.get("/selectDonation", queryDonationListAll);
+route.get("/selectCustDonationList", queryCustomerDonationList);
+route.get("/searchByCustomerTel", searchDonationLogByCustomerTel);
+route.post("/insertCustomerDonation", uploadImage, customerDonation);
+route.post("/insertDonationList", uploadImage, insertDonationList); 
+route.post("/insertBankInformForDonation", uploadImage, insertBankAccountForDonation); 
+route.put("/updateDonationData01", uploadImage, updateDonationMainInformation01); 
+route.put("/updateDonationData02", uploadImage, updateDonationMainInformation02); 
 export default route;
