@@ -1,7 +1,10 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // query all order data by channel
-export const queryOrderDetailDataAllByChannelAndSellStatus = async (req, res) => {
+export const queryOrderDetailDataAllByChannelAndSellStatus = async (
+  req,
+  res
+) => {
   const channel = req.query.channel ?? "";
   const status = req.query.status ?? "";
   const page = parseInt(req.query.page) || 0;
@@ -25,25 +28,52 @@ export const queryOrderDetailDataAllByChannelAndSellStatus = async (req, res) =>
     // Count Query
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tborder_detail 
-      WHERE channel = $1 
-      AND staffconfirm='1' 
-      AND sellstatus = $2
+      FROM public.tborder o inner join public.tborder_detail d on d.orderid=o.orderid
+      WHERE channel = $1 AND staffconfirm='1' AND sellstatus = $2
     `;
     const countResult = await dbExecution(countQuery, [channel, status]);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // Main Query
-    const query = `
-      SELECT orderid, channel, productid, productname, price, qty, custtel,
-             custcomment, paymentimage, cdate, staffconfirm,
-             confirmdate, sellcomment, sellstatus, sellname, selldate
-      FROM public.tborder_detail 
-      WHERE channel = $1
-        AND staffconfirm='1'
-        AND sellstatus = $2
-      ORDER BY cdate DESC
-      LIMIT $3 OFFSET $4
+    const query = ` 
+SELECT 
+    o.orderid,
+    o.shipping,
+    o.delivery,
+    o.channel,
+    o.custtel,
+    o.custname,
+    o.custcomment,
+    o.paymentimage,
+    o.cdate,
+    o.staffconfirm,
+    o.confirmdate,
+    o.sellstatus,
+    o.sellcomment,
+    o.sellname,
+    o.selldate,
+
+    -- Group products into JSON array
+    jsonb_agg(
+        jsonb_build_object(
+            'productid', d.productid,
+            'productname', d.productname,
+            'price', d.price,
+            'qty', d.qty
+        )
+    ) AS productDetail
+
+FROM public.tborder o
+INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
+
+WHERE channel = $1 AND staffconfirm='1' AND sellstatus = $2
+GROUP BY
+    o.orderid, o.shipping, o.delivery, o.channel,
+    o.custtel, o.custname, o.custcomment,
+    o.paymentimage, o.cdate, o.staffconfirm,
+    o.confirmdate, o.sellstatus, o.sellcomment,
+    o.sellname, o.selldate ORDER BY cdate DESC
+     LIMIT $3 OFFSET $4;
     `;
 
     const result = await dbExecution(query, [
@@ -91,7 +121,6 @@ export const queryOrderDetailDataAllByChannelAndSellStatus = async (req, res) =>
       data: formattedRows, // ← FIXED
       pagination,
     });
-
   } catch (error) {
     console.error("Error in query order detail data all by channel:", error);
     res.status(500).send({
@@ -101,10 +130,11 @@ export const queryOrderDetailDataAllByChannelAndSellStatus = async (req, res) =>
   }
 };
 
-
 // query all order data by channel
-export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (req, res) => {
-
+export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (
+  req,
+  res
+) => {
   const channel = req.query.channel ?? "";
   const status = req.query.status ?? "";
   const page = parseInt(req.query.page) || 0;
@@ -118,7 +148,6 @@ export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (req,
     });
   }
 
-  
   const validPage = Math.max(page, 0);
   const validLimit = Math.max(limit, 1);
   const offset = validPage * validLimit;
@@ -129,8 +158,8 @@ export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (req,
     // Count Query
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tborder_detail 
-      WHERE channel = $1 
+      FROM public.tborder o inner join public.tborder_detail d on d.orderid=o.orderid
+     WHERE channel = $1 
       AND staffconfirm=$2
       AND sellstatus='0'
     `;
@@ -139,15 +168,44 @@ export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (req,
 
     // Main Query
     const query = `
-      SELECT orderid, channel, productid, productname, price, qty, custtel,
-             custcomment, paymentimage, cdate, staffconfirm,
-             confirmdate, sellcomment, sellstatus, sellname, selldate
-      FROM public.tborder_detail 
-      WHERE channel = $1 
-        AND staffconfirm=$2
-        AND sellstatus='0'
-      ORDER BY cdate DESC
-      LIMIT $3 OFFSET $4
+SELECT 
+    o.orderid,
+    o.shipping,
+    o.delivery,
+    o.channel,
+    o.custtel,
+    o.custname,
+    o.custcomment,
+    o.paymentimage,
+    o.cdate,
+    o.staffconfirm,
+    o.confirmdate,
+    o.sellstatus,
+    o.sellcomment,
+    o.sellname,
+    o.selldate,
+
+    -- Group products into JSON array
+    jsonb_agg(
+        jsonb_build_object(
+            'productid', d.productid,
+            'productname', d.productname,
+            'price', d.price,
+            'qty', d.qty
+        )
+    ) AS productDetail
+
+FROM public.tborder o
+INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
+
+WHERE channel = $1 AND staffconfirm=$2 AND sellstatus='0'
+GROUP BY
+    o.orderid, o.shipping, o.delivery, o.channel,
+    o.custtel, o.custname, o.custcomment,
+    o.paymentimage, o.cdate, o.staffconfirm,
+    o.confirmdate, o.sellstatus, o.sellcomment,
+    o.sellname, o.selldate ORDER BY cdate DESC
+     LIMIT $3 OFFSET $4;
     `;
 
     const result = await dbExecution(query, [
@@ -195,7 +253,6 @@ export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (req,
       data: formattedRows, // ← FIXED
       pagination,
     });
-
   } catch (error) {
     console.error("Error in query order detail data all by channel:", error);
     res.status(500).send({
@@ -222,11 +279,43 @@ export const queryOrderDetailDataOne = async (req, res) => {
 
   try {
     const query = `
-      SELECT orderid, channel, productid, productname, price, qty, custtel,
-        custcomment, paymentimage, cdate, staffconfirm,
-        confirmdate, sellcomment, sellstatus, sellname, selldate
-      FROM public.tborder_detail 
-      WHERE orderid = $1
+SELECT 
+    o.orderid,
+    o.shipping,
+    o.delivery,
+    o.channel,
+    o.custtel,
+    o.custname,
+    o.custcomment,
+    o.paymentimage,
+    o.cdate,
+    o.staffconfirm,
+    o.confirmdate,
+    o.sellstatus,
+    o.sellcomment,
+    o.sellname,
+    o.selldate,
+
+    -- Group products into JSON array
+    jsonb_agg(
+        jsonb_build_object(
+            'productid', d.productid,
+            'productname', d.productname,
+            'price', d.price,
+            'qty', d.qty
+        )
+    ) AS productDetail
+
+FROM public.tborder o
+INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
+
+WHERE o.orderid = $1
+GROUP BY
+    o.orderid, o.shipping, o.delivery, o.channel,
+    o.custtel, o.custname, o.custcomment,
+    o.paymentimage, o.cdate, o.staffconfirm,
+    o.confirmdate, o.sellstatus, o.sellcomment,
+    o.sellname, o.selldate;
     `;
 
     const resultSingle = await dbExecution(query, [orderId]);
@@ -298,12 +387,13 @@ export const updateOrderListStatus = async (req, res) => {
 
     // 1️⃣ Seller updating sale result (must have BOTH fields)
     if (
-      sellStatus && sellName &&
+      sellStatus &&
+      sellName &&
       sellStatus.trim() !== "" &&
       sellName.trim() !== ""
     ) {
       query = `
-        UPDATE public.tborder_detail
+        UPDATE public.tborder
         SET sellstatus  = $2, 
             sellcomment = $3,
             sellname    = $4,
@@ -316,15 +406,13 @@ export const updateOrderListStatus = async (req, res) => {
     // 2️⃣ Staff confirming sale
     else if (staffConfirm !== undefined && staffConfirm !== null) {
       query = `
-        UPDATE public.tborder_detail
+        UPDATE public.tborder
         SET staffconfirm = $2,
             confirmdate = NOW()
         WHERE orderid = $1 RETURNING *
       `;
       values = [orderId, staffConfirm];
-    }
-
-    else {
+    } else {
       return res.status(400).send({
         status: false,
         message: "No valid fields provided",
@@ -346,7 +434,6 @@ export const updateOrderListStatus = async (req, res) => {
       message: "No rows updated",
       data: [],
     });
-
   } catch (error) {
     console.error("Error in updateOrderListStatus:", error);
     return res.status(500).send({
@@ -355,4 +442,3 @@ export const updateOrderListStatus = async (req, res) => {
     });
   }
 };
-

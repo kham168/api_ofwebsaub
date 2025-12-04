@@ -24,28 +24,55 @@ export const querySearchOrderData = async (req, res) => {
     // Count query
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tborder_detail 
-      WHERE custtel LIKE $1
+      FROM public.tborder o inner join public.tborder_detail d on d.orderid=o.orderid
+	where o.custtel Ilike $1
     `;
     const countResult = await dbExecution(countQuery, [`%${tel}%`]);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // Main query
     const query = `
-      SELECT orderid, channel, productid, productname, price, qty, custtel,
-             custcomment, paymentimage, cdate, staffconfirm,
-             confirmdate, sellcomment, sellstatus, sellname, selldate
-      FROM public.tborder_detail 
-      WHERE custtel LIKE $1
-      ORDER BY cdate DESC
-      LIMIT $2 OFFSET $3
+SELECT 
+    o.orderid,
+    o.shipping,
+    o.delivery,
+    o.channel,
+    o.custtel,
+    o.custname,
+    o.custcomment,
+    o.paymentimage,
+    o.cdate,
+    o.staffconfirm,
+    o.confirmdate,
+    o.sellstatus,
+    o.sellcomment,
+    o.sellname,
+    o.selldate,
+
+    -- Group products into JSON array
+    jsonb_agg(
+        jsonb_build_object(
+            'productid', d.productid,
+            'productname', d.productname,
+            'price', d.price,
+            'qty', d.qty
+        )
+    ) AS productDetail
+
+FROM public.tborder o
+INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
+
+WHERE custtel ILIKE $1 
+GROUP BY
+    o.orderid, o.shipping, o.delivery, o.channel,
+    o.custtel, o.custname, o.custcomment,
+    o.paymentimage, o.cdate, o.staffconfirm,
+    o.confirmdate, o.sellstatus, o.sellcomment,
+    o.sellname, o.selldate ORDER BY cdate DESC
+     LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [
-      `%${tel}%`,
-      validLimit,
-      offset,
-    ]);
+    const result = await dbExecution(query, [`%${tel}%`, validLimit, offset]);
 
     const rows = result?.rows || [];
 
@@ -83,7 +110,6 @@ export const querySearchOrderData = async (req, res) => {
         totalPages: Math.ceil(total / validLimit),
       },
     });
-
   } catch (error) {
     console.error("Error in querySearchOrderData:", error);
     res.status(500).send({
@@ -94,24 +120,37 @@ export const querySearchOrderData = async (req, res) => {
 };
 
 // insert order data
-  export const insertOrderDetailData = async (req, res) => {
+
+export const insertOrderDetailData = async (req, res) => {
   try {
-    const {
-      id,
-      shipping,
-      delivery,
-      channel,
-      productId,
-      productName,
-      price,
-      qty,
-      custTel,
-      custname,
-      custComment,
-    } = req.body;
+    let { id, shipping, delivery, channel, custTel, custName, custComment } =
+      req.body;
+
+    // IMPORTANT: extract productDetail separately (NOT in destructuring)
+    let productDetail = req.body.productDetail;
+
+    // productDetail is a string when sent via form-data
+    if (typeof productDetail === "string") {
+      try {
+        productDetail = JSON.parse(productDetail);
+      } catch (err) {
+        console.error("JSON parse error:", err);
+        return res.status(400).json({
+          status: false,
+          message: "Invalid JSON in productDetail",
+        });
+      }
+    }
+
+    if (!Array.isArray(productDetail)) {
+      return res.status(400).json({
+        status: false,
+        message: "productDetail must be array",
+      });
+    }
 
     // Validate required fields
-    if (!id || !channel || !productId || !productName || !price || !custTel) {
+    if (!id || !channel || !custTel) {
       return res.status(400).send({
         status: false,
         message: "Missing required fields",
@@ -119,51 +158,71 @@ export const querySearchOrderData = async (req, res) => {
     }
 
     // Handle uploaded images
-    const imageArray = req.files?.length
-      ? req.files.map((file) => file.filename)
-      : [];
+    const imageArray = req.files?.map((f) => f.filename) || [];
 
-    const query = `
-      INSERT INTO public.tborder_detail (
-        orderid, shipping, delivery, channel, productid, productname, price, qty,
-        custtel, custname, custcomment, paymentimage, cdate, staffconfirm, sellstatus
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, NOW(), '0', '0'
+    // Insert into tborder
+    const insertOrderQuery = `
+      INSERT INTO public.tborder (
+        orderid, shipping, delivery, channel,
+        custtel, custname, custcomment,
+        paymentimage, cdate, staffconfirm, sellstatus
       )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), '0', '0')
       RETURNING *;
     `;
 
-    const values = [
+    const orderValues = [
       id,
-      shipping,
-      delivery,
+      shipping ?? "",
+      delivery ?? "",
       channel,
-      productId,
-      productName,
-      price,
-      qty,
       custTel,
-      custname,
-      custComment,
+      custName ?? "",
+      custComment ?? "",
       imageArray,
     ];
 
-    const result = await dbExecution(query, values);
+    const orderResult = await dbExecution(insertOrderQuery, orderValues);
 
-    if (result?.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
+    if (!orderResult?.rowCount) {
+      return res.status(400).send({
+        status: false,
+        message: "Insert order failed",
       });
     }
 
-    return res.status(400).send({
-      status: false,
-      message: "Insert data failed",
-    });
+    // Insert product items
+    const insertProductQuery = `
+      INSERT INTO public.tborder_detail (
+        orderid, productid, productname, price, qty
+      ) VALUES ($1, $2, $3, $4, $5);
+    `;
 
+    for (const item of productDetail) {
+      if (!item.productid || !item.productname || !item.price || !item.qty) {
+        return res.status(400).send({
+          status: false,
+          message:
+            "Each product item must include productid, productname, price, qty",
+        });
+      }
+
+      const values = [
+        id,
+        item.productid,
+        item.productname,
+        item.price,
+        item.qty,
+      ];
+
+      await dbExecution(insertProductQuery, values);
+    }
+
+    return res.status(200).send({
+      status: true,
+      message: "Order and product details inserted successfully",
+      order: orderResult.rows[0],
+    });
   } catch (error) {
     console.error("Error in insert order detail data:", error);
     return res.status(500).send({
@@ -172,5 +231,3 @@ export const querySearchOrderData = async (req, res) => {
     });
   }
 };
-
-
