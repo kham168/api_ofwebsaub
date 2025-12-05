@@ -5,17 +5,15 @@ import {
   queryLandDataOne,
   queryLandDataByDistrictId,
   queryLandDataByVillageId,
-  insertLandData,
   updateProductData,
-} from "../../controllers/land/land.controllers.js";
-import { uploadImage } from "../../middleware/land.uploadimage.js";
+} from "../../controllers/land/land.controllers.js"; 
 const route = Route();
 
 route.get("/selectAll", queryLandDataAll);
 route.get("/selectOne", queryLandDataOne);
 route.get("/selectByDistrictId", queryLandDataByDistrictId);
 route.get("/selectByVillageId", queryLandDataByVillageId);
-route.post("/insert", uploadImage, insertLandData);
+//route.post("/insert", uploadImage, insertLandData);
 route.put("/updateData", updateProductData);
 
 export default route;

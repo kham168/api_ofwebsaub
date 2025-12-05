@@ -28,6 +28,7 @@ export const queryDormitoryDataAll = async (req, res) => {
     // 📦 Main query with pagination
     const dataQuery = `
       SELECT 
+        d.channel,
         d.id,
         d.dormantalname,
         d.price1,
@@ -53,7 +54,7 @@ export const queryDormitoryDataAll = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.status = '1'
       GROUP BY 
-        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+       d.channel, d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
         d.totalroom, d.activeroom, d.locationvideo, d.tel, 
         d.contactnumber, d.moredetail,
         p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
@@ -117,21 +118,7 @@ export const queryDormitoryDataAll = async (req, res) => {
         console.warn("Failed to load top data:", e.message);
       }
     }
-
-    // ✅ Build combined response
-    // const responseData = {
-    //   rows,
-    //   pagination,
-    //   ...(validPage === 0 && { topData }), // only include if page === 0
-    // };
-
-    // // ✅ Send success response
-    // res.status(200).send({
-    //   status: true,
-    //   message: rows.length > 0 ? "Query successful" : "No data found",
-    //   data: responseData,
-    // });
-
+ 
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
@@ -184,6 +171,7 @@ export const searchDormitoryData = async (req, res) => {
 
     const query = `
       SELECT 
+        d.channel,
         d.id,
         d.dormantalname,
         d.price1,
@@ -209,7 +197,7 @@ export const searchDormitoryData = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.status = '1' AND d.dormantalname ILIKE $1
       GROUP BY 
-        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+       d.channel, d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
         d.totalroom, d.activeroom, d.locationvideo, d.tel, 
         d.contactnumber, d.moredetail,
         p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
@@ -301,6 +289,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
     // 📦 Main query
     const query = `
       SELECT 
+        d.channel,
         d.id,
         d.dormantalname,
         d.price1,
@@ -326,7 +315,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.status = '1' AND d.districtid = $1
       GROUP BY 
-        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+       d.channel, d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
         d.totalroom, d.activeroom, d.locationvideo, d.tel, 
         d.contactnumber, d.moredetail,
         p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
@@ -418,6 +407,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
     // 📦 Main query with joins
     const query = `
         SELECT 
+        d.channel,
         d.id,
         d.dormantalname,
         d.price1,
@@ -443,7 +433,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.status = '1' AND $1 = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       GROUP BY 
-        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+      d.channel,  d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
         d.totalroom, d.activeroom, d.locationvideo, d.tel, 
         d.contactnumber, d.moredetail,
         p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
@@ -520,6 +510,7 @@ export const queryDormitoryDataOne = async (req, res) => {
     // 📦 Main query (no LIMIT/OFFSET)
     const query = `
       SELECT 
+        d.channel,
         d.id,
         d.dormantalname,
         d.price1,
@@ -545,7 +536,7 @@ export const queryDormitoryDataOne = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE d.id = $1
       GROUP BY 
-        d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+       d.channel, d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
         d.totalroom, d.activeroom, d.locationvideo, d.tel, 
         d.contactnumber, d.moredetail,
         p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
@@ -593,131 +584,7 @@ export const queryDormitoryDataOne = async (req, res) => {
     });
   }
 };
-
-// insert data   // kho lawm
-export const insertDormitoryData = async (req, res) => {
-  const {
-    id,
-    dormantalname,
-    price1,
-    price2,
-    price3,
-    type,
-    totalroom,
-    activeroom,
-    locationvideo,
-    tel,
-    contactnumber,
-    moredetail,
-    province,
-    district,
-    village,
-    plan_on_next_month,
-  } = req.body;
-
-  // ✅ Required field validation
-  if (!id || !type || !totalroom || !dormantalname) {
-    return res.status(400).send({
-      status: false,
-      message:
-        "Missing required fields: id, type, totalroom, dormantalname are required",
-      data: null,
-    });
-  }
-
-  // ✅ Normalize village input into array
-  const parseVillageList = (v) => {
-    if (!v) return [];
-    if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
-    if (typeof v === "string") {
-      const trimmed = v.trim();
-      if (trimmed.startsWith("[")) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          return Array.isArray(parsed)
-            ? parsed.map((x) => String(x).trim()).filter(Boolean)
-            : [];
-        } catch {}
-      }
-      return trimmed
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-    }
-    return [String(v).trim()];
-  };
-
-  // ✅ Extract uploaded images from multer
-  const imageArray =
-    req.files && req.files.length > 0
-      ? req.files.map((file) => file.filename)
-      : [];
-
-  // ✅ Parse villages
-  const villageArray = parseVillageList(village);
-
-  try {
-    const query = `
-      INSERT INTO public.tbdormantal(
-        id, dormantalname, price1, price2, price3, type, totalroom, activeroom,
-        locationvideo, tel, contactnumber, moredetail,
-        province, district, village, image, status, plan_on_next_month, cdate
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12,
-        $13, $14, $15::text[], $16::text[], '1', $17, NOW()
-      )
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      dormantalname,
-      price1 || null,
-      price2 || null,
-      price3 || null,
-      type,
-      totalroom,
-      activeroom || 0,
-      locationvideo || "",
-      tel || "",
-      contactnumber || "",
-      moredetail || "",
-      province || null,
-      district || null,
-      villageArray,
-      imageArray,
-      plan_on_next_month || "",
-    ];
-
-    const result = await dbExecution(query, values);
-
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert dormantal data successful",
-        data: result.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert dormantal data failed",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in insert_dormantal_data:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      error: error.message,
-    });
-  }
-};
-
-// kho lawm
-
+  
 export const UpdateActiveStatusDormitoryData = async (req, res) => {
   // done
 

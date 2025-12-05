@@ -38,6 +38,7 @@ export const queryCreamDataAll = async (req, res) => {
     // Fetch paginated cream data
     const dataQuery = `
       SELECT 
+        c.channel,
         c.id,
         c.creamname,
         c.price1,
@@ -158,6 +159,7 @@ export const searchCreamData = async (req, res) => {
     // Main search query
     const query = `
       SELECT 
+        c.channel,
         c.id,
         c.creamname,
         c.price1,
@@ -252,6 +254,7 @@ export const queryCreamDataOne = async (req, res) => {
     // Main query
     const query = `
       SELECT 
+        c.channel,
         c.id,
         c.creamname,
         c.price1,
@@ -316,73 +319,7 @@ export const queryCreamDataOne = async (req, res) => {
     });
   }
 };
-
-// insert cream data
-export const insertCreamData = async (req, res) => {
-  const { id, creamName, price1, price2, tel, detail, donation } = req.body;
-
-  if (!id || !creamName || !price1 || !detail) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields",
-      data: [],
-    });
-  }
-
-  try {
-    // 🖼️ Collect uploaded image filenames into an array
-    const imageArray =
-      req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename)
-        : [];
-
-    // 🧠 Insert into tbcream
-    const query = `
-      INSERT INTO public.tbcream (
-        id, creamname, price1, price2,
-        tel, detail, image, donation, status, cdate
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7::text[], $8, $9, NOW())
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      creamName,
-      price1,
-      price2,
-      tel,
-      detail,
-      imageArray, // 👈 image array here
-      donation || "",
-      "1", // status = active
-    ];
-
-    const result = await dbExecution(query, values);
-
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert data failed",
-        data: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error in insertCreamData:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-    });
-  }
-};
-
+  
 export const updateProductData = async (req, res) => {
   const { id, bland, creamName, Price1, Price2, tel, detail, donation } =
     req.body;

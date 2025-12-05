@@ -87,21 +87,30 @@ GROUP BY
 
     // Format image URLs properly
     const formattedRows = rows.map((item) => {
-      let img = item.paymentimage;
+      const img = item.paymentimage;
 
+      // If null → return null (DO NOT add baseUrl)
       if (!img) {
         item.paymentimage = null;
         return item;
       }
 
-      // Clean { } and quotes
-      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+      // Remove { }, quotes from PostgreSQL array output
+      const cleaned = img.replace(/[{}"]/g, "").trim();
 
-      const imgList = img.split(",").map((i) => i.trim());
+      // If empty string → return null
+      if (!cleaned) {
+        item.paymentimage = null;
+        return item;
+      }
 
+      const imgList = cleaned.split(",").map((i) => i.trim());
+
+      // If one file → return full URL string
       if (imgList.length === 1) {
         item.paymentimage = baseUrl + imgList[0];
       } else {
+        // If many → return array of URLs
         item.paymentimage = imgList.map((i) => baseUrl + i);
       }
 
@@ -219,21 +228,30 @@ GROUP BY
 
     // Format image URLs properly
     const formattedRows = rows.map((item) => {
-      let img = item.paymentimage;
+      const img = item.paymentimage;
 
+      // If null → return null (DO NOT add baseUrl)
       if (!img) {
         item.paymentimage = null;
         return item;
       }
 
-      // Clean { } and quotes
-      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+      // Remove { }, quotes from PostgreSQL array output
+      const cleaned = img.replace(/[{}"]/g, "").trim();
 
-      const imgList = img.split(",").map((i) => i.trim());
+      // If empty string → return null
+      if (!cleaned) {
+        item.paymentimage = null;
+        return item;
+      }
 
+      const imgList = cleaned.split(",").map((i) => i.trim());
+
+      // If one file → return full URL string
       if (imgList.length === 1) {
         item.paymentimage = baseUrl + imgList[0];
       } else {
+        // If many → return array of URLs
         item.paymentimage = imgList.map((i) => baseUrl + i);
       }
 
@@ -331,25 +349,30 @@ GROUP BY
 
     // 🔥 FIXED: clean image format
     const formattedRows = rows.map((item) => {
-      let img = item.paymentimage;
+      const img = item.paymentimage;
 
+      // If null → return null (DO NOT add baseUrl)
       if (!img) {
         item.paymentimage = null;
         return item;
       }
 
-      // Remove wrapping braces and quotes → {"img.jpg"} → img.jpg
-      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+      // Remove { }, quotes from PostgreSQL array output
+      const cleaned = img.replace(/[{}"]/g, "").trim();
 
-      // If multiple: img1.jpg,img2.jpg
-      const imgList = img.split(",").map((i) => i.trim());
+      // If empty string → return null
+      if (!cleaned) {
+        item.paymentimage = null;
+        return item;
+      }
 
-      // Convert 1 image → string
+      const imgList = cleaned.split(",").map((i) => i.trim());
+
+      // If one file → return full URL string
       if (imgList.length === 1) {
         item.paymentimage = baseUrl + imgList[0];
-      }
-      // Convert multiple → array
-      else {
+      } else {
+        // If many → return array of URLs
         item.paymentimage = imgList.map((i) => baseUrl + i);
       }
 

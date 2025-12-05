@@ -35,7 +35,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     // Query paginated data
     const query = `
       SELECT 
-        id,
+      channel, id,
         type,
         name,
         price1,
@@ -163,7 +163,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     // ✅ Fetch paginated matching data
     const query = `
       SELECT 
-        id,type,
+       channel, id,type,
         name,
         price1,
         price2,
@@ -255,7 +255,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
 
   try {
     const query = `SELECT 
-        k.id,type,
+       channel, k.id,type,
         k.name,
         k.price1,
         k.price2,
@@ -309,74 +309,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     });
   }
 };
-
-export const insertKhoomKhoTshebData = async (req, res) => {
-  const { id, type, name, price1, price2, tel, detail, locationgps } = req.body;
-
-  // ✅ Validate required fields
-  if (!id || !name || !price1 || !detail) {
-    return res.status(400).send({
-      status: false,
-      message:
-        "Missing required fields: id, name, price1, and detail are required",
-      data: [],
-    });
-  }
-
-  // ✅ Extract uploaded image filenames
-  const imageArray =
-    req.files && req.files.length > 0
-      ? req.files.map((file) => file.filename)
-      : [];
-
-  try {
-    // ✅ Build query for inserting data directly into tbkhoomkhotsheb
-    const query = `
-      INSERT INTO public.tbkhoomkhotsheb(
-        id, type, name, price1, price2, tel, detail, locationgps, image, status, cdate
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      type,
-      name,
-      price1,
-      price2 || null,
-      tel || null,
-      detail,
-      locationgps,
-      imageArray,
-    ];
-
-    const result = await dbExecution(query, values);
-
-    // ✅ Response handling
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert data failed",
-        data: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error in insert_khoomkho_tsheb_data:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      error: error.message,
-      data: [],
-    });
-  }
-};
-
+  
 export const updateProductData = async (req, res) => {
   try {
     const {

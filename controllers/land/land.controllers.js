@@ -26,7 +26,7 @@ export const queryLandDataAll = async (req, res) => {
     // ✅ Main land query with pagination
     const landQuery = `
       SELECT 
-        l.id,
+       l.channel, l.id,
         l.productname,
         l.type,
         l.squaremeters,
@@ -49,7 +49,7 @@ export const queryLandDataAll = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1'
       GROUP BY 
-        l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
+      l.channel, l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
@@ -130,7 +130,7 @@ export const queryLandDataOne = async (req, res) => {
   try {
     const query = `
       SELECT 
-        l.id,
+       l.channel, l.id,
         l.productname,
         l.type,l.squaremeters, 
         l.area,
@@ -152,7 +152,7 @@ export const queryLandDataOne = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1' AND l.id = $1
       GROUP BY 
-        l.id, l.productname, l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
+       l.channel, l.id, l.productname, l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC;
@@ -231,7 +231,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
     // Main query
     const query = `
       SELECT 
-        l.id,
+      l.channel, l.id,
         l.productname,
         l.type,l.squaremeters, 
         l.area,
@@ -253,7 +253,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE l.status = '1' AND l.districtid = $1
       GROUP BY 
-        l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
+       l.channel, l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
@@ -342,7 +342,7 @@ export const queryLandDataByVillageId = async (req, res) => {
     // ✅ Main query with LIMIT and OFFSET
     const query = `
       SELECT 
-        l.id,
+      l.channel, l.id,
         l.productname,
         l.type,l.squaremeters, 
         l.area,
@@ -365,7 +365,7 @@ export const queryLandDataByVillageId = async (req, res) => {
       WHERE l.status = '1'
       AND $1 = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
       GROUP BY 
-        l.id, l.productname, l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
+       l.channel, l.id, l.productname, l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
         l.locationurl, l.locationvideo, l.moredetail, 
         p.province, d.district, l.image, l.cdate
       ORDER BY l.cdate DESC
@@ -420,131 +420,7 @@ export const queryLandDataByVillageId = async (req, res) => {
   }
 };
 
-// insert data //    kho lawm
-export const insertLandData = async (req, res) => {
-  const {
-    id,
-    ownername,
-    productname,
-    type,
-    squaremeters,
-    area,
-    price,
-    tel,
-    contactnumber,
-    locationurl,
-    locationvideo,
-    moredetail,
-    province,
-    district,
-    village,
-  } = req.body;
 
-  try {
-    // ✅ Validate required fields
-    if (!id || !ownername || !productname || !price || !tel) {
-      return res.status(400).send({
-        status: false,
-        message: "Missing required fields",
-        data: [],
-      });
-    }
-
-    // 🏘️ Parse village into array
-    const parseVillageList = (v) => {
-      if (!v) return [];
-      if (Array.isArray(v))
-        return v.map((x) => String(x).trim()).filter(Boolean);
-      if (typeof v === "string") {
-        const trimmed = v.trim();
-        if (trimmed.startsWith("[")) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            return Array.isArray(parsed)
-              ? parsed.map((x) => String(x).trim()).filter(Boolean)
-              : [];
-          } catch {
-            // fallback if JSON.parse fails
-          }
-        }
-        return trimmed
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean);
-      }
-      return [String(v).trim()];
-    };
-
-    const villageArray = parseVillageList(village);
-
-    // 🖼️ Collect uploaded image filenames
-    const imageArray =
-      req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename)
-        : [];
-
-    // ✅ Build SQL Query
-    const query = `
-      INSERT INTO public.tbland(
-        id, ownername, productname, type, squaremeters, area, price, tel, contactnumber,
-        locationurl, locationvideo, moredetail,
-        provinceid, districtid, villageid, image,
-        status, cdate
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7,
-        $8, $9, $10,
-        $11, $12,$13,$14, $15::text[], $16::text[],
-        $17, NOW()
-      )
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      ownername,
-      productname,
-      type,
-      squaremeters,
-      area,
-      price,
-      tel,
-      contactnumber,
-      locationurl,
-      locationvideo,
-      moredetail,
-      province,
-      district,
-      villageArray, // array of villages
-      imageArray, // array of images
-      "1", // active status
-    ];
-
-    // ✅ Execute Insert
-    const result = await dbExecution(query, values);
-
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert land successful",
-        data: result.rows,
-      });
-    }
-
-    return res.status(400).send({
-      status: false,
-      message: "Insert land failed",
-      data: [],
-    });
-  } catch (error) {
-    console.error("Error in insert_land_data:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-    });
-  }
-};
 export const updateProductData = async (req, res) => {
   try {
     const {

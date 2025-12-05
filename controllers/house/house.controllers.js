@@ -1,119 +1,6 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopup } from "../class/class.controller.js";
 
-export const insertHouseData = async (req, res) => {
-  const {
-    id,
-    houseName,
-    price1,
-    price2,
-    price3,
-    tel,
-    contactNumber,
-    locationVideo,
-    moreDetail,
-    province,
-    district,
-    village,
-  } = req.body;
-
-  // ✅ Helper function to normalize village input into array
-  const parseVillageList = (v) => {
-    if (!v) return [];
-    if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
-    if (typeof v === "string") {
-      const trimmed = v.trim();
-      if (trimmed.startsWith("[")) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          return Array.isArray(parsed)
-            ? parsed.map((x) => String(x).trim()).filter(Boolean)
-            : [];
-        } catch {}
-      }
-      return trimmed
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
-    }
-    return [String(v).trim()];
-  };
-
-  // ✅ Get uploaded image filenames (from multer)
-  const imageArray =
-    req.files && req.files.length > 0
-      ? req.files.map((file) => file.filename)
-      : [];
-
-  // ✅ Parse village list into array
-  const villageArray = parseVillageList(village);
-
-  // ✅ Validate required fields
-  if (!id || !houseName || !price1 || !tel) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields",
-      data: [],
-    });
-  }
-
-  try {
-    const query = `
-      INSERT INTO public.tbhouse(
-        id, housename, price1, price2, price3,
-        tel, contactnumber, locationvideo, status, moredetail,
-        province, district, village, image, cdate
-      )
-      VALUES (
-        $1, $2, $3, $4, $5,
-        $6, $7, $8, $9, $10,
-        $11, $12, $13::text[], $14::text[], NOW()
-      )
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      houseName,
-      price1,
-      price2,
-      price3,
-      tel,
-      contactNumber,
-      locationVideo,
-      "1", // status active
-      moreDetail,
-      province,
-      district,
-      villageArray,
-      imageArray,
-    ];
-
-    const result = await dbExecution(query, values);
-
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert house successful",
-        data: result.rows,
-      });
-    }
-
-    return res.status(400).send({
-      status: false,
-      message: "Insert house failed",
-      data: [],
-    });
-  } catch (error) {
-    console.error("Error in insert_house_data:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      error: error.message,
-    });
-  }
-};
-
 export const queryHouseDataAll = async (req, res) => {
   try {
     // const { page, limit = 20 } = req.params; // ✅ use query params
@@ -140,6 +27,7 @@ export const queryHouseDataAll = async (req, res) => {
     // ✅ Main query
     const query = `
       SELECT 
+        h.channel,
         h.id,
         h.housename,
         h.price1,
@@ -161,7 +49,7 @@ export const queryHouseDataAll = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1'
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+      h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
         h.contactnumber, h.locationvideo, h.moredetail,
         p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
@@ -257,6 +145,7 @@ export const searchHouseData = async (req, res) => {
     // ✅ Main query
     const query = `
       SELECT 
+        h.channel,
         h.id,
         h.housename,
         h.price1,
@@ -278,7 +167,7 @@ export const searchHouseData = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1' AND h.housename ILIKE $1
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+       h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
         h.contactnumber, h.locationvideo, h.moredetail,
         p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
@@ -375,6 +264,7 @@ export const queryHouseDataByDistrictId = async (req, res) => {
     // Main query with pagination
     const query = `
       SELECT 
+        h.channel,
         h.id,
         h.housename,
         h.price1,
@@ -396,7 +286,7 @@ export const queryHouseDataByDistrictId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1' AND h.districtid = $1
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+       h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
         h.contactnumber, h.locationvideo, h.moredetail,
         p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
@@ -501,6 +391,7 @@ export const queryHouseDataByVillageId = async (req, res) => {
     // Main query with pagination
     const query = `
       SELECT 
+        h.channel,
         h.id,
         h.housename,
         h.price1,
@@ -523,7 +414,7 @@ export const queryHouseDataByVillageId = async (req, res) => {
       WHERE h.status = '1' 
         AND $1 = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+       h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
         h.contactnumber, h.locationvideo, h.moredetail,
         p.province, d.district, h.image, h.cdate
       ORDER BY h.cdate DESC
@@ -594,6 +485,7 @@ export const queryHouseDataOne = async (req, res) => {
   try {
     const query = `
       SELECT 
+       h.channel,
         h.id,
         h.housename,
         h.price1,
@@ -615,7 +507,7 @@ export const queryHouseDataOne = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE h.status = '1' AND h.id = $1
       GROUP BY 
-        h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+      h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
         h.contactnumber, h.locationvideo, h.moredetail,
         p.province, d.district, h.image, h.cdate;
     `;

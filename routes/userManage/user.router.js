@@ -1,13 +1,23 @@
-
-import Route from "express"; 
-import { queryUserDataAll, queryUserDataOne, createNewUser, userLogin,updateUserData,updateProductStatus } from "../../controllers/userManage/user.controllers.js";
+import Route from "express";
+import {
+  queryUserDataAll,
+  queryUserDataOne,
+  createNewUser,
+  insertDormitoryData,
+  insertDataOfAnyFunction,
+  userLogin,
+  updateUserData,
+  updateProductStatus,
+} from "../../controllers/userManage/user.controllers.js";
+import { uploadImage } from "../../middleware/upload.Image.js";
 const route = Route();
 
-route.get("/selectAll", queryUserDataAll); // done 100 % lawm os
-route.get("/selectOne", queryUserDataOne); // done 100 % lawm os
-route.post("/login", userLogin); // done 100 % lawm os
-route.post("/insert", createNewUser); // done 100 % lawm os
-route.put("/update", updateUserData); // yuav tau saib ntxiv
-route.put("/updateProductStatus", updateProductStatus); // yuav tau saib ntxiv
+route.post("/insert01", uploadImage, insertDataOfAnyFunction);
+route.get("/selectAll", queryUserDataAll);
+route.get("/selectOne", queryUserDataOne);
+route.post("/login", userLogin);
+route.post("/insert", createNewUser);
+route.post("/insert02", uploadImage, insertDormitoryData);
+route.put("/update", updateUserData);
+route.put("/updateProductStatus", updateProductStatus);
 export default route;
- 

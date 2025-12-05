@@ -78,26 +78,36 @@ GROUP BY
 
     // Fix/format payment image
     const formattedRows = rows.map((item) => {
-      let img = item.paymentimage;
+  const img = item.paymentimage;
 
-      if (!img) {
-        item.paymentimage = null;
-        return item;
-      }
+  // If null → return null (DO NOT add baseUrl)
+  if (!img) {
+    item.paymentimage = null;
+    return item;
+  }
 
-      // Remove { }, quotes
-      img = img.replace(/[\{\}]/g, "").replace(/"/g, "");
+  // Remove { }, quotes from PostgreSQL array output
+  const cleaned = img.replace(/[{}"]/g, "").trim();
 
-      const imgList = img.split(",").map((i) => i.trim());
+  // If empty string → return null
+  if (!cleaned) {
+    item.paymentimage = null;
+    return item;
+  }
 
-      if (imgList.length === 1) {
-        item.paymentimage = baseUrl + imgList[0];
-      } else {
-        item.paymentimage = imgList.map((i) => baseUrl + i);
-      }
+  const imgList = cleaned.split(",").map((i) => i.trim());
 
-      return item;
-    });
+  // If one file → return full URL string
+  if (imgList.length === 1) {
+    item.paymentimage = baseUrl + imgList[0];
+  } else {
+    // If many → return array of URLs
+    item.paymentimage = imgList.map((i) => baseUrl + i);
+  }
+
+  return item;
+});
+
 
     return res.status(200).send({
       status: true,
@@ -158,9 +168,9 @@ export const insertOrderDetailData = async (req, res) => {
     }
 
     // Handle uploaded images
-    const imageArray = req.files?.map((f) => f.filename) || [];
-
-    // Insert into tborder
+     const imageArray = req.files?.map((f) => f.filename) || [];
+    
+     // Insert into tborder
     const insertOrderQuery = `
       INSERT INTO public.tborder (
         orderid, shipping, delivery, channel,
@@ -179,7 +189,8 @@ export const insertOrderDetailData = async (req, res) => {
       custTel,
       custName ?? "",
       custComment ?? "",
-      imageArray,
+      imageArray.length > 0 ? imageArray.join(",") : null
+
     ];
 
     const orderResult = await dbExecution(insertOrderQuery, orderValues);

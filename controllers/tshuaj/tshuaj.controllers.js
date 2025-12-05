@@ -41,6 +41,7 @@ export const queryTshuajDataAll = async (req, res) => {
     // Now get paginated results
     const dataQuery = `
       SELECT 
+       t.channel,
         t.id,
         t.name,
         t.price1,
@@ -156,6 +157,7 @@ export const searchTshuajData = async (req, res) => {
     // Query paginated search results
     const dataQuery = `
       SELECT 
+        t.channel,
         t.id,
         t.name,
         t.price1,
@@ -241,6 +243,7 @@ export const queryTshuajDataOne = async (req, res) => {
 
   try {
     const query = `SELECT 
+        t.channel,
         t.id,
         t.name,
         t.price1,
@@ -295,74 +298,7 @@ export const queryTshuajDataOne = async (req, res) => {
     });
   }
 };
-
-// insert data  test  nw work lawm
-export const insertTshuajData = async (req, res) => {
-  const { id, name, price1, price2, tel, detail, donation } = req.body;
-
-  // ✅ Validate required fields
-  if (!id || !name || !price1 || !detail) {
-    return res.status(400).send({
-      status: false,
-      message:
-        "Missing required fields: id, name, price1, and detail are required",
-      data: [],
-    });
-  }
-
-  // ✅ Collect uploaded filenames into an array
-  const imageArray =
-    req.files && req.files.length > 0
-      ? req.files.map((file) => file.filename)
-      : [];
-
-  try {
-    // ✅ Insert into main table directly
-    const query = `
-      INSERT INTO public.tbtshuaj(
-        id, name, price1, price2, tel, detail, image, status, donation, cdate
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      name,
-      price1,
-      price2 || null,
-      tel || "",
-      detail,
-      imageArray,
-      donation || "",
-    ];
-
-    const result = await dbExecution(query, values);
-
-    // ✅ Success response
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert data failed",
-        data: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error in insert_tshuaj_data:", error);
-    res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      error: error.message,
-      data: [],
-    });
-  }
-};
+ 
 
 export const updateProductData = async (req, res) => {
   const { id, name, Price1, Price2, tel, detail, donation } = req.body;

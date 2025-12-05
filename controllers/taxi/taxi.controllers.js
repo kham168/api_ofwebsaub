@@ -41,6 +41,7 @@ export const queryTaxiDataAll = async (req, res) => {
     // ✅ Fixed JOIN — cast text to integer array
     const query = `
       SELECT 
+        t.channel,
         t.id,
         t.name,
         t.price1,
@@ -58,7 +59,7 @@ export const queryTaxiDataAll = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1'
       GROUP BY 
-        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
+       t.channel, t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $1 OFFSET $2;
@@ -184,6 +185,7 @@ export const searchTaxiData = async (req, res) => {
     // ✅ Main query with search + pagination
     const query = `
       SELECT 
+        t.channel,
         t.id,
         t.name,
         t.price1,
@@ -201,7 +203,7 @@ export const searchTaxiData = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and t.name ILIKE $1
       GROUP BY 
-        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
+       t.channel, t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
@@ -302,7 +304,7 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
     // ✅ Main query
     const query = `
      SELECT 
-        t.id,
+       t.channel, t.id,
         t.name,
         t.price1,
         t.price2,
@@ -319,7 +321,7 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and t.districtid = $1
       GROUP BY 
-        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
+      t.channel,  t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
@@ -421,6 +423,7 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
     // ✅ Main query
     const query = `
        SELECT 
+        t.channel,
         t.id,
         t.name,
         t.price1,
@@ -438,7 +441,7 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and $1 = ANY( string_to_array(t.villageid, ',') )
       GROUP BY 
-        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
+       t.channel, t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image
       ORDER BY t.id DESC
       LIMIT $2 OFFSET $3;
@@ -511,6 +514,7 @@ export const queryTaxiDataOne = async (req, res) => {
   try {
     const query = `
        SELECT 
+        t.channel,
         t.id,
         t.name,
         t.price1,
@@ -528,7 +532,7 @@ export const queryTaxiDataOne = async (req, res) => {
         ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
       WHERE t.status = '1' and t.id= $1
       GROUP BY 
-        t.id, t.name, t.price1, t.price2, t.tel, t.detail,
+       t.channel, t.id, t.name, t.price1, t.price2, t.tel, t.detail,
         p.province, d.district, t.image 
     `;
     // const resultSingle = await dbExecution(query, [id]);
@@ -572,116 +576,7 @@ export const queryTaxiDataOne = async (req, res) => {
     });
   }
 };
-
-// insert taxi data
-export const insert_taxi_data = async (req, res) => {
-  const {
-    id,
-    name,
-    price1,
-    price2,
-    tel,
-    detail,
-    province,
-    district,
-    village,
-    peopleid,
-    turnofreason,
-  } = req.body;
-
-  try {
-    // 🧾 Validate required fields
-    if (!id || !name || !tel || !detail) {
-      return res.status(400).send({
-        status: false,
-        message: "Missing required fields",
-        data: [],
-      });
-    }
-
-    // 🖼️ Collect uploaded images as an array
-    const imageArray =
-      req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename)
-        : [];
-
-    // 🏘️ Parse village input into array
-    const parseVillageList = (v) => {
-      if (!v) return [];
-      if (Array.isArray(v))
-        return v.map((x) => String(x).trim()).filter(Boolean);
-      if (typeof v === "string") {
-        const trimmed = v.trim();
-        if (trimmed.startsWith("[")) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            return Array.isArray(parsed)
-              ? parsed.map((x) => String(x).trim()).filter(Boolean)
-              : [];
-          } catch (e) {
-            // fallback if JSON parse fails
-          }
-        }
-        return trimmed
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean);
-      }
-      return [String(v).trim()];
-    };
-
-    const villageArray = parseVillageList(village);
-
-    // 🧠 Insert main data
-    const query = `
-      INSERT INTO public.tbtaxi(
-        id, name, price1, price2, tel, detail, province, district, village, image, 
-        status, peopleid, turnofreason, cdate
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::text[], $10::text[], $11, $12, $13, NOW())
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      name,
-      price1,
-      price2,
-      tel,
-      detail,
-      province,
-      district,
-      villageArray, // 👈 array of villages
-      imageArray, // 👈 array of images
-      "1", // status
-      peopleid || null,
-      turnofreason || null,
-    ];
-
-    const result = await dbExecution(query, values);
-
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
-      });
-    }
-
-    return res.status(400).send({
-      status: false,
-      message: "Insert data failed",
-      data: [],
-    });
-  } catch (error) {
-    console.error("Error in insert_taxi_data:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-    });
-  }
-};
+ 
 
 export const updateProductData = async (req, res) => {
   try {

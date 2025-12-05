@@ -121,6 +121,403 @@ export const createNewUser = async (req, res) => {
   }
 };
 
+export const insertDormitoryData = async (req, res) => {
+  const {
+    channel,
+    id,
+    name,
+    productName,
+    squareMeters,
+    area,
+    peopleId,
+    turnOfReason,
+    price1,
+    price2,
+    price3,
+    type,
+    totalRoom,
+    activeRoom,
+    locationVideo,
+    tel,
+    contactNumber,
+    locationArea,
+    moreDetail,
+    province,
+    district,
+    village,
+    plan_on_next_month,
+  } = req.body;
+
+  // Required field validation
+  if (!id || !channel || !name || !tel || !province || !district) {
+    return res.status(400).send({
+      status: false,
+      message: "Missing required fields: id, type, totalRoom, name",
+      data: null,
+    });
+  }
+
+  // Normalize village to array
+  const parseVillageList = (v) => {
+    if (!v) return [];
+    if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      if (trimmed.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return Array.isArray(parsed)
+            ? parsed.map((x) => String(x).trim()).filter(Boolean)
+            : [];
+        } catch {}
+      }
+      return trimmed
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+
+    return [String(v).trim()];
+  };
+
+  const villageArray = parseVillageList(village);
+
+  // Uploaded images
+  const imageArray =
+    req.files?.length > 0 ? req.files.map((file) => file.filename) : [];
+
+  let query = "";
+  let values = [];
+
+  if (!imageArray.length || !villageArray.length) {
+    return res.status(400).send({
+      status: false,
+      message: "image or village array is empty",
+      data: null,
+    });
+  }
+
+  try {
+    // Channel 2 → Dormitory
+    if (channel === "2") {
+      query = `
+        INSERT INTO public.tbdormitory(
+       channel, id, dormantalname, price1, price2, price3, type, totalroom, activeroom,
+          locationvideo, tel, contactnumber, moredetail,
+          provinceid, districtid, villageid, image, status, plan_on_next_month, cdate
+        ) VALUES (
+        '2',  $1, $2, $3, $4, $5, $6, $7, $8,
+          $9, $10, $11, $12,
+          $13, $14, $15::text[], $16::text[], '1', $17, NOW()
+        )
+        RETURNING *;
+      `;
+
+      values = [
+        id,
+        name,
+        price1 || null,
+        price2 || null,
+        price3 || null,
+        type,
+        totalRoom,
+        activeRoom || 0,
+        locationVideo || "",
+        tel || "",
+        contactNumber || "",
+        moreDetail || "",
+        province || null,
+        district || null,
+        villageArray,
+        imageArray,
+        plan_on_next_month || "",
+      ];
+    }
+
+    // Channel 3 → House
+    else if (channel === "3") {
+      query = `
+        INSERT INTO public.tbhouse(
+        channel,  id, housename, price1, price2, price3,
+          tel, contactnumber, locationvideo, status, moredetail,
+          provinceid, districtid, villageid, image, cdate
+        )
+        VALUES (
+        '3',  $1, $2, $3, $4, $5,
+          $6, $7, $8, '1', $9,
+          $10, $11, $12::text[], $13::text[], NOW()
+        )
+        RETURNING *;
+      `;
+
+      values = [
+        id,
+        name,
+        price1,
+        price2,
+        price3,
+        tel,
+        contactNumber,
+        locationVideo,
+        moreDetail,
+        province,
+        district,
+        villageArray,
+        imageArray,
+      ];
+    }
+
+    // Channel 5 → Land
+    else if (channel === "5") {
+      query = `
+        INSERT INTO public.tbland(
+         channel, id, ownername, productname, type, squaremeters, area, price, 
+          tel, contactnumber, locationurl, locationvideo, moredetail,
+          provinceid, districtid, villageid, image,
+          status, cdate
+        )
+        VALUES (
+        '5',  $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12,
+          $13, $14, $15::text[], $16::text[],
+          '1', NOW()
+        )
+        RETURNING *;
+      `;
+
+      values = [
+        id,
+        name,
+        productName,
+        type,
+        squareMeters,
+        area,
+        price1,
+        tel,
+        contactNumber,
+        locationArea,
+        locationVideo,
+        moreDetail,
+        province,
+        district,
+        villageArray,
+        imageArray,
+      ];
+    }
+
+    // Channel 7 → Taxi
+    else if (channel === "7") {
+      query = `
+        INSERT INTO public.tbtaxi(
+         channel, id, name, price1, price2, tel, detail, provinceid, districtid, villageid, image, 
+          status, peopleid, turnofreason, cdate
+        ) VALUES (
+         '7', $1, $2, $3, $4, $5, $6, 
+          $7, $8, $9::text[], $10::text[], 
+          '1', $11, $12, NOW()
+        )
+        RETURNING *;
+      `;
+
+      values = [
+        id,
+        name,
+        price1,
+        price2,
+        tel,
+        moreDetail,
+        province,
+        district,
+        villageArray,
+        imageArray,
+        peopleId || null,
+        turnOfReason || null,
+      ];
+    }
+
+    // Invalid channel
+    else {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid channel",
+        data: null,
+      });
+    }
+
+    // Execute insert
+    const result = await dbExecution(query, values);
+
+    if (result?.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Insert successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(400).send({
+      status: false,
+      message: "Insert failed",
+      data: null,
+    });
+  } catch (error) {
+    console.error("Error in insertDormitoryData:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+// insert cream
+export const insertDataOfAnyFunction = async (req, res) => {
+  const {
+    channel,
+    id,
+    type,
+    bland,
+    name,
+    price1,
+    price2,
+    tel,
+    detail,
+    donation,
+    locationGps,
+  } = req.body;
+
+  if (!id || !name || !price1 || !detail) {
+    return res.status(400).send({
+      status: false,
+      message: "Missing required fields",
+      data: [],
+    });
+  }
+
+  try {
+    // Collect uploaded images
+    const imageArray =
+      req.files && req.files.length > 0
+        ? req.files.map((file) => file.filename)
+        : [];
+
+    let query = "";
+    let values = [];
+    let result = null;
+
+    // 🧠 CH 1 → tbcream
+    if (channel === "1") {
+      query = `
+        INSERT INTO public.tbcream (
+         channel, id, bland, creamname, price1, price2,
+          tel, detail, image, donation, status, cdate
+        )
+        VALUES ('1',$1, $2, $3, $4, $5, $6, $7, $8::text[], $9, '1', NOW())
+        RETURNING *;
+      `;
+      values = [
+        id,
+        bland,
+        name,
+        price1,
+        price2,
+        tel,
+        detail,
+        imageArray,
+        donation || "",
+      ];
+    }
+
+    // 🧠 CH 4 → tbkhoomkhotsheb
+    else if (channel === "4") {
+      query = `
+        INSERT INTO public.tbkhoomkhotsheb(
+         channel, id, type, name, price1, price2, 
+          tel, detail, locationgps, image, status, cdate
+        )
+        VALUES ('4', $1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
+        RETURNING *;
+      `;
+      values = [
+        id,
+        type,
+        name,
+        price1,
+        price2 || null,
+        tel || null,
+        detail,
+        locationGps,
+        imageArray,
+      ];
+    }
+
+    // 🧠 CH 8 → tbmuas
+    else if (channel === "8") {
+      query = `
+        INSERT INTO public.tbmuas (
+          channel,id, name, price, tel, detail, image, status, cdate
+        )
+        VALUES ('8',$1, $2, $3, $4, $5, $6::text[], '1', NOW())
+        RETURNING *;
+      `;
+      values = [id, name, price1, tel, detail, imageArray];
+    }
+
+    // 🧠 CH 6 → tbtshuaj
+    else if (channel === "6") {
+      query = `
+        INSERT INTO public.tbtshuaj(
+         channel, id, name, price1, price2, tel, detail,
+          image, status, donation, cdate
+        )
+        VALUES ('6',$1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
+        RETURNING *;
+      `;
+      values = [
+        id,
+        name,
+        price1,
+        price2 || null,
+        tel || "",
+        detail,
+        imageArray,
+        donation || "",
+      ];
+    } else {
+      return res.status(400).send({
+        status: false,
+        message: "Invalid channel",
+        data: [],
+      });
+    }
+
+    // Execute the query
+    result = await dbExecution(query, values);
+
+    if (result && result.rowCount > 0) {
+      return res.status(200).send({
+        status: true,
+        message: "Insert successful",
+        data: result.rows,
+      });
+    }
+
+    return res.status(400).send({
+      status: false,
+      message: "Insert data failed",
+      data: [],
+    });
+  } catch (error) {
+    console.error("Error in insertDataOfAnyFunction:", error);
+    return res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: [],
+    });
+  }
+};
+
 export const userLogin = async (req, res) => {
   const { tel, password } = req.body; // 👈 safer than params for login
 

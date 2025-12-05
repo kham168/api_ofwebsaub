@@ -41,7 +41,7 @@ export const queryMuasDataAll = async (req, res) => {
     // Get paginated data
     const dataQuery = `
       SELECT 
-        m.id,
+       m.channel, m.id,
         m.name,
         m.price,
         m.tel,
@@ -167,6 +167,7 @@ export const searchMuasData = async (req, res) => {
     // Fetch paginated search results
     const dataQuery = `
       SELECT 
+        m.channel,
         m.id,
         m.name,
         m.price,
@@ -260,6 +261,7 @@ export const queryMuasDataOne = async (req, res) => {
 
   try {
     const query = `SELECT 
+       m.channel,
         m.id,
         m.name,
         m.price,
@@ -313,70 +315,7 @@ export const queryMuasDataOne = async (req, res) => {
     });
   }
 };
-
-export const insertMuasData = async (req, res) => {
-  const { id, name, price, tel, detail } = req.body;
-
-  // Validate required fields
-  if (!id || !name || !price || !detail) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields",
-      data: [],
-    });
-  }
-
-  try {
-    // 🖼️ Collect uploaded image filenames into an array
-    const imageArray =
-      req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename)
-        : [];
-
-    // 🧠 Insert data into tbmuas
-    const query = `
-      INSERT INTO public.tbmuas (
-        id, name, price, tel, detail, image, status, cdate
-      )
-      VALUES ($1, $2, $3, $4, $5, $6::text[], $7, NOW())
-      RETURNING *;
-    `;
-
-    const values = [
-      id,
-      name,
-      price,
-      tel,
-      detail,
-      imageArray, // 👈 store array of images here
-      "1", // active status
-    ];
-
-    const result = await dbExecution(query, values);
-
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert data failed",
-        data: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error in insertMuasData:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: [],
-    });
-  }
-};
-
+  
 export const updateProductData = async (req, res) => {
   try {
     const { id, name, price, tel, detail, donation } = req.body;

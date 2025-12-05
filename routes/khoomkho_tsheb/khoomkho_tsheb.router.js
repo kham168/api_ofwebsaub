@@ -3,16 +3,14 @@ import { verifyJWT } from "../../middleware/jwt.js";
 import {
   queryKhoomKhoTshebDataAll,
   searchKhoomKhoTshebData,
-  queryKhoomKhoTshebDataOne,
-  insertKhoomKhoTshebData,
+  queryKhoomKhoTshebDataOne, 
   updateProductData,
-} from "../../controllers/khoomkho_tsheb/khoomkho_tsheb.controllers.js";
-import { uploadImage } from "../../middleware/khoomkho_tsheb.uploadimage.js";
+} from "../../controllers/khoomkho_tsheb/khoomkho_tsheb.controllers.js"; 
 const route = Route();
 
 route.get("/selectAll", queryKhoomKhoTshebDataAll);
 route.get("/selectOne", queryKhoomKhoTshebDataOne);
 route.get("/searchByName", searchKhoomKhoTshebData);
-route.post("/insert", uploadImage, insertKhoomKhoTshebData);
+//route.post("/insert", uploadImage, insertKhoomKhoTshebData);
 route.put("/updateData", updateProductData);
 export default route;
