@@ -23,7 +23,7 @@ export const queryHouseDataAll = async (req, res) => {
     `;
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
-
+ 
     // ✅ Main query
     const query = `
       SELECT 
@@ -55,7 +55,7 @@ export const queryHouseDataAll = async (req, res) => {
       ORDER BY h.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
-
+     
     const result = await dbExecution(query, [validLimit, offset]);
     let rows = result?.rows || [];
 

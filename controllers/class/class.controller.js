@@ -6,7 +6,7 @@ class queryTopData {
       const baseUrl = "http://localhost:5151/";
 
       const tbcream = `
-        SELECT '1' as channelid, id, creamname AS name, tel, detail, donation, image
+        SELECT channel, id, creamname AS name, tel, detail, donation, image
         FROM public.tbcream
         WHERE status = '1'
         ORDER BY cdate DESC
@@ -14,7 +14,7 @@ class queryTopData {
       `;
 
       const tbkhoomkhotsheb = `
-        SELECT '4' as channelid,id, name, tel, detail, donation, image
+        SELECT channel,id, name, tel, detail, donation, image
         FROM public.tbkhoomkhotsheb
         WHERE status = '1'
         ORDER BY cdate DESC
@@ -22,7 +22,7 @@ class queryTopData {
       `;
 
       const tbmuas = `
-        SELECT '8' as channelid, id, name, tel, detail, donation, image
+        SELECT channel, id, name, tel, detail, donation, image
         FROM public.tbmuas
         WHERE status = '1'
         ORDER BY id DESC
@@ -30,7 +30,7 @@ class queryTopData {
       `;
 
       const tbtshuaj = `
-        SELECT '6' as channelid, id, name, tel, detail, donation, image
+        SELECT channel, id, name, tel, detail, donation, image
         FROM public.tbtshuaj
         WHERE status = '1'
         ORDER BY id DESC
@@ -80,7 +80,7 @@ class queryTopData {
       // 🏘️ 1. Dormitory
       const tbdormitory = `
         SELECT 
-          '2' as channelid,
+          d.channel,
           d.id,
           d.dormantalname AS name,
           d.type,
@@ -103,7 +103,7 @@ class queryTopData {
           ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
         WHERE d.status = '1'
         GROUP BY 
-          d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
+         d.channel, d.id, d.dormantalname, d.type,
           d.totalroom, d.activeroom, d.locationvideo, d.tel, 
           d.contactnumber, d.moredetail,
           p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
@@ -114,7 +114,7 @@ class queryTopData {
       // 🏠 2. House
       const tbhouse = `
         SELECT 
-          '3' as channelid,
+          h.channel,
           h.id,
           h.housename AS name,
           h.tel,
@@ -133,7 +133,7 @@ class queryTopData {
           ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
         WHERE h.status = '1'
         GROUP BY 
-          h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
+        h.channel,  h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
           h.contactnumber, h.locationvideo, h.moredetail,
           p.province, d.district, h.image, h.cdate
         ORDER BY h.cdate DESC
@@ -143,7 +143,7 @@ class queryTopData {
       // 🏞️ 3. Land
       const tbland = `
         SELECT 
-          '5' as channelid,
+          l.channel,
           l.id,
           l.productname AS name,
           l.area,
@@ -164,7 +164,7 @@ class queryTopData {
           ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
         WHERE l.status = '1'
         GROUP BY 
-          l.id, l.productname, l.area, l.price, l.tel, l.contactnumber, 
+        l.channel, l.id, l.productname, l.area, l.tel, l.contactnumber, 
           l.locationurl, l.locationvideo, l.moredetail, 
           p.province, d.district, l.image, l.cdate
         ORDER BY l.cdate DESC
@@ -174,7 +174,7 @@ class queryTopData {
       // 🚕 4. Taxi
       const tbtaxi = `
         SELECT 
-          '7' as channelid,
+          t.channel,
           t.id,
           t.name,
           t.tel,
@@ -191,7 +191,7 @@ class queryTopData {
           ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
         WHERE t.status = '1'
         GROUP BY 
-          t.id, t.name, t."Price1", t."Price2", t.tel, t.detail,
+        t.channel, t.id, t.name, t.tel, t.detail,
           p.province, d.district, t.image, t.cdate
         ORDER BY t.cdate DESC
         LIMIT $1;
