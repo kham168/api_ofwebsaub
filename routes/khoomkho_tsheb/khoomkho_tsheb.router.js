@@ -1,16 +1,15 @@
 import Route from "express";
-import { verifyJWT } from "../../middleware/jwt.js";
+import { refreshToken, verifyJWT } from "../../middleware/auth.js";
 import {
   queryKhoomKhoTshebDataAll,
   searchKhoomKhoTshebData,
-  queryKhoomKhoTshebDataOne, 
+  queryKhoomKhoTshebDataOne,
   updateProductData,
-} from "../../controllers/khoomkho_tsheb/khoomkho_tsheb.controllers.js"; 
+} from "../../controllers/khoomkho_tsheb/khoomkho_tsheb.controllers.js";
 const route = Route();
 
-route.get("/selectAll", queryKhoomKhoTshebDataAll);
-route.get("/selectOne", queryKhoomKhoTshebDataOne);
-route.get("/searchByName", searchKhoomKhoTshebData);
-//route.post("/insert", uploadImage, insertKhoomKhoTshebData);
-route.put("/updateData", updateProductData);
+route.get("/selectAll", verifyJWT, queryKhoomKhoTshebDataAll);
+route.get("/selectOne", verifyJWT, queryKhoomKhoTshebDataOne);
+route.get("/searchByName", verifyJWT, searchKhoomKhoTshebData);
+route.put("/updateData", verifyJWT, updateProductData);
 export default route;

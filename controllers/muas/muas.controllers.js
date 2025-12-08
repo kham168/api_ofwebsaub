@@ -28,15 +28,54 @@ export const queryMuasDataAll = async (req, res) => {
     const baseUrl = "http://localhost:5151/";
 
     // Query QR image
-    const qrQuery = `
-      SELECT qr 
-      FROM public.tbchanneldetail 
-      WHERE id = '1'
-      LIMIT 1;
-    `;
-    const qrResult = await dbExecution(qrQuery, []);
-    const qrRaw = qrResult.rows[0]?.qr || null;
-    const qrImage = qrRaw ? baseUrl + qrRaw : null;
+    // Query QR image
+    let channelData = null;
+    let topData = null;
+
+    if (validPage === 0) {
+      const qrQuery = `
+    SELECT  qr,
+      image AS "channelimage",
+      video1,
+      video2,
+      guidelinevideo
+    FROM public.tbchanneldetail
+    WHERE id = '8'
+    LIMIT 1;
+  `;
+
+      const qrResult = await dbExecution(qrQuery, []);
+      const raw = qrResult.rows[0] || null;
+
+      if (raw) {
+        // Helper: convert "a.png,b.png" → ["url/a.png", "url/b.png"]
+        const convertToUrlArray = (str) => {
+          if (!str) return [];
+          return str
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((x) => baseUrl + x);
+        };
+
+        channelData = {
+          qr: raw.qr ? baseUrl + raw.qr : null,
+          channelimage: convertToUrlArray(raw.channelimage),
+          video1: raw.video1 ? baseUrl + raw.video1 : null,
+          video2: raw.video2 ? baseUrl + raw.video2 : null,
+          guidelinevideo: raw.guidelinevideo
+            ? baseUrl + raw.guidelinevideo
+            : null,
+        };
+      }
+
+      try {
+        const topResult = await QueryTopup.getAllProductAData();
+        topData = topResult?.topData || topResult;
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
 
     // Get paginated data
     const dataQuery = `
@@ -87,33 +126,22 @@ export const queryMuasDataAll = async (req, res) => {
       total,
       totalPages: Math.ceil(total / validLimit),
     };
-
-    // ✅ If page === 0 → also call top data function
-    let topData = null;
-    if (validPage === 0) {
-      try {
-        const topResult = await QueryTopup.getAllProductAData(); // must return data in JS object, not Express res
-        topData = topResult?.data || topResult; // handle both formats
-      } catch (e) {
-        console.warn("Failed to load top data:", e.message);
-      }
-    }
-
+ 
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      qrImage,
       data: rows,
       pagination,
-      ...(validPage === 0 && { topData }),
+      ...(validPage === 0 && {channelData, topData }),
     });
   } catch (error) {
     console.error("Error in query_muas dataall:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      qrImage: null,
       data: [],
+      channelData: null,
+      topData: null,
     });
   }
 };

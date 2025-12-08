@@ -1,4 +1,5 @@
 import Route from "express";
+import { refreshToken, verifyJWT } from "../../middleware/auth.js";
 import {
   queryUserDataAll,
   queryUserDataOne,
@@ -12,12 +13,12 @@ import {
 import { uploadImage } from "../../middleware/upload.Image.js";
 const route = Route();
 
-route.post("/insert01", uploadImage, insertDataOfAnyFunction);
-route.get("/selectAll", queryUserDataAll);
-route.get("/selectOne", queryUserDataOne);
+route.post("/insert01", verifyJWT, uploadImage, insertDataOfAnyFunction);
+route.get("/selectAll", verifyJWT, queryUserDataAll);
+route.get("/selectOne", verifyJWT, queryUserDataOne);
 route.post("/login", userLogin);
-route.post("/insert", createNewUser);
-route.post("/insert02", uploadImage, insertDormitoryData);
-route.put("/update", updateUserData);
-route.put("/updateProductStatus", updateProductStatus);
+route.post("/insert", verifyJWT, createNewUser);
+route.post("/insert02", verifyJWT, uploadImage, insertDormitoryData);
+route.put("/update",verifyJWT, updateUserData);
+route.put("/updateProductStatus",verifyJWT, updateProductStatus);
 export default route;

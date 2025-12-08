@@ -38,6 +38,58 @@ export const queryTaxiDataAll = async (req, res) => {
       });
     }
 
+    let channelData = null;
+    let topData = null;
+    // ----------------------------------------
+    // ✅ Query QR + channel images ONLY on first page
+    // ----------------------------------------
+
+    if (validPage === 0) {
+      const qrQuery = `
+    SELECT qr,
+      image AS "channelimage",
+      video1,
+      video2,
+      guidelinevideo
+    FROM public.tbchanneldetail
+    WHERE id = '7'
+    LIMIT 1;
+  `;
+
+      const qrResult = await dbExecution(qrQuery, []);
+      const raw = qrResult.rows[0] || null;
+
+      if (raw) {
+        // Helper: convert "a.png,b.png" → ["url/a.png", "url/b.png"]
+        const convertToUrlArray = (str) => {
+          if (!str) return [];
+          return str
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((x) => baseUrl + x);
+        };
+
+        channelData = {
+          qr: raw.qr ? baseUrl + raw.qr : null,
+          channelimage: convertToUrlArray(raw.channelimage),
+          video1: raw.video1 ? baseUrl + raw.video1 : null,
+          video2: raw.video2 ? baseUrl + raw.video2 : null,
+          guidelinevideo: raw.guidelinevideo
+            ? baseUrl + raw.guidelinevideo
+            : null,
+        };
+      }
+
+      try {
+        const topResult = await QueryTopup.getAllProductB();
+
+        topData = topResult?.topData || topResult;
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
+
     // ✅ Fixed JOIN — cast text to integer array
     const query = `
       SELECT 
@@ -90,18 +142,6 @@ export const queryTaxiDataAll = async (req, res) => {
       };
     });
 
-    let topData = null;
-
-    if (validPage === 0) {
-      try {
-        const topResult = await QueryTopup.getAllProductB();
-
-        topData = topResult?.topData || topResult;
-      } catch (e) {
-        console.warn("Failed to load top data:", e.message);
-      }
-    }
-
     const response = {
       data: rows,
       pagination: {
@@ -124,7 +164,7 @@ export const queryTaxiDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { topData }),
+      ...(validPage === 0 && {channelData, topData }),
     });
   } catch (error) {
     console.error("Error in query_taxi_dataall:", error);
@@ -576,7 +616,6 @@ export const queryTaxiDataOne = async (req, res) => {
     });
   }
 };
- 
 
 export const updateProductData = async (req, res) => {
   try {
@@ -619,8 +658,8 @@ export const updateProductData = async (req, res) => {
 
     // Add all updatable fields
     addField("name", name);
-    addField('price1', Price1);
-    addField('price2', Price2);
+    addField("price1", Price1);
+    addField("price2", Price2);
     addField("tel", tel);
     addField("detail", detail);
     addField("provinceid", provinceId);

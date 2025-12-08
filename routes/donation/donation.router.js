@@ -1,5 +1,5 @@
 import Route from "express";
-import { verifyJWT } from "../../middleware/jwt.js";
+import { refreshToken, verifyJWT } from "../../middleware/auth.js";
 import {
   queryDonationListAll,
   queryCustomerDonationList,
@@ -13,12 +13,27 @@ import {
 import { uploadImage } from "../../middleware/donationa.uploadimage.js";
 const route = Route();
 
-route.get("/selectDonation", queryDonationListAll);
-route.get("/selectCustDonationList", queryCustomerDonationList);
-route.get("/searchByCustomerTel", searchDonationLogByCustomerTel);
-route.post("/insertCustomerDonation", uploadImage, customerDonation);
-route.post("/insertDonationList", uploadImage, insertDonationList); 
-route.post("/insertBankInformForDonation", uploadImage, insertBankAccountForDonation); 
-route.put("/updateDonationData01", uploadImage, updateDonationMainInformation01); 
-route.put("/updateDonationData02", uploadImage, updateDonationMainInformation02); 
+route.get("/selectDonation", verifyJWT, queryDonationListAll);
+route.get("/selectCustDonationList", verifyJWT, queryCustomerDonationList);
+route.get("/searchByCustomerTel", verifyJWT, searchDonationLogByCustomerTel);
+route.post("/insertCustomerDonation", verifyJWT, uploadImage, customerDonation);
+route.post("/insertDonationList", verifyJWT, uploadImage, insertDonationList);
+route.post(
+  "/insertBankInformForDonation",
+  verifyJWT,
+  uploadImage,
+  insertBankAccountForDonation
+);
+route.put(
+  "/updateDonationData01",
+  verifyJWT,
+  uploadImage,
+  updateDonationMainInformation01
+);
+route.put(
+  "/updateDonationData02",
+  verifyJWT,
+  uploadImage,
+  updateDonationMainInformation02
+);
 export default route;

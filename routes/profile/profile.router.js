@@ -1,13 +1,15 @@
-import Route from "express"; 
-import { queryAdvertData,insertAdvertDataDetail,
-    updateProfileDataDetail
- } from "../../controllers/profile/profileimage.controllers.js"; 
- import { uploadImage } from "../../middleware/profile.uploadimage.js";
+import Route from "express";
+import { refreshToken, verifyJWT } from "../../middleware/auth.js";
+import {
+  queryAdvertData,
+  insertAdvertDataDetail,
+  updateProfileDataDetail,
+} from "../../controllers/profile/profileimage.controllers.js";
+import { uploadImage } from "../../middleware/profile.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll", queryAdvertData);
-route.post("/insert", uploadImage,insertAdvertDataDetail);
-route.put("/updateStatus", updateProfileDataDetail);
+route.get("/selectAll", verifyJWT, queryAdvertData);
+route.post("/insert", verifyJWT, uploadImage, insertAdvertDataDetail);
+route.put("/updateStatus", verifyJWT, updateProfileDataDetail);
 
 export default route;
- 

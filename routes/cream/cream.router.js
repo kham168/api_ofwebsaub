@@ -1,17 +1,15 @@
 import Route from "express";
-import { verifyJWT } from "../../middleware/jwt.js";
+import { refreshToken, verifyJWT } from "../../middleware/auth.js";
 import {
   queryCreamDataAll,
   searchCreamData,
   queryCreamDataOne,
   updateProductData,
 } from "../../controllers/cream/cream.controllers.js";
-//import { uploadImage } from "../../middleware/cream.uploadImage.js";
 const route = Route();
 
-route.get("/selectAll", queryCreamDataAll);
-route.get("/searchByName", searchCreamData);
-route.get("/selectOne", queryCreamDataOne);
-//route.post("/insert", uploadImage, insertCreamData);
-route.put("/updateData", updateProductData);
+route.get("/selectAll", verifyJWT, queryCreamDataAll);
+route.get("/searchByName",verifyJWT, searchCreamData);
+route.get("/selectOne",verifyJWT, queryCreamDataOne); 
+route.put("/updateData",verifyJWT, updateProductData);
 export default route;

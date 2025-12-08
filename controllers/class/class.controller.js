@@ -236,5 +236,5 @@ class queryTopData {
     }
   }
 }
-
+ 
 export const QueryTopup = new queryTopData();

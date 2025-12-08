@@ -1,6 +1,7 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { generateAccessToken } from "../../utils/jwt.js";
 
 export const queryUserDataAll = async (req, res) => {
   try {
@@ -76,8 +77,7 @@ export const createNewUser = async (req, res) => {
   if (!tel || !name || !password) {
     return res.status(400).send({
       status: false,
-      message:
-        "Missing required fields: id, name, price1, and detail are required",
+      message: "Missing required fields: id, name, password are required",
       data: [],
     });
   }
@@ -152,7 +152,7 @@ export const insertDormitoryData = async (req, res) => {
   if (!id || !channel || !name || !tel || !province || !district) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields: id, type, totalRoom, name",
+      message: "Missing required fields: id, channel, tel, province, district",
       data: null,
     });
   }
@@ -384,6 +384,8 @@ export const insertDataOfAnyFunction = async (req, res) => {
     tel,
     detail,
     donation,
+    dntstartDate,
+    dntendDate,
     locationGps,
   } = req.body;
 
@@ -411,9 +413,9 @@ export const insertDataOfAnyFunction = async (req, res) => {
       query = `
         INSERT INTO public.tbcream (
          channel, id, bland, creamname, price1, price2,
-          tel, detail, image, donation, status, cdate
+          tel, detail, image, donation,dntstartdate, dntenddate, status, cdate
         )
-        VALUES ('1',$1, $2, $3, $4, $5, $6, $7, $8::text[], $9, '1', NOW())
+        VALUES ('1',$1, $2, $3, $4, $5, $6, $7, $8::text[], $9,$10,$11, '1', NOW())
         RETURNING *;
       `;
       values = [
@@ -426,6 +428,8 @@ export const insertDataOfAnyFunction = async (req, res) => {
         detail,
         imageArray,
         donation || "",
+        dntstartDate || null,
+        dntendDate || null,
       ];
     }
 
@@ -434,9 +438,9 @@ export const insertDataOfAnyFunction = async (req, res) => {
       query = `
         INSERT INTO public.tbkhoomkhotsheb(
          channel, id, type, name, price1, price2, 
-          tel, detail, locationgps, image, status, cdate
+          tel, detail, locationgps, image, status, donation, dntstartdate, dntenddate, cdate
         )
-        VALUES ('4', $1, $2, $3, $4, $5, $6, $7, $8, $9::text[], '1', NOW())
+        VALUES ('4', $1, $2, $3, $4, $5, $6, $7, $8, $9::text[],'1', $10, $11, $12, NOW())
         RETURNING *;
       `;
       values = [
@@ -449,6 +453,9 @@ export const insertDataOfAnyFunction = async (req, res) => {
         detail,
         locationGps,
         imageArray,
+        donation,
+        dntstartDate || null,
+        dntendDate || null
       ];
     }
 
@@ -456,12 +463,12 @@ export const insertDataOfAnyFunction = async (req, res) => {
     else if (channel === "8") {
       query = `
         INSERT INTO public.tbmuas (
-          channel,id, name, price, tel, detail, image, status, cdate
+          channel,id, name, price, tel, detail, image, status,donation, dntstartdate, dntenddate, cdate
         )
-        VALUES ('8',$1, $2, $3, $4, $5, $6::text[], '1', NOW())
+        VALUES ('8',$1, $2, $3, $4, $5, $6::text[], '1', $7, $8, $8, NOW())
         RETURNING *;
       `;
-      values = [id, name, price1, tel, detail, imageArray];
+      values = [id, name, price1, tel, detail, imageArray,donation, dntstartDate, dntendDate,];
     }
 
     // 🧠 CH 6 → tbtshuaj
@@ -469,9 +476,9 @@ export const insertDataOfAnyFunction = async (req, res) => {
       query = `
         INSERT INTO public.tbtshuaj(
          channel, id, name, price1, price2, tel, detail,
-          image, status, donation, cdate
+          image, status, donation, dntstartdate, dntenddate, cdate
         )
-        VALUES ('6',$1, $2, $3, $4, $5, $6, $7::text[], '1', $8, NOW())
+        VALUES ('6',$1, $2, $3, $4, $5, $6, $7::text[], '1', $8, $9, $10, NOW())
         RETURNING *;
       `;
       values = [
@@ -483,6 +490,8 @@ export const insertDataOfAnyFunction = async (req, res) => {
         detail,
         imageArray,
         donation || "",
+        dntstartDate || null,
+        dntendDate || null
       ];
     } else {
       return res.status(400).send({
@@ -560,18 +569,23 @@ export const userLogin = async (req, res) => {
       });
     }
 
-    // ✅ 4️⃣ Login successful
-    // (Optional) Remove password from response
-
     delete user.password;
 
-    //const token = generateToken(user.id);
+    // Create token payload
+    const tokenPayload = {
+      id: user.id,
+      name: user.name,
+      type: user.type,
+      channel: user.channel,
+    };
+
+    const token = generateAccessToken(tokenPayload);
 
     return res.status(200).send({
       status: true,
       message: "Login successful",
       data: user,
-      // data: user, token
+      token,
     });
   } catch (error) {
     console.error("Error in user Login:", error);

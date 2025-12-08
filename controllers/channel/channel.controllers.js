@@ -215,88 +215,11 @@ export const insertChannelDataDetail = async (req, res) => {
   }
 };
 
-// update channel status
+// update channel data
 
-export const update_channel_status = async (req, res) => {
-  const { id, status } = req.body;
-
-  if (!id || !status) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields: id or detail",
-      data: null,
-    });
-  }
-
-  try {
-    const query = `UPDATE public.tbchanneldetail SET status=$1 WHERE id=$2 RETURNING *;`;
-    const resultSingle = await dbExecution(query, [status, id]);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to update",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in update data:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
-
-// update channel detial data
-
-export const update_channel_detail = async (req, res) => {
-  const { id, detail } = req.body;
-
-  if (!id || !detail) {
-    return res.status(400).send({
-      status: false,
-      message: "Missing required fields: id or detail",
-      data: null,
-    });
-  }
-
-  try {
-    const query = `UPDATE public.tbchanneldetail SET detail=$1 WHERE id=$2 RETURNING *;`;
-    const resultSingle = await dbExecution(query, [detail, id]);
-
-    if (resultSingle && resultSingle.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Update successful",
-        data: resultSingle.rows,
-      });
-    } else {
-      return res.status(404).send({
-        status: false,
-        message: "No record found to update",
-        data: null,
-      });
-    }
-  } catch (error) {
-    console.error("Error in update data:", error);
-    return res.status(500).send({
-      status: false,
-      message: "Internal Server Error",
-      data: null,
-    });
-  }
-};
-
-export const update_channel_image = async (req, res) => {
-  const { id, video1, video2, guidelineVideo } = req.body;
+export const updateChannelData = async (req, res) => {
+  
+  const { id, detail, video1, video2, guidelineVideo, status } = req.body;
 
   if (!id) {
     return res.status(400).send({
@@ -320,12 +243,18 @@ export const update_channel_image = async (req, res) => {
     const values = [];
     let paramIndex = 1;
 
+    if (detail !== null) {
+      fields.push(`detail = $${paramIndex}`);
+      values.push(detail);
+      paramIndex++;
+    }
+
     if (imageArray !== null) {
-  const imageString = imageArray.join(",");   // store as comma-separated string
-  fields.push(`image = $${paramIndex}`);
-  values.push(imageString);
-  paramIndex++;
-}
+      const imageString = imageArray.join(","); // store as comma-separated string
+      fields.push(`image = $${paramIndex}`);
+      values.push(imageString);
+      paramIndex++;
+    }
 
     if (qrImage !== null) {
       fields.push(`qr = $${paramIndex}`);
@@ -348,6 +277,12 @@ export const update_channel_image = async (req, res) => {
     if (guidelineVideo) {
       fields.push(`guidelinevideo = $${paramIndex}`);
       values.push(guidelineVideo);
+      paramIndex++;
+    }
+
+    if (status !== null) {
+      fields.push(`status = $${paramIndex}`);
+      values.push(status);
       paramIndex++;
     }
 

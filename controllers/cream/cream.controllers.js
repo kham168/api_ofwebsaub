@@ -19,21 +19,59 @@ export const queryCreamDataAll = async (req, res) => {
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
-    // ✅ Query QR image
-    const qrQuery = `
-      SELECT qr 
-      FROM public.tbchanneldetail 
-      WHERE id = '1' 
-      LIMIT 1;
-    `;
-    const qrResult = await dbExecution(qrQuery, []);
-    const qrRaw = qrResult.rows[0]?.qr || null;
-
-    // Base URL
     const baseUrl = "http://localhost:5151/";
 
-    // Convert QR to full URL
-    const qrimage = qrRaw ? baseUrl + qrRaw : null;
+    // ----------------------------------------
+    // ✅ Query QR ONLY on first page
+    // ----------------------------------------
+    let channelData = null;
+    let topData = null;
+
+    if (validPage === 0) {
+      const qrQuery = `
+    SELECT 
+      qr,
+      image AS "channelimage",
+      video1,
+      video2,
+      guidelinevideo
+    FROM public.tbchanneldetail
+    WHERE id = '1'
+    LIMIT 1;
+  `;
+
+      const qrResult = await dbExecution(qrQuery, []);
+      const raw = qrResult.rows[0] || null;
+
+      if (raw) {
+        // Helper: convert "a.png,b.png" → ["url/a.png", "url/b.png"]
+        const convertToUrlArray = (str) => {
+          if (!str) return [];
+          return str
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((x) => baseUrl + x);
+        };
+
+        channelData = {
+          qr: raw.qr ? baseUrl + raw.qr : null,
+          channelimage: convertToUrlArray(raw.channelimage),
+          video1: raw.video1 ? baseUrl + raw.video1 : null,
+          video2: raw.video2 ? baseUrl + raw.video2 : null,
+          guidelinevideo: raw.guidelinevideo
+            ? baseUrl + raw.guidelinevideo
+            : null,
+        };
+      }
+
+      try {
+        const topResult = await QueryTopup.getAllProductAData();
+        topData = topResult?.topData || topResult;
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
 
     // Fetch paginated cream data
     const dataQuery = `
@@ -48,7 +86,7 @@ export const queryCreamDataAll = async (req, res) => {
         c.donation,
         c.image
       FROM public.tbcream c
-      WHERE c.status = '1' 
+      WHERE c.status = '1'
       ORDER BY c.cdate DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -76,6 +114,7 @@ export const queryCreamDataAll = async (req, res) => {
       };
     });
 
+    // Pagination data
     const pagination = {
       page: validPage,
       limit: validLimit,
@@ -83,26 +122,13 @@ export const queryCreamDataAll = async (req, res) => {
       totalPages: Math.ceil(total / validLimit),
     };
 
-    let topData = null;
-
-    if (validPage === 0) {
-      try {
-        const topResult = await QueryTopup.getAllProductAData();
-
-        topData = topResult?.topData || topResult;
-      } catch (e) {
-        console.warn("Failed to load top data:", e.message);
-      }
-    }
-
-    // Final Output
+    // Response
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      qrimage, // ⬅️ HERE!
       data: rows,
       pagination,
-      ...(validPage === 0 && { topData }),
+      ...(validPage === 0 && { channelData, topData }), // ⬅️ Only include on first page
     });
   } catch (error) {
     console.error("Error in queryCreamDataAll:", error);
@@ -319,7 +345,7 @@ export const queryCreamDataOne = async (req, res) => {
     });
   }
 };
-  
+
 export const updateProductData = async (req, res) => {
   const { id, bland, creamName, Price1, Price2, tel, detail, donation } =
     req.body;

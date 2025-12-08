@@ -25,6 +25,58 @@ export const queryDormitoryDataAll = async (req, res) => {
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
+    let channelData = null;
+    let topData = null;
+    // ----------------------------------------
+    // ✅ Query QR + channel images ONLY on first page
+    // ----------------------------------------
+
+    if (validPage === 0) {
+      const qrQuery = `
+    SELECT qr,
+      image AS "channelimage",
+      video1,
+      video2,
+      guidelinevideo
+    FROM public.tbchanneldetail
+    WHERE id = '2'
+    LIMIT 1;
+  `;
+
+      const qrResult = await dbExecution(qrQuery, []);
+      const raw = qrResult.rows[0] || null;
+
+      if (raw) {
+        // Helper: convert "a.png,b.png" → ["url/a.png", "url/b.png"]
+        const convertToUrlArray = (str) => {
+          if (!str) return [];
+          return str
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((x) => baseUrl + x);
+        };
+
+        channelData = {
+          qr: raw.qr ? baseUrl + raw.qr : null,
+          channelimage: convertToUrlArray(raw.channelimage),
+          video1: raw.video1 ? baseUrl + raw.video1 : null,
+          video2: raw.video2 ? baseUrl + raw.video2 : null,
+          guidelinevideo: raw.guidelinevideo
+            ? baseUrl + raw.guidelinevideo
+            : null,
+        };
+      }
+
+      try {
+        const topResult = await QueryTopup.getAllProductB();
+
+        topData = topResult?.topData || topResult;
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
+
     // 📦 Main query with pagination
     const dataQuery = `
       SELECT 
@@ -95,36 +147,12 @@ export const queryDormitoryDataAll = async (req, res) => {
       totalPages: Math.ceil(total / validLimit),
     };
 
-    // ✅ If page === 0 → also call top data function
-                                    // let topData = null;
-                                    // if (validPage === 0) {
-                                    //   try {
-                                    //     const topResult = await QueryTopup.getAllProductB(); // must return data in JS object, not Express res
-                                    //     topData = topResult?.data || topResult; // handle both formats
-                                    //   } catch (e) {
-                                    //     console.warn("Failed to load top data:", e.message);
-                                    //   }
-                                    // }
-
-
-     let topData = null;
-
-    if (validPage === 0) {
-      try {
-        const topResult = await QueryTopup.getAllProductB();
-
-        topData = topResult?.topData || topResult;
-      } catch (e) {
-        console.warn("Failed to load top data:", e.message);
-      }
-    }
- 
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { topData }), // only include if page === 0
+      ...(validPage === 0 && { channelData, topData }), // only include if page === 0
     });
   } catch (error) {
     console.error("Error in query_dormantal_dataall:", error);
@@ -584,7 +612,7 @@ export const queryDormitoryDataOne = async (req, res) => {
     });
   }
 };
-  
+
 export const UpdateActiveStatusDormitoryData = async (req, res) => {
   // done
 
@@ -708,7 +736,7 @@ export const updateProductData = async (req, res) => {
     pushUpdate("provinceid", provinceid);
     pushUpdate("districtid", districtid);
     pushUpdate("plan_on_next_month", plan_on_next_month);
- 
+
     // Village list (array)
     let villageIdArray = null;
     if (Array.isArray(villageid) && villageid.length > 0) {

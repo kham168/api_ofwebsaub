@@ -24,14 +24,53 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     // Query QR image
-    const qrQuery = `
-      SELECT qr FROM public.tbchanneldetail 
-      WHERE id = '4' LIMIT 1;
-    `;
-    const qrResult = await dbExecution(qrQuery, []);
-    const qrRaw = qrResult.rows[0]?.qr || null;
-    const qrimage = qrRaw ? baseUrl + qrRaw : null;
+    let channelData = null;
+    let topData = null;
 
+    if (validPage === 0) {
+      const qrQuery = `
+    SELECT  qr,
+      image AS "channelimage",
+      video1,
+      video2,
+      guidelinevideo
+    FROM public.tbchanneldetail
+    WHERE id = '4'
+    LIMIT 1;
+  `;
+
+      const qrResult = await dbExecution(qrQuery, []);
+      const raw = qrResult.rows[0] || null;
+
+      if (raw) {
+        // Helper: convert "a.png,b.png" → ["url/a.png", "url/b.png"]
+        const convertToUrlArray = (str) => {
+          if (!str) return [];
+          return str
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .map((x) => baseUrl + x);
+        };
+
+        channelData = {
+          qr: raw.qr ? baseUrl + raw.qr : null,
+          channelimage: convertToUrlArray(raw.channelimage),
+          video1: raw.video1 ? baseUrl + raw.video1 : null,
+          video2: raw.video2 ? baseUrl + raw.video2 : null,
+          guidelinevideo: raw.guidelinevideo
+            ? baseUrl + raw.guidelinevideo
+            : null,
+        };
+      }
+
+      try {
+        const topResult = await QueryTopup.getAllProductAData();
+        topData = topResult?.topData || topResult;
+      } catch (e) {
+        console.warn("Failed to load top data:", e.message);
+      }
+    }
     // Query paginated data
     const query = `
       SELECT 
@@ -83,35 +122,22 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
       totalPages,
     };
 
-    // Optional topData for page 0
-    let topData = null;
-
-    if (validPage === 0) {
-      try {
-        const topResult = await QueryTopup.getAllProductAData();
-
-        topData = topResult?.topData || topResult;
-      } catch (e) {
-        console.warn("Failed to load top data:", e.message);
-      }
-    }
-
     // FINAL RESPONSE
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      qrimage,
       data: rows,
       pagination,
-      ...(validPage === 0 && { topData }),
+      ...(validPage === 0 && { channelData, topData }),
     });
   } catch (error) {
     console.error("Error in queryKhoomKhoTshebDataAll:", error);
     res.status(500).send({
       status: false,
-      message: "Internal Server Error",
-      qrimage: null,
+      message: "Internal Server Error", 
       data: [],
+      channelData: null,
+      topData: null,
     });
   }
 };
@@ -309,7 +335,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     });
   }
 };
-  
+
 export const updateProductData = async (req, res) => {
   try {
     const {
