@@ -8,7 +8,7 @@ import {
 import { uploadImage } from "../../middleware/profile.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryAdvertData);
+route.get("/selectAll", queryAdvertData);
 route.post("/insert", verifyJWT, uploadImage, insertAdvertDataDetail);
 route.put("/updateStatus", verifyJWT, updateProfileDataDetail);
 

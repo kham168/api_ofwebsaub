@@ -10,10 +10,10 @@ import {
 } from "../../controllers/taxi/taxi.controllers.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryTaxiDataAll);
-route.get("/searchByName", verifyJWT, searchTaxiData);
-route.get("/selectByDistrictId", verifyJWT, queryTaxiByProvinceIdAndDistrictId);
-route.get("/selectByVillageId", verifyJWT, queryTaxiByDistrictIdAndVillageId);
-route.get("/selectOne", verifyJWT, queryTaxiDataOne);
+route.get("/selectAll", queryTaxiDataAll);
+route.get("/searchByName", searchTaxiData);
+route.get("/selectByDistrictId", queryTaxiByProvinceIdAndDistrictId);
+route.get("/selectByVillageId", queryTaxiByDistrictIdAndVillageId);
+route.get("/selectOne", queryTaxiDataOne);
 route.put("/updateData", verifyJWT, updateProductData);
 export default route;

@@ -1,10 +1,10 @@
 import { dbExecution } from "../../config/dbConfig.js";
- 
 
 // queery vill data all
 
-export const query_village_dataall = async (req, res) => { // done
- 
+export const queryVillageDataAll = async (req, res) => {
+  // done
+
   try {
     const query = `SELECT villageid, village,arean,districtid FROM public.tbprovince order by id asc limit 25`;
     const resultSingle = await dbExecution(query, []);
@@ -16,13 +16,12 @@ export const query_village_dataall = async (req, res) => { // done
   }
 };
 
-
 // query village by district id
-export const query_village_data_by_district_id = async (req, res) => {
-  const { districtid } = req.body;
+export const queryVillageDataByDistrictId = async (req, res) => {
+  const { districtId } = req.body;
 
   try {
-    if (!districtid) {
+    if (!districtId) {
       return res.status(400).json({ error: "districtid is required" });
     }
 
@@ -31,7 +30,7 @@ export const query_village_data_by_district_id = async (req, res) => {
       FROM public.tbvillage
       WHERE districtid = $1 order by villageid asc
     `;
-    const resultSingle = await dbExecution(query, [districtid]);
+    const resultSingle = await dbExecution(query, [districtId]);
 
     return res.json(resultSingle?.rows);
   } catch (error) {
@@ -40,12 +39,10 @@ export const query_village_data_by_district_id = async (req, res) => {
   }
 };
 
-
-
 // query village by id
 
-export const query_village_dataone = async (req, res) => {
-  const { villageid } = req.body;
+export const queryVillageDataOne = async (req, res) => {
+  const { villageId } = req.body;
 
   try {
     const query = `
@@ -53,7 +50,7 @@ export const query_village_dataone = async (req, res) => {
       FROM public.tbvillage
       WHERE villageid = $1
     `;
-    const resultSingle = await dbExecution(query, [villageid]);
+    const resultSingle = await dbExecution(query, [villageId]);
 
     return res.json(resultSingle?.rows);
   } catch (error) {
@@ -62,15 +59,13 @@ export const query_village_dataone = async (req, res) => {
   }
 };
 
-
-
 // insert village data
 
-export const insert_village_data = async (req, res) => {
-  const { villageid, village, arean, districtid } = req.body;
+export const insertVillageData = async (req, res) => {
+  const { villageId, village, arean, districtId } = req.body;
 
   try {
-    if (!villageid || !village || !arean || !districtid) {
+    if (!villageId || !village || !arean || !districtId) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
@@ -79,7 +74,7 @@ export const insert_village_data = async (req, res) => {
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `;
-    const values = [villageid, village, arean, districtid];
+    const values = [villageId, village, arean, districtId];
     const resultSingle = await dbExecution(query, values);
 
     return res.status(201).json({
@@ -93,15 +88,16 @@ export const insert_village_data = async (req, res) => {
   }
 };
 
-
 // update village data by id
 
-export const update_village_data = async (req, res) => {
-  const { villageid, village, arean } = req.body;
+export const updateVillageData = async (req, res) => {
+  const { villageId, village, arean } = req.body;
 
   try {
-    if (!villageid || !village || !arean) {
-      return res.status(400).json({ error: "villageid, village, and arean are required" });
+    if (!villageId || !village || !arean) {
+      return res
+        .status(400)
+        .json({ error: "villageid, village, and arean are required" });
     }
 
     const query = `
@@ -111,7 +107,7 @@ export const update_village_data = async (req, res) => {
       WHERE villageid = $3
       RETURNING *
     `;
-    const values = [village, arean, villageid];
+    const values = [village, arean, villageId];
     const resultSingle = await dbExecution(query, values);
 
     if (resultSingle.rowCount === 0) {

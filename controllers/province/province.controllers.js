@@ -1,7 +1,8 @@
 import { dbExecution } from "../../config/dbConfig.js";
- 
-export const quer_province_dataall = async (req, res) => { // done
-  
+
+export const queryProvinceDataAll = async (req, res) => {
+  // done
+
   try {
     const query = `SELECT provinceid, province
 	FROM public.tbprovince;`;
@@ -14,8 +15,9 @@ export const quer_province_dataall = async (req, res) => { // done
   }
 };
 
-export const quer_province_dataone = async (req, res) => {  // done
-  const id=req.body.id;
+export const queryProvinceDataOne = async (req, res) => {
+  // done
+  const id = req.body.id;
   try {
     const query = `SELECT id, province FROM public.tbprovince where id='${id}'`;
     const resultSingle = await dbExecution(query, []);
@@ -26,4 +28,3 @@ export const quer_province_dataone = async (req, res) => {  // done
     res.status(500).send("Internal Server Error");
   }
 };
- 

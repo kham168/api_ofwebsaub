@@ -12,11 +12,11 @@ import {
 } from "../../controllers/dormitory/dormitory.controllers.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryDormitoryDataAll);
-route.get("/searchByName", verifyJWT, searchDormitoryData);
-route.get("/selectByDistrictId", verifyJWT, queryDormitoryDataByDistrictId);
-route.get("/selectByVillageId", verifyJWT, queryDormitoryDataByVillageId);
-route.get("/selectOne", verifyJWT, queryDormitoryDataOne);
+route.get("/selectAll", queryDormitoryDataAll);
+route.get("/searchByName", searchDormitoryData);
+route.get("/selectByDistrictId", queryDormitoryDataByDistrictId);
+route.get("/selectByVillageId", queryDormitoryDataByVillageId);
+route.get("/selectOne", queryDormitoryDataOne);
 route.put("/updateActiveStatus", verifyJWT, UpdateActiveStatusDormitoryData);
 route.put("/updateViewNumberOfThisId", verifyJWT, UpdateViewNumberOfThisId);
 route.put("/updateData", verifyJWT, updateProductData);

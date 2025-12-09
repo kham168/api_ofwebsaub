@@ -13,10 +13,10 @@ import {
 import { uploadImage } from "../../middleware/donationa.uploadimage.js";
 const route = Route();
 
-route.get("/selectDonation", verifyJWT, queryDonationListAll);
-route.get("/selectCustDonationList", verifyJWT, queryCustomerDonationList);
-route.get("/searchByCustomerTel", verifyJWT, searchDonationLogByCustomerTel);
-route.post("/insertCustomerDonation", verifyJWT, uploadImage, customerDonation);
+route.get("/selectDonation", queryDonationListAll);
+route.get("/selectCustDonationList", queryCustomerDonationList);
+route.get("/searchByCustomerTel", searchDonationLogByCustomerTel);
+route.post("/insertCustomerDonation", uploadImage, customerDonation);
 route.post("/insertDonationList", verifyJWT, uploadImage, insertDonationList);
 route.post(
   "/insertBankInformForDonation",

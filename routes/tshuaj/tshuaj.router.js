@@ -8,8 +8,8 @@ import {
 } from "../../controllers/tshuaj/tshuaj.controllers.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryTshuajDataAll);
-route.get("/searchByName", verifyJWT, searchTshuajData);
-route.get("/selectOne", verifyJWT, queryTshuajDataOne);
+route.get("/selectAll", queryTshuajDataAll);
+route.get("/searchByName", searchTshuajData);
+route.get("/selectOne", queryTshuajDataOne);
 route.put("/updateData", verifyJWT, updateProductData);
 export default route;

@@ -1,14 +1,12 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
-
 // query district data all
 
-
-export const query_district_dataall = async (req, res) => {
+export const queryDistrictDataAll = async (req, res) => {
   try {
     const query = `SELECT districtid, district, arean, provinceid
 	FROM public.tbdistrict order by districtid asc`;
-    const resultSingle = await dbExecution(query, []); 
+    const resultSingle = await dbExecution(query, []);
     if (resultSingle) {
       res.status(200).send({
         status: true,
@@ -27,19 +25,15 @@ export const query_district_dataall = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
-
 
 // query by province ID
 
-
-export const query_district_data_by_province_id = async (req, res) => {
-  
-  const provinceid = req.body.provinceid;
+export const queryDistrictDataByProvinceId = async (req, res) => {
+  const provinceId = req.body.provinceId;
 
   try {
-
     const query = `SELECT districtid, district FROM public.tbdistrict where provinceid=$1`;
-    const resultSingle = await dbExecution(query, [provinceid]);
+    const resultSingle = await dbExecution(query, [provinceId]);
     if (resultSingle) {
       res.status(200).send({
         status: true,
@@ -53,25 +47,20 @@ export const query_district_data_by_province_id = async (req, res) => {
         data: resultSingle?.rows,
       });
     }
-
   } catch (error) {
     console.error("Error in testdda:", error);
     res.status(500).send("Internal Server Error");
   }
 };
-
 
 // query by district ID
 
-
-export const query_district_dataone = async (req, res) => {
-  
-  const districtid = req.body.districtid;
+export const queryDistrictDataOne = async (req, res) => {
+  const districtId = req.body.districtId;
 
   try {
-
     const query = `SELECT districtid, district,provinceid FROM public.tbdistrict where districtid=$1`;
-    const resultSingle = await dbExecution(query, [districtid]);
+    const resultSingle = await dbExecution(query, [districtId]);
     if (resultSingle) {
       res.status(200).send({
         status: true,
@@ -85,25 +74,21 @@ export const query_district_dataone = async (req, res) => {
         data: resultSingle?.rows,
       });
     }
-
   } catch (error) {
     console.error("Error in testdda:", error);
     res.status(500).send("Internal Server Error");
   }
 };
 
+// insert district data
 
- // insert district data
-
-
-
-export const insert_district_data = async (req, res) => {
-  const { districtid, district,provinceid } = req.body;
+export const insertDistrictData = async (req, res) => {
+  const { districtId, district, provinceId } = req.body;
   try {
     const query = `INSERT INTO public.tbdistrict(id, district,provinceid)VALUES ($1, $2,$3) RETURNING *`;
-    const values = [districtid,district,provinceid];
+    const values = [districtId, district, provinceId];
     const resultSingle = await dbExecution(query, values);
- 
+
     if (resultSingle && resultSingle.rowCount > 0) {
       return res.status(200).send({
         status: true,
@@ -117,25 +102,20 @@ export const insert_district_data = async (req, res) => {
         data: null,
       });
     }
-    
   } catch (error) {
     console.error("Error in testdda:", error);
     res.status(500).send("Internal Server Error");
   }
 };
 
-
-// update districtid
-
-
-export const update_district_data = async (req, res) => {
-  const { districtid, district } = req.body;
+export const updateDistrictData = async (req, res) => {
+  const { districtId, district } = req.body;
 
   try {
     const query = `UPDATE public.tbdistrict SET district =$1 WHERE id =$2 RETURNING *`;
-    const values = [district, districtid];
+    const values = [district, districtId];
     const resultSingle = await dbExecution(query, values);
- 
+
     if (resultSingle && resultSingle.rowCount > 0) {
       return res.status(200).send({
         status: true,

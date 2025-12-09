@@ -8,8 +8,8 @@ import {
 } from "../../controllers/khoomkho_tsheb/khoomkho_tsheb.controllers.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryKhoomKhoTshebDataAll);
-route.get("/selectOne", verifyJWT, queryKhoomKhoTshebDataOne);
-route.get("/searchByName", verifyJWT, searchKhoomKhoTshebData);
+route.get("/selectAll", queryKhoomKhoTshebDataAll);
+route.get("/selectOne", queryKhoomKhoTshebDataOne);
+route.get("/searchByName", searchKhoomKhoTshebData);
 route.put("/updateData", verifyJWT, updateProductData);
 export default route;

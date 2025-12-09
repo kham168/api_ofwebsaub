@@ -9,8 +9,8 @@ import {
 import { uploadChannelFiles } from "../../middleware/channel.uploadimage.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryChannelDataAll);
-route.get("/selectOne", verifyJWT, queryChannelDataByOne);
+route.get("/selectAll", queryChannelDataAll);
+route.get("/selectOne", queryChannelDataByOne);
 route.post("/insert", verifyJWT, insertChannelDataDetail);
 route.put(
   "/updateChannelData",

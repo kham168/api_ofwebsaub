@@ -1,12 +1,12 @@
 import Route from "express";
 import { refreshToken, verifyJWT } from "../../middleware/auth.js";
 import {
-  quer_province_dataall,
-  quer_province_dataone,
-} from "../../controllers/province/province.controllers.js"; //"../../controllers/provice/provice.controllers.js";
+  queryProvinceDataAll,
+  queryProvinceDataOne,
+} from "../../controllers/province/province.controllers.js";
 const route = Route();
 
-route.get("/selectall", verifyJWT, quer_province_dataall);
-route.post("/selectone", verifyJWT, quer_province_dataone);
+route.get("/selectAll", queryProvinceDataAll);
+route.post("/selectOne", queryProvinceDataOne);
 
 export default route;

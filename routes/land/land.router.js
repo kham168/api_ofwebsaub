@@ -9,10 +9,10 @@ import {
 } from "../../controllers/land/land.controllers.js";
 const route = Route();
 
-route.get("/selectAll", verifyJWT, queryLandDataAll);
-route.get("/selectOne", verifyJWT, queryLandDataOne);
-route.get("/selectByDistrictId", verifyJWT, queryLandDataByDistrictId);
-route.get("/selectByVillageId", verifyJWT, queryLandDataByVillageId);
+route.get("/selectAll", queryLandDataAll);
+route.get("/selectOne", queryLandDataOne);
+route.get("/selectByDistrictId", queryLandDataByDistrictId);
+route.get("/selectByVillageId", queryLandDataByVillageId);
 route.put("/updateData", verifyJWT, updateProductData);
 
 export default route;
