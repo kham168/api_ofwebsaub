@@ -6,8 +6,7 @@ export const queryChannelDataAll = async (req, res) => {
     const baseUrl = "http://localhost:5151/";
 
     const query = `
-      SELECT 
-        id,
+      SELECT id,
         channel,
         detail,
         ownername,
@@ -30,7 +29,7 @@ export const queryChannelDataAll = async (req, res) => {
 
     const result = await dbExecution(query, []);
     const rows = result?.rows || [];
-
+/// hello
     const formatted = rows.map((r) => {
       const pathProductDetailArray = r.pathproductdetail
         ? r.pathproductdetail
