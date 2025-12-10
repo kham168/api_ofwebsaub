@@ -45,23 +45,23 @@ class queryTopData {
         dbExecution(tbtshuaj, []),
       ]);
 
-      const formatImage = (rows) =>
-        (rows || []).map((r) => ({
-          ...r,
-          image: r.image
-            ? r.image
-                .replace(/[{}]/g, "")
-                .split(",")
-                .map((img) => `${baseUrl}${img.trim()}`)
-            : [],
-        }));
+      // Format images using async cleanImageArray
+      const formatImage = async (rows) =>
+        Promise.all(
+          (rows || []).map(async (r) => ({
+            ...r,
+            image: (await this.cleanImageArray(r.image)).map(
+              (img) => `${baseUrl}${img}`
+            ),
+          }))
+        );
 
       // Combine into one array
       const mergedTopData = [
-        ...formatImage(creamRes?.rows),
-        ...formatImage(khoomRes?.rows),
-        ...formatImage(muasRes?.rows),
-        ...formatImage(tshuajRes?.rows),
+        ...(await formatImage(creamRes?.rows)),
+        ...(await formatImage(khoomRes?.rows)),
+        ...(await formatImage(muasRes?.rows)),
+        ...(await formatImage(tshuajRes?.rows)),
       ];
 
       return {
@@ -206,22 +206,22 @@ class queryTopData {
         dbExecution(tbtaxi, [limit]),
       ]);
 
-      const formatImage = (rows) =>
-        (rows || []).map((r) => ({
-          ...r,
-          image: r.image
-            ? r.image
-                .replace(/[{}]/g, "") // remove { and }
-                .split(",")
-                .map((img) => `${baseUrl}${img.trim()}`)
-            : [],
-        }));
+      // Format images using async cleanImageArray
+      const formatImage = async (rows) =>
+        Promise.all(
+          (rows || []).map(async (r) => ({
+            ...r,
+            image: (await this.cleanImageArray(r.image)).map(
+              (img) => `${baseUrl}${img}`
+            ),
+          }))
+        );
 
       const mergedTopData = [
-        ...formatImage(dormitoryRes?.rows),
-        ...formatImage(houseRes?.rows),
-        ...formatImage(landRes?.rows),
-        ...formatImage(taxiRes?.rows),
+        ...(await formatImage(dormitoryRes?.rows)),
+        ...(await formatImage(houseRes?.rows)),
+        ...(await formatImage(landRes?.rows)),
+        ...(await formatImage(taxiRes?.rows)),
       ];
 
       return {

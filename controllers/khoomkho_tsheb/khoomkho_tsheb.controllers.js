@@ -29,7 +29,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
 
     if (validPage === 0) {
       const qrQuery = `
-    SELECT  qr,
+    SELECT qr,
       image AS "channelimage",
       video1,
       video2,
@@ -93,26 +93,15 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     let rows = (await dbExecution(query, [validLimit, offset]))?.rows || [];
 
     // Convert image array
-    rows = rows.map((r) => {
-      let imgs = [];
-
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // Pagination object
     const pagination = {
@@ -128,14 +117,15 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { channelData, topData }),
+      ...(validPage === 0 && channelData ? { ...channelData, topData } : {}),
     });
   } catch (error) {
     console.error("Error in queryKhoomKhoTshebDataAll:", error);
     res.status(500).send({
       status: false,
-      message: "Internal Server Error", 
+      message: "Internal Server Error",
       data: [],
+      pagination: null,
       channelData: null,
       topData: null,
     });
@@ -184,7 +174,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     `;
     const qrResult = await dbExecution(qrQuery, []);
     const qrRaw = qrResult.rows[0]?.qr || null;
-    const qrimage = qrRaw ? baseUrl + qrRaw : null;
+    const qr = qrRaw ? baseUrl + qrRaw : null;
 
     // ✅ Fetch paginated matching data
     const query = `
@@ -208,26 +198,15 @@ export const searchKhoomKhoTshebData = async (req, res) => {
       (await dbExecution(query, [`%${name}%`, validLimit, offset]))?.rows || [];
 
     // ✅ Safely parse images from Postgres array
-    rows = rows.map((r) => {
-      let imgs = [];
-
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // ✅ Send final response
     const pagination = {
@@ -240,17 +219,18 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      qrimage,
       data: rows,
       pagination,
+      qr,
     });
   } catch (error) {
     console.error("Error in searchKhoomKhoTshebData:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      qrimage: null,
       data: [],
+      pagination: [],
+      qr: null,
     });
   }
 };
@@ -259,9 +239,10 @@ export const searchKhoomKhoTshebData = async (req, res) => {
 export const queryKhoomKhoTshebDataOne = async (req, res) => {
   //const id = req.params.id;
 
-  const id = req.query.id ?? 0;
+  const idParam = req.query.id ?? "";
+  const id = String(idParam).trim();
 
-  if (!id || typeof id !== "string") {
+  if (!id) {
     return res.status(400).send({
       status: false,
       message: "Invalid id",
@@ -277,61 +258,53 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     `;
   const qrResult = await dbExecution(qrQuery, []);
   const qrRaw = qrResult.rows[0]?.qr || null;
-  const qrimage = qrRaw ? baseUrl + qrRaw : null;
+  const qr = qrRaw ? baseUrl + qrRaw : null;
 
   try {
-    const query = `SELECT 
-       channel, k.id,type,
+    const query = `SELECT
+        channel,
+        k.id,
+        type,
         k.name,
         k.price1,
         k.price2,
         k.tel,
-        k.detail, 
+        k.detail,
         k.locationgps,
-        ,k.image
+        k.image,
         k.donation
-      FROM public.tbkhoomkhotsheb k where k.id= $1
+      FROM public.tbkhoomkhotsheb k
+      WHERE k.id = $1;
     `;
 
     let rows = (await dbExecution(query, [id]))?.rows || [];
 
     // ✅ Safely parse images from Postgres array
-    rows = rows.map((r) => {
-      let imgs = [];
-
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // ✅ Send final response
 
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      qrimage,
       data: rows,
+      qr,
     });
   } catch (error) {
     console.error("Error in query khoomkho tsheb dataone:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      qrimage: null,
       data: [],
+      qr: null,
     });
   }
 };

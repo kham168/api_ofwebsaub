@@ -29,8 +29,7 @@ export const queryCreamDataAll = async (req, res) => {
 
     if (validPage === 0) {
       const qrQuery = `
-    SELECT 
-      qr,
+    SELECT qr,
       image AS "channelimage",
       video1,
       video2,
@@ -93,28 +92,7 @@ export const queryCreamDataAll = async (req, res) => {
 
     const result = await dbExecution(dataQuery, [validLimit, offset]);
     let rows = result?.rows || [];
-
-    // Format images
-    // rows = rows.map((r) => {
-    //   let imgs = [];
-    //   if (r.image) {
-    //     if (Array.isArray(r.image)) {
-    //       imgs = r.image;
-    //     } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-    //       imgs = r.image
-    //         .replace(/[{}]/g, "")
-    //         .split(",")
-    //         .map((i) => i.trim())
-    //         .filter(Boolean);
-    //     }
-    //   }
-    //   return {
-    //     ...r,
-    //     image: imgs.map((img) => baseUrl + img),
-    //   };
-    // });
-
-    // Use Promise.all with an async mapper so we can await inside
+ 
     rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopup.cleanImageArray(r.image);
@@ -148,6 +126,9 @@ export const queryCreamDataAll = async (req, res) => {
       status: false,
       message: "Internal Server Error",
       data: [],
+      pagination: null,
+      channelData: null,
+      topData: null,
     });
   }
 };
@@ -185,14 +166,12 @@ export const searchCreamData = async (req, res) => {
 
     // Query QR image
     const qrQuery = `
-      SELECT qr 
-      FROM public.tbchanneldetail 
-      WHERE id = '1' 
-      LIMIT 1;
+      SELECT qr FROM public.tbchanneldetail 
+      WHERE id = '1' LIMIT 1;
     `;
     const qrResult = await dbExecution(qrQuery, []);
     const qrRaw = qrResult.rows[0]?.qr || null;
-    const qrimage = qrRaw ? baseUrl + qrRaw : null;
+    const qr = qrRaw ? baseUrl + qrRaw : null;
 
     // Main search query
     const query = `
@@ -217,26 +196,15 @@ export const searchCreamData = async (req, res) => {
     let rows = result?.rows || [];
 
     // Format image URLs
-    rows = rows.map((r) => {
-      let imgs = [];
-
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+     rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -249,9 +217,9 @@ export const searchCreamData = async (req, res) => {
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
-      qrimage,
       data: rows,
       pagination,
+      qr,
     });
   } catch (error) {
     console.error("Error in searchCreamData:", error);
@@ -259,6 +227,8 @@ export const searchCreamData = async (req, res) => {
       status: false,
       message: "Internal Server Error",
       data: [],
+      pagination: null,
+      qr: null,
     });
   }
 };
@@ -280,14 +250,12 @@ export const queryCreamDataOne = async (req, res) => {
 
     // Query QR image
     const qrQuery = `
-      SELECT qr 
-      FROM public.tbchanneldetail 
-      WHERE id = '1'
-      LIMIT 1;
+      SELECT qr FROM public.tbchanneldetail 
+      WHERE id = '1' LIMIT 1;
     `;
     const qrResult = await dbExecution(qrQuery, []);
     const qrRaw = qrResult.rows[0]?.qr || null;
-    const qrImage = qrRaw ? baseUrl + qrRaw : null;
+    const qr = qrRaw ? baseUrl + qrRaw : null;
 
     // Main query
     const query = `
@@ -313,47 +281,36 @@ export const queryCreamDataOne = async (req, res) => {
       return res.status(404).send({
         status: false,
         message: "No data found",
-        qrimage: qrImage,
         data: [],
+        qr: null,
       });
     }
 
     // Parse images
-    rows = rows.map((r) => {
-      let imgs = [];
-
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // Final response (QR at top level)
     return res.status(200).send({
       status: true,
       message: "Query successful",
-      qrimage: qrImage,
       data: rows,
+      qr
     });
   } catch (error) {
     console.error("Error in queryCreamDataOne:", error);
     return res.status(500).send({
       status: false,
       message: "Internal Server Error",
-      qrimage: null,
       data: [],
+      qr: null,
     });
   }
 };
