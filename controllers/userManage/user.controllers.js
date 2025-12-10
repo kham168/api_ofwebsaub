@@ -428,26 +428,17 @@ if (req.files && req.files.length > 0) {
   imageArray = req.files.map((f) => f.filename);
 } 
 else if (typeof req.body.image === "string") {
-
   let imgStr = req.body.image;
 
-  // remove all extra double quotes
-  imgStr = imgStr.replace(/"+/g, "");
+  // STEP 1: Remove brackets and double quotes
+  imgStr = imgStr.replace(/[\[\]{}"]/g, "");
 
-  try {
-    // Try parse JSON: ["a.png","b.png"]
-    const arr = JSON.parse(imgStr);
+  // STEP 2: Split into array
+  imageArray = imgStr.split(",").map((i) => i.trim());
 
-    if (Array.isArray(arr)) {
-      imageArray = arr.map((i) => i.trim());
-    }
-  } catch (err) {
-    // Fallback: "a.png,b.png"
-    imageArray = imgStr.split(",").map((i) => i.trim());
-  }
+  // STEP 3: Remove empty items
+  imageArray = imageArray.filter((i) => i.length > 0);
 }
-
- 
     let query = "";
     let values = [];
     let result = null;

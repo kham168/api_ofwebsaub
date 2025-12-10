@@ -1,6 +1,6 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
-class queryTopData { 
+class queryTopData {
   async getAllProductAData() {
     try {
       const baseUrl = "http://localhost:5151/";
@@ -49,7 +49,10 @@ class queryTopData {
         (rows || []).map((r) => ({
           ...r,
           image: r.image
-            ? r.image.replace(/[{}]/g, "").split(",").map((img) => `${baseUrl}${img.trim()}`)
+            ? r.image
+                .replace(/[{}]/g, "")
+                .split(",")
+                .map((img) => `${baseUrl}${img.trim()}`)
             : [],
         }));
 
@@ -64,13 +67,11 @@ class queryTopData {
       return {
         topData: mergedTopData,
       };
-
     } catch (error) {
       console.error("Error in getAllProductAData:", error);
       throw error;
     }
-  } 
-
+  }
 
   async getAllProductB(req, res) {
     try {
@@ -215,8 +216,8 @@ class queryTopData {
                 .map((img) => `${baseUrl}${img.trim()}`)
             : [],
         }));
- 
-         const mergedTopData = [
+
+      const mergedTopData = [
         ...formatImage(dormitoryRes?.rows),
         ...formatImage(houseRes?.rows),
         ...formatImage(landRes?.rows),
@@ -235,6 +236,29 @@ class queryTopData {
       };
     }
   }
+
+  // Clean image array from PostgreSQL (handles all bad formats)
+  async cleanImageArray(dbValue) {
+    if (!dbValue) return [];
+
+    let str = dbValue;
+
+    // Convert array to string if needed
+    if (Array.isArray(str)) {
+      str = str.join(",");
+    }
+
+    // Remove { } and all quotes inside
+    str = str.replace(/[{}"]/g, "");
+
+    // Split into array
+    const arr = str
+      .split(",")
+      .map((i) => i.trim())
+      .filter((i) => i.length > 0);
+
+    return arr;
+  }
 }
- 
+
 export const QueryTopup = new queryTopData();

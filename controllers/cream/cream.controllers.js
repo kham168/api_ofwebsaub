@@ -95,24 +95,35 @@ export const queryCreamDataAll = async (req, res) => {
     let rows = result?.rows || [];
 
     // Format images
-    rows = rows.map((r) => {
-      let imgs = [];
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string" && r.image.startsWith("{")) {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+    // rows = rows.map((r) => {
+    //   let imgs = [];
+    //   if (r.image) {
+    //     if (Array.isArray(r.image)) {
+    //       imgs = r.image;
+    //     } else if (typeof r.image === "string" && r.image.startsWith("{")) {
+    //       imgs = r.image
+    //         .replace(/[{}]/g, "")
+    //         .split(",")
+    //         .map((i) => i.trim())
+    //         .filter(Boolean);
+    //     }
+    //   }
+    //   return {
+    //     ...r,
+    //     image: imgs.map((img) => baseUrl + img),
+    //   };
+    // });
+
+    // Use Promise.all with an async mapper so we can await inside
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // Pagination data
     const pagination = {
@@ -128,7 +139,8 @@ export const queryCreamDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { channelData, topData }), // ⬅️ Only include on first page
+      // When on first page, spread channelData fields to top-level (qr, channelimage, ...)
+      ...(validPage === 0 && channelData ? { ...channelData, topData } : {}),
     });
   } catch (error) {
     console.error("Error in queryCreamDataAll:", error);
