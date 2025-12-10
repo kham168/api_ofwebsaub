@@ -184,8 +184,26 @@ export const insertDormitoryData = async (req, res) => {
   const villageArray = parseVillageList(village);
 
   // Uploaded images
-  const imageArray =
-    req.files?.length > 0 ? req.files.map((file) => file.filename) : [];
+ // If frontend sends image as string → convert to array
+let imageArray = [];
+
+if (req.files && req.files.length > 0) {
+  imageArray = req.files.map((f) => f.filename);
+} else if (typeof req.body.image === "string") {
+  // frontend sometimes sends JSON string
+  try {
+    const parsed = JSON.parse(req.body.image); // ["a.png","b.png"]
+
+    if (Array.isArray(parsed)) {
+      imageArray = parsed.map((x) => x.replace(/^"+|"+$/g, "").trim());
+    }
+  } catch {
+    // frontend sends: "a.png,b.png"
+    imageArray = req.body.image
+      .split(",")
+      .map((x) => x.replace(/^"+|"+$/g, "").trim());
+  }
+}
 
   let query = "";
   let values = [];
@@ -399,11 +417,31 @@ export const insertDataOfAnyFunction = async (req, res) => {
 
   try {
     // Collect uploaded images
-    const imageArray =
-      req.files && req.files.length > 0
-        ? req.files.map((file) => file.filename)
-        : [];
+    // const imageArray =
+    //   req.files && req.files.length > 0
+    //     ? req.files.map((file) => file.filename)
+    //     : [];
+    // If frontend sends image as string → convert to array
+let imageArray = [];
 
+if (req.files && req.files.length > 0) {
+  imageArray = req.files.map((f) => f.filename);
+} else if (typeof req.body.image === "string") {
+  // frontend sometimes sends JSON string
+  try {
+    const parsed = JSON.parse(req.body.image); // ["a.png","b.png"]
+
+    if (Array.isArray(parsed)) {
+      imageArray = parsed.map((x) => x.replace(/^"+|"+$/g, "").trim());
+    }
+  } catch {
+    // frontend sends: "a.png,b.png"
+    imageArray = req.body.image
+      .split(",")
+      .map((x) => x.replace(/^"+|"+$/g, "").trim());
+  }
+}
+ 
     let query = "";
     let values = [];
     let result = null;

@@ -1,7 +1,7 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // search order data by tel
-export const querySearchOrderData = async (req, res) => {
+ export const querySearchOrderData = async (req, res) => {
   const tel = req.query.tel ?? "";
   const page = parseInt(req.query.page) || 0;
   const limit = parseInt(req.query.limit) || 5;
@@ -24,90 +24,93 @@ export const querySearchOrderData = async (req, res) => {
     // Count query
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM public.tborder o inner join public.tborder_detail d on d.orderid=o.orderid
-	where o.custtel Ilike $1
+      FROM public.tborder o 
+      INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
+      WHERE o.custtel ILIKE $1
     `;
     const countResult = await dbExecution(countQuery, [`%${tel}%`]);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // Main query
     const query = `
-SELECT 
-    o.orderid,
-    o.shipping,
-    o.delivery,
-    o.channel,
-    o.custtel,
-    o.custname,
-    o.custcomment,
-    o.paymentimage,
-    o.cdate,
-    o.staffconfirm,
-    o.confirmdate,
-    o.sellstatus,
-    o.sellcomment,
-    o.sellname,
-    o.selldate,
+      SELECT 
+          o.orderid,
+          o.shipping,
+          o.delivery,
+          o.channel,
+          o.custtel,
+          o.custname,
+          o.custcomment,
+          o.paymentimage,
+          o.cdate,
+          o.staffconfirm,
+          o.confirmdate,
+          o.sellstatus,
+          o.sellcomment,
+          o.sellname,
+          o.selldate,
 
-    -- Group products into JSON array
-    jsonb_agg(
-        jsonb_build_object(
-            'productid', d.productid,
-            'productname', d.productname,
-            'price', d.price,
-            'qty', d.qty
-        )
-    ) AS productDetail
+          jsonb_agg(
+              jsonb_build_object(
+                  'productid', d.productid,
+                  'productname', d.productname,
+                  'image', d.image,
+                  'price', d.price,
+                  'qty', d.qty
+              )
+          ) AS productDetail
 
-FROM public.tborder o
-INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
+      FROM public.tborder o
+      INNER JOIN public.tborder_detail d ON d.orderid = o.orderid
 
-WHERE custtel ILIKE $1 
-GROUP BY
-    o.orderid, o.shipping, o.delivery, o.channel,
-    o.custtel, o.custname, o.custcomment,
-    o.paymentimage, o.cdate, o.staffconfirm,
-    o.confirmdate, o.sellstatus, o.sellcomment,
-    o.sellname, o.selldate ORDER BY cdate DESC
-     LIMIT $2 OFFSET $3;
+      WHERE o.custtel ILIKE $1 
+
+      GROUP BY
+        o.orderid, o.shipping, o.delivery, o.channel,
+        o.custtel, o.custname, o.custcomment,
+        o.paymentimage, o.cdate, o.staffconfirm,
+        o.confirmdate, o.sellstatus, o.sellcomment,
+        o.sellname, o.selldate
+
+      ORDER BY cdate DESC
+      LIMIT $2 OFFSET $3;
     `;
 
     const result = await dbExecution(query, [`%${tel}%`, validLimit, offset]);
-
     const rows = result?.rows || [];
 
-    // Fix/format payment image
+    // Format paymentimage + product images
     const formattedRows = rows.map((item) => {
-  const img = item.paymentimage;
+      // ----- FORMAT PAYMENT IMAGE -----
+      const img = item.paymentimage;
 
-  // If null → return null (DO NOT add baseUrl)
-  if (!img) {
-    item.paymentimage = null;
-    return item;
-  }
+      if (!img) {
+        item.paymentimage = null;
+      } else {
+        const cleaned = img.replace(/[{}"]/g, "").trim();
+        if (!cleaned) {
+          item.paymentimage = null;
+        } else {
+          const imgList = cleaned.split(",").map((i) => i.trim());
+          item.paymentimage =
+            imgList.length === 1
+              ? baseUrl + imgList[0]
+              : imgList.map((i) => baseUrl + i);
+        }
+      }
 
-  // Remove { }, quotes from PostgreSQL array output
-  const cleaned = img.replace(/[{}"]/g, "").trim();
+      // ----- FORMAT PRODUCT DETAIL IMAGES -----
+      if (item.productdetail && Array.isArray(item.productdetail)) {
+        item.productdetail = item.productdetail.map((p) => {
+          if (p.image && typeof p.image === "string") {
+            p.image = baseUrl + p.image;
+          }
+          return p;
+        });
+      }
 
-  // If empty string → return null
-  if (!cleaned) {
-    item.paymentimage = null;
-    return item;
-  }
-
-  const imgList = cleaned.split(",").map((i) => i.trim());
-
-  // If one file → return full URL string
-  if (imgList.length === 1) {
-    item.paymentimage = baseUrl + imgList[0];
-  } else {
-    // If many → return array of URLs
-    item.paymentimage = imgList.map((i) => baseUrl + i);
-  }
-
-  return item;
-});
-
+      return item;
+    });
 
     return res.status(200).send({
       status: true,
@@ -128,6 +131,7 @@ GROUP BY
     });
   }
 };
+
 
 // insert order data
 
@@ -205,8 +209,8 @@ export const insertOrderDetailData = async (req, res) => {
     // Insert product items
     const insertProductQuery = `
       INSERT INTO public.tborder_detail (
-        orderid, productid, productname, price, qty
-      ) VALUES ($1, $2, $3, $4, $5);
+        orderid, productid, productname, image, price, qty
+      ) VALUES ($1, $2, $3, $4, $5, $6);
     `;
 
     for (const item of productDetail) {
@@ -214,7 +218,7 @@ export const insertOrderDetailData = async (req, res) => {
         return res.status(400).send({
           status: false,
           message:
-            "Each product item must include productid, productname, price, qty",
+            "Each product item must include productid, productname, image, price, qty",
         });
       }
 
@@ -222,6 +226,7 @@ export const insertOrderDetailData = async (req, res) => {
         id,
         item.productid,
         item.productname,
+        item.image,
         item.price,
         item.qty,
       ];

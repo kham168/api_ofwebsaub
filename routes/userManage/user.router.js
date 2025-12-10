@@ -12,8 +12,9 @@ import {
 } from "../../controllers/userManage/user.controllers.js";
 import { uploadImage } from "../../middleware/upload.Image.js";
 const route = Route();
-
-route.post("/insert01", verifyJWT, uploadImage, insertDataOfAnyFunction);
+ 
+route.post("/insert01", //verifyJWT,
+   uploadImage, insertDataOfAnyFunction);
 route.get("/selectAll", verifyJWT, queryUserDataAll);
 route.get("/selectOne", verifyJWT, queryUserDataOne);
 route.post("/login", userLogin);
