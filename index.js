@@ -47,6 +47,7 @@ app.use(express.static(path.join(__dirname, "./tshuajimage")));
 app.use(express.static(path.join(__dirname, "./channelimage")));
 app.use(express.static(path.join(__dirname, "./profileimage")));
 app.use(express.static(path.join(__dirname, "./donationimage")));
+app.use(express.static(path.join(__dirname, "./paymentimage")));
 app.use("/", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(bodyParser.json());

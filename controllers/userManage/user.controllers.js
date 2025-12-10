@@ -185,7 +185,7 @@ export const insertDormitoryData = async (req, res) => {
 
   // Uploaded images
  // If frontend sends image as string → convert to array
-let imageArray = [];
+let imageArray = []; // imageArray
 
 if (req.files && req.files.length > 0) {
   imageArray = req.files.map((f) => f.filename);
@@ -426,21 +426,27 @@ let imageArray = [];
 
 if (req.files && req.files.length > 0) {
   imageArray = req.files.map((f) => f.filename);
-} else if (typeof req.body.image === "string") {
-  // frontend sometimes sends JSON string
-  try {
-    const parsed = JSON.parse(req.body.image); // ["a.png","b.png"]
+} 
+else if (typeof req.body.image === "string") {
 
-    if (Array.isArray(parsed)) {
-      imageArray = parsed.map((x) => x.replace(/^"+|"+$/g, "").trim());
+  let imgStr = req.body.image;
+
+  // remove all extra double quotes
+  imgStr = imgStr.replace(/"+/g, "");
+
+  try {
+    // Try parse JSON: ["a.png","b.png"]
+    const arr = JSON.parse(imgStr);
+
+    if (Array.isArray(arr)) {
+      imageArray = arr.map((i) => i.trim());
     }
-  } catch {
-    // frontend sends: "a.png,b.png"
-    imageArray = req.body.image
-      .split(",")
-      .map((x) => x.replace(/^"+|"+$/g, "").trim());
+  } catch (err) {
+    // Fallback: "a.png,b.png"
+    imageArray = imgStr.split(",").map((i) => i.trim());
   }
 }
+
  
     let query = "";
     let values = [];

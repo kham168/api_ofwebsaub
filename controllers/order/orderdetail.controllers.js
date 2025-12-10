@@ -58,6 +58,7 @@ SELECT
         jsonb_build_object(
             'productid', d.productid,
             'productname', d.productname,
+            'image', d.image,
             'price', d.price,
             'qty', d.qty
         )
@@ -199,6 +200,7 @@ SELECT
         jsonb_build_object(
             'productid', d.productid,
             'productname', d.productname,
+            'image', d.image,
             'price', d.price,
             'qty', d.qty
         )
@@ -319,6 +321,7 @@ SELECT
         jsonb_build_object(
             'productid', d.productid,
             'productname', d.productname,
+            'image', 'image', d.image,
             'price', d.price,
             'qty', d.qty
         )
