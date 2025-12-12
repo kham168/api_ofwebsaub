@@ -332,6 +332,7 @@ SELECT
     o.staffconfirm,
     o.confirmdate,
     o.sellstatus,
+    o.paymenttype,
     o.sellcomment,
     o.sellname,
     o.selldate,
@@ -355,7 +356,7 @@ GROUP BY
     o.orderid, o.shipping, o.delivery, o.channel,
     o.custtel, o.custname, o.custcomment,
     o.paymentimage, o.cdate, o.staffconfirm,
-    o.confirmdate, o.sellstatus, o.sellcomment,
+    o.confirmdate, o.sellstatus,o.paymenttype, o.sellcomment,
     o.sellname, o.selldate ORDER BY cdate DESC
      LIMIT $2 OFFSET $3;
     `;
@@ -538,7 +539,7 @@ GROUP BY
 };
 
 export const updateOrderListStatus = async (req, res) => {
-  const { orderId, staffConfirm, sellStatus, sellComment, sellName } = req.body;
+  const { orderId, staffConfirm, sellStatus, sellComment,paymentType, sellName } = req.body;
 
   if (!orderId) {
     return res.status(400).send({
@@ -561,12 +562,13 @@ export const updateOrderListStatus = async (req, res) => {
       query = `
         UPDATE public.tborder
         SET sellstatus  = $2, 
-            sellcomment = $3,
-            sellname    = $4,
+            paymenttype = $3,
+            sellcomment = $4,
+            sellname    = $5,
             selldate    = NOW()
         WHERE orderid = $1 RETURNING *
       `;
-      values = [orderId, sellStatus, sellComment, sellName];
+      values = [orderId, sellStatus,paymentType, sellComment, sellName];
     }
 
     // 2️⃣ Staff confirming sale
