@@ -147,7 +147,7 @@ export const queryHouseDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { channelData, topData }),
+      ...(validPage === 0 && { ...channelData, topData }),
     });
   } catch (error) {
     console.error("Error in query_house_dataall:", error);

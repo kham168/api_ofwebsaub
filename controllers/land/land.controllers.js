@@ -33,7 +33,7 @@ export const queryLandDataAll = async (req, res) => {
     if (validPage === 0) {
       const qrQuery = `
     SELECT qr,
-      '' AS "channelimage",
+       image AS "channelimage",
       video1,
       video2,
       guidelinevideo
@@ -150,7 +150,7 @@ export const queryLandDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { channelData, topData }),
+      ...(validPage === 0 && { ...channelData, topData }),
     });
   } catch (error) {
     console.error("Error in queryLandDataAll:", error);

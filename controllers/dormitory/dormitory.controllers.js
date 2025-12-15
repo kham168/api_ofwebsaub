@@ -152,7 +152,7 @@ export const queryDormitoryDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && { channelData, topData }), // only include if page === 0
+      ...(validPage === 0 && { ...channelData, topData }), // only include if page === 0
     });
   } catch (error) {
     console.error("Error in query_dormantal_dataall:", error);

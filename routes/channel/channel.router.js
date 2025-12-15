@@ -17,7 +17,7 @@ route.get("/selectOne", queryChannelDataByOne);
 route.post("/insert", verifyJWT, insertChannelDataDetail);
 route.put(
   "/updateChannelData",
-  verifyJWT,
+ // verifyJWT,
   uploadChannelFiles,
   updateChannelData
 );
