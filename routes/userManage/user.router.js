@@ -4,8 +4,8 @@ import {
   queryUserDataAll,
   queryUserDataOne,
   createNewUser,
-  insertDormitoryData,
-  insertDataOfAnyFunction,
+  insertDataOfAnyFunction02,
+  insertDataOfAnyFunction01,
   userLogin,
   updateUserData,
   updateProductStatus,
@@ -13,13 +13,13 @@ import {
 import { uploadImage } from "../../middleware/upload.Image.js";
 const route = Route();
  
-route.post("/insert01", //verifyJWT,
-   uploadImage, insertDataOfAnyFunction);
+route.post("/insert01", verifyJWT,
+   uploadImage, insertDataOfAnyFunction01);
 route.get("/selectAll", verifyJWT, queryUserDataAll);
 route.get("/selectOne", verifyJWT, queryUserDataOne);
 route.post("/login", userLogin);
 route.post("/insert", verifyJWT, createNewUser);
-route.post("/insert02", verifyJWT, uploadImage, insertDormitoryData);
+route.post("/insert02", verifyJWT, uploadImage, insertDataOfAnyFunction02);
 route.put("/update",verifyJWT, updateUserData);
 route.put("/updateProductStatus",verifyJWT, updateProductStatus);
 export default route;

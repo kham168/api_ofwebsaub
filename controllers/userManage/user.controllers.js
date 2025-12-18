@@ -121,7 +121,7 @@ export const createNewUser = async (req, res) => {
   }
 };
 
-export const insertDormitoryData = async (req, res) => {
+export const insertDataOfAnyFunction02 = async (req, res) => {
   const {
     channel,
     id,
@@ -182,28 +182,26 @@ export const insertDormitoryData = async (req, res) => {
   };
 
   const villageArray = parseVillageList(village);
+ 
+  let imageArray = []; // imageArray
 
-  // Uploaded images
- // If frontend sends image as string → convert to array
-let imageArray = []; // imageArray
+  if (req.files && req.files.length > 0) {
+    imageArray = req.files.map((f) => f.filename);
+  } else if (typeof req.body.image === "string") {
+    // frontend sometimes sends JSON string
+    try {
+      const parsed = JSON.parse(req.body.image); // ["a.png","b.png"]
 
-if (req.files && req.files.length > 0) {
-  imageArray = req.files.map((f) => f.filename);
-} else if (typeof req.body.image === "string") {
-  // frontend sometimes sends JSON string
-  try {
-    const parsed = JSON.parse(req.body.image); // ["a.png","b.png"]
-
-    if (Array.isArray(parsed)) {
-      imageArray = parsed.map((x) => x.replace(/^"+|"+$/g, "").trim());
+      if (Array.isArray(parsed)) {
+        imageArray = parsed.map((x) => x.replace(/^"+|"+$/g, "").trim());
+      }
+    } catch {
+      // frontend sends: "a.png,b.png"
+      imageArray = req.body.image
+        .split(",")
+        .map((x) => x.replace(/^"+|"+$/g, "").trim());
     }
-  } catch {
-    // frontend sends: "a.png,b.png"
-    imageArray = req.body.image
-      .split(",")
-      .map((x) => x.replace(/^"+|"+$/g, "").trim());
   }
-}
 
   let query = "";
   let values = [];
@@ -390,7 +388,7 @@ if (req.files && req.files.length > 0) {
 };
 
 // insert cream
-export const insertDataOfAnyFunction = async (req, res) => {
+export const insertDataOfAnyFunction01 = async (req, res) => {
   const {
     channel,
     id,
@@ -402,8 +400,8 @@ export const insertDataOfAnyFunction = async (req, res) => {
     tel,
     detail,
     donation,
-    dntstartDate,
-    dntendDate,
+    dntStartDate,
+    dntEndDate,
     locationGps,
   } = req.body;
 
@@ -422,23 +420,22 @@ export const insertDataOfAnyFunction = async (req, res) => {
     //     ? req.files.map((file) => file.filename)
     //     : [];
     // If frontend sends image as string → convert to array
-let imageArray = [];
+    let imageArray = [];
 
-if (req.files && req.files.length > 0) {
-  imageArray = req.files.map((f) => f.filename);
-} 
-else if (typeof req.body.image === "string") {
-  let imgStr = req.body.image;
+    if (req.files && req.files.length > 0) {
+      imageArray = req.files.map((f) => f.filename);
+    } else if (typeof req.body.image === "string") {
+      let imgStr = req.body.image;
 
-  // STEP 1: Remove brackets and double quotes
-  imgStr = imgStr.replace(/[\[\]{}"]/g, "");
+      // STEP 1: Remove brackets and double quotes
+      imgStr = imgStr.replace(/[\[\]{}"]/g, "");
 
-  // STEP 2: Split into array
-  imageArray = imgStr.split(",").map((i) => i.trim());
+      // STEP 2: Split into array
+      imageArray = imgStr.split(",").map((i) => i.trim());
 
-  // STEP 3: Remove empty items
-  imageArray = imageArray.filter((i) => i.length > 0);
-}
+      // STEP 3: Remove empty items
+      imageArray = imageArray.filter((i) => i.length > 0);
+    }
     let query = "";
     let values = [];
     let result = null;
@@ -463,8 +460,8 @@ else if (typeof req.body.image === "string") {
         detail,
         imageArray,
         donation || "",
-        dntstartDate || null,
-        dntendDate || null,
+        dntStartDate || null,
+        dntEndDate || null,
       ];
     }
 
@@ -489,8 +486,8 @@ else if (typeof req.body.image === "string") {
         locationGps,
         imageArray,
         donation,
-        dntstartDate || null,
-        dntendDate || null
+        dntStartDate || null,
+        dntEndDate || null,
       ];
     }
 
@@ -503,7 +500,17 @@ else if (typeof req.body.image === "string") {
         VALUES ('8',$1, $2, $3, $4, $5, $6::text[], '1', $7, $8, $8, NOW())
         RETURNING *;
       `;
-      values = [id, name, price1, tel, detail, imageArray,donation, dntstartDate, dntendDate,];
+      values = [
+        id,
+        name,
+        price1,
+        tel,
+        detail,
+        imageArray,
+        donation,
+        dntStartDate,
+        dntEndDate,
+      ];
     }
 
     // 🧠 CH 6 → tbtshuaj
@@ -525,8 +532,8 @@ else if (typeof req.body.image === "string") {
         detail,
         imageArray,
         donation || "",
-        dntstartDate || null,
-        dntendDate || null
+        dntStartDate || null,
+        dntEndDate || null,
       ];
     } else {
       return res.status(400).send({

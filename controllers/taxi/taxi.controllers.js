@@ -121,26 +121,16 @@ export const queryTaxiDataAll = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const response = {
       data: rows,
@@ -253,26 +243,16 @@ export const searchTaxiData = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
-      let imgs = [];
+     rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -372,26 +352,16 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -493,26 +463,16 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -581,26 +541,16 @@ export const queryTaxiDataOne = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     res.status(200).send({
       status: true,

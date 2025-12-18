@@ -18,6 +18,7 @@ export const queryVillageDataAll = async (req, res) => {
 
 // query village by district id
 export const queryVillageDataByDistrictId = async (req, res) => {
+ 
   const { districtId } = req.body;
 
   try {

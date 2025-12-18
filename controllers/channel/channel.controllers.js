@@ -227,10 +227,7 @@ export const updateChannelData = async (req, res) => {
       data: null,
     });
   }
-
-  //const images = req.files?.files || null;   // array of images
-  //const qrFile = req.files?.file || null;    // array with 1 file
-
+ 
   const imageArray = req.files?.files
     ? req.files.files.map((f) => f.filename)
     : null;
@@ -242,44 +239,44 @@ export const updateChannelData = async (req, res) => {
     const values = [];
     let paramIndex = 1;
 
-    if (detail !== null) {
+    if (detail !== null && detail !== undefined) {
       fields.push(`detail = $${paramIndex}`);
       values.push(detail);
       paramIndex++;
     }
 
-    if (imageArray !== null) {
+    if (imageArray !== null && imageArray.length > 0) {
       const imageString = imageArray.join(","); // store as comma-separated string
       fields.push(`image = $${paramIndex}`);
       values.push(imageString);
       paramIndex++;
     }
 
-    if (qrImage !== null) {
+    if (qrImage !== null && qrImage !== undefined) {
       fields.push(`qr = $${paramIndex}`);
       values.push(qrImage);
       paramIndex++;
     }
 
-    if (video1) {
+    if (video1 !== null && video1 !== undefined) {
       fields.push(`video1 = $${paramIndex}`);
       values.push(video1);
       paramIndex++;
     }
 
-    if (video2) {
+    if (video2 !== null && video2 !== undefined) {
       fields.push(`video2 = $${paramIndex}`);
       values.push(video2);
       paramIndex++;
     }
 
-    if (guidelineVideo) {
+    if (guidelineVideo !== null && guidelineVideo !== undefined) {
       fields.push(`guidelinevideo = $${paramIndex}`);
       values.push(guidelineVideo);
       paramIndex++;
     }
 
-    if (status !== null) {
+    if (status !== null && status !== undefined) {
       fields.push(`status = $${paramIndex}`);
       values.push(status);
       paramIndex++;

@@ -10,8 +10,8 @@ import {
 const route = Route();
 
 route.get("/selectAll", queryDistrictDataAll);
-route.post("/selectByProvinceId", queryDistrictDataByProvinceId);
-route.post("/selectOne", queryDistrictDataOne);
+route.get("/selectByProvinceId", queryDistrictDataByProvinceId);
+route.get("/selectOne", queryDistrictDataOne);
 route.post("/insert", verifyJWT, insertDistrictData);
 route.put("/update", verifyJWT, updateDistrictData);
 

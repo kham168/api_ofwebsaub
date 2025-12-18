@@ -25,6 +25,7 @@ import channel from "./routes/channel/channel.router.js";
 import order from "./routes/order/order.router.js";
 import profile from "./routes/profile/profile.router.js";
 import donation from "./routes/donation/donation.router.js";
+import notePrice from "./routes/noteprice/noteprice.router.js";
 import user from "./routes/userManage/user.router.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -48,6 +49,7 @@ app.use(express.static(path.join(__dirname, "./channelimage")));
 app.use(express.static(path.join(__dirname, "./profileimage")));
 app.use(express.static(path.join(__dirname, "./donationimage")));
 app.use(express.static(path.join(__dirname, "./paymentimage")));
+app.use(express.static(path.join(__dirname, "./notepriceimage")));
 app.use("/", express.static(path.join(process.cwd(), "uploads")));
 
 app.use(bodyParser.json());
@@ -69,6 +71,7 @@ app.use("/api/channel", channel);
 app.use("/api/order", order);
 app.use("/api/profile", profile);
 app.use("/api/donation", donation);
+app.use("/api/note", notePrice);
 app.use("/api/user", user);
 
 app.get("/", (req, res) => {

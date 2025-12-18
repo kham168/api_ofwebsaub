@@ -114,26 +114,16 @@ export const queryLandDataAll = async (req, res) => {
     let rows = (await dbExecution(landQuery, [validLimit, offset]))?.rows || [];
 
     // ✅ Safely parse images from Postgres array
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // ✅ Pagination info
     const pagination = {
@@ -205,26 +195,16 @@ export const queryLandDataOne = async (req, res) => {
     let rows = (await dbExecution(query, [id]))?.rows || [];
 
     // ✅ Safely parse images from Postgres array
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // ✅ Build combined response
     res.status(200).send({
@@ -308,26 +288,16 @@ export const queryLandDataByDistrictId = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Parse image arrays like before
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -420,26 +390,16 @@ export const queryLandDataByVillageId = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,

@@ -97,7 +97,6 @@ export const queryDormitoryDataAll = async (req, res) => {
         dis.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
         d.image,
-        d.plan_on_next_month,
         d.cdate
       FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
@@ -119,26 +118,16 @@ export const queryDormitoryDataAll = async (req, res) => {
 
     // 🖼️ Map image URLs to full paths
     // 🖼️ Map image URLs to full paths
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -216,7 +205,6 @@ export const searchDormitoryData = async (req, res) => {
         dis.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
         d.image,
-        d.plan_on_next_month,
         d.cdate
       FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
@@ -236,26 +224,16 @@ export const searchDormitoryData = async (req, res) => {
     const result = await dbExecution(query, [`%${name}%`, validLimit, offset]);
     let rows = result?.rows || [];
 
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -334,7 +312,6 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
         dis.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
         d.image,
-        d.plan_on_next_month,
         d.cdate
       FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
@@ -354,26 +331,16 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
     const result = await dbExecution(query, [districtId, validLimit, offset]);
     let rows = result?.rows || [];
 
-    rows = rows.map((r) => {
-      let imgs = [];
+   rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // ✅ Send success response
     const pagination = {
@@ -452,7 +419,6 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
         dis.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
         d.image,
-        d.plan_on_next_month,
         d.cdate
       FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
@@ -472,26 +438,16 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
     const result = await dbExecution(query, [villageId, validLimit, offset]);
     let rows = result?.rows || [];
 
-    rows = rows.map((r) => {
-      let imgs = [];
+   rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     const pagination = {
       page: validPage,
@@ -555,7 +511,6 @@ export const queryDormitoryDataOne = async (req, res) => {
         dis.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
         d.image,
-        d.plan_on_next_month,
         d.cdate
       FROM public.tbdormitory d
       INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
@@ -576,26 +531,16 @@ export const queryDormitoryDataOne = async (req, res) => {
     let rows = result?.rows || [];
 
     // 🖼️ Process images
-    rows = rows.map((r) => {
-      let imgs = [];
+    rows = await Promise.all(
+      rows.map(async (r) => {
+        const imgs = await QueryTopup.cleanImageArray(r.image);
 
-      if (r.image) {
-        if (Array.isArray(r.image)) {
-          imgs = r.image;
-        } else if (typeof r.image === "string") {
-          imgs = r.image
-            .replace(/[{}]/g, "")
-            .split(",")
-            .map((i) => i.trim())
-            .filter(Boolean);
-        }
-      }
-
-      return {
-        ...r,
-        image: imgs.map((img) => baseUrl + img),
-      };
-    });
+        return {
+          ...r,
+          image: imgs.map((img) => baseUrl + img),
+        };
+      })
+    );
 
     // ✅ Send success response
     res.status(200).send({

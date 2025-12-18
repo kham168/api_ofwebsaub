@@ -4,7 +4,7 @@ import { dbExecution } from "../../config/dbConfig.js";
 
 export const queryDistrictDataAll = async (req, res) => {
   try {
-    const query = `SELECT districtid, district, arean, provinceid
+    const query = `SELECT districtid, district, provinceid
 	FROM public.tbdistrict order by districtid asc`;
     const resultSingle = await dbExecution(query, []);
     if (resultSingle) {
@@ -29,7 +29,8 @@ export const queryDistrictDataAll = async (req, res) => {
 // query by province ID
 
 export const queryDistrictDataByProvinceId = async (req, res) => {
-  const provinceId = req.body.provinceId;
+ 
+   const provinceId = req.query.provinceId ?? "";
 
   try {
     const query = `SELECT districtid, district FROM public.tbdistrict where provinceid=$1`;
