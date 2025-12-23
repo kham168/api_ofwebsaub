@@ -152,7 +152,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
   if (!id || !channel || !name || !tel || !province || !district) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields: id, channel, tel, province, district",
+      message: "Missing required fields: id, channel, tel",
       data: null,
     });
   }
@@ -182,7 +182,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
   };
 
   const villageArray = parseVillageList(village);
- 
+
   let imageArray = []; // imageArray
 
   if (req.files && req.files.length > 0) {
@@ -217,6 +217,14 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
   try {
     // Channel 2 → Dormitory
     if (channel === "2") {
+      if (!price2 || !moreDetail) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields: price2, contactNumber",
+          data: null,
+        });
+      }
+
       query = `
         INSERT INTO public.tbdormitory(
        channel, id, dormantalname, price1, price2, price3, type, totalroom, activeroom,
@@ -233,18 +241,18 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
       values = [
         id,
         name,
-        price1 || null,
-        price2 || null,
-        price3 || null,
+        price1 || "",
+        price2,
+        price3 || "",
         type,
         totalRoom,
         activeRoom || 0,
         locationVideo || "",
-        tel || "",
+        tel,
         contactNumber || "",
-        moreDetail || "",
-        province || null,
-        district || null,
+        moreDetail,
+        province,
+        district,
         villageArray,
         imageArray,
         plan_on_next_month || "",
@@ -253,6 +261,14 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
 
     // Channel 3 → House
     else if (channel === "3") {
+      if (!price2 || !contactNumber || !moreDetail) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields: price2, contactNumber",
+          data: null,
+        });
+      }
+
       query = `
         INSERT INTO public.tbhouse(
         channel,  id, housename, price1, price2, price3,
@@ -270,12 +286,12 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
       values = [
         id,
         name,
-        price1,
+        price1 || "",
         price2,
-        price3,
+        price3 || "",
         tel,
         contactNumber,
-        locationVideo,
+        locationVideo || "",
         moreDetail,
         province,
         district,
@@ -286,6 +302,22 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
 
     // Channel 5 → Land
     else if (channel === "5") {
+      if (
+        !productName ||
+        !price1 ||
+        !squareMeters ||
+        !type ||
+        !moreDetail ||
+        !area
+      ) {
+        return res.status(400).send({
+          status: false,
+          message:
+            "Missing required fields: squareMeters, type, area, moreDetail",
+          data: null,
+        });
+      }
+
       query = `
         INSERT INTO public.tbland(
          channel, id, ownername, productname, type, squaremeters, area, price, 
@@ -311,9 +343,9 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         area,
         price1,
         tel,
-        contactNumber,
-        locationArea,
-        locationVideo,
+        contactNumber || "",
+        locationArea || "",
+        locationVideo || "",
         moreDetail,
         province,
         district,
@@ -324,6 +356,14 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
 
     // Channel 7 → Taxi
     else if (channel === "7") {
+      if (!price2 || !peopleId || !moreDetail) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields: peopleId, moreDetail",
+          data: null,
+        });
+      }
+
       query = `
         INSERT INTO public.tbtaxi(
          channel, id, name, price1, price2, tel, detail, provinceid, districtid, villageid, image, 
@@ -339,7 +379,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
       values = [
         id,
         name,
-        price1,
+        price1 || "",
         price2,
         tel,
         moreDetail,
@@ -347,8 +387,8 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         district,
         villageArray,
         imageArray,
-        peopleId || null,
-        turnOfReason || null,
+        peopleId,
+        turnOfReason || "",
       ];
     }
 
@@ -405,21 +445,15 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
     locationGps,
   } = req.body;
 
-  if (!id || !name || !price1 || !detail) {
+  if (!id || !name || !price2 || !tel || !detail) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields",
+      message: "Missing required fields name, price2",
       data: [],
     });
   }
 
   try {
-    // Collect uploaded images
-    // const imageArray =
-    //   req.files && req.files.length > 0
-    //     ? req.files.map((file) => file.filename)
-    //     : [];
-    // If frontend sends image as string → convert to array
     let imageArray = [];
 
     if (req.files && req.files.length > 0) {
@@ -442,6 +476,14 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
 
     // 🧠 CH 1 → tbcream
     if (channel === "1") {
+      if (!bland) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields bland",
+          data: [],
+        });
+      }
+
       query = `
         INSERT INTO public.tbcream (
          channel, id, bland, creamname, price1, price2,
@@ -454,7 +496,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
         id,
         bland,
         name,
-        price1,
+        price1 || "",
         price2,
         tel,
         detail,
@@ -467,6 +509,14 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
 
     // 🧠 CH 4 → tbkhoomkhotsheb
     else if (channel === "4") {
+      if (!type) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields type",
+          data: [],
+        });
+      }
+
       query = `
         INSERT INTO public.tbkhoomkhotsheb(
          channel, id, type, name, price1, price2, 
@@ -479,13 +529,13 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
         id,
         type,
         name,
-        price1,
-        price2 || null,
-        tel || null,
+        price1 || "",
+        price2,
+        tel,
         detail,
         locationGps,
         imageArray,
-        donation,
+        donation || "",
         dntStartDate || null,
         dntEndDate || null,
       ];
@@ -503,13 +553,13 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
       values = [
         id,
         name,
-        price1,
+        price1 || "",
         tel,
         detail,
         imageArray,
-        donation,
-        dntStartDate,
-        dntEndDate,
+        donation || "",
+        dntStartDate || null,
+        dntEndDate || null,
       ];
     }
 
@@ -526,9 +576,9 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
       values = [
         id,
         name,
-        price1,
-        price2 || null,
-        tel || "",
+        price1 || "",
+        price2,
+        tel,
         detail,
         imageArray,
         donation || "",
