@@ -261,7 +261,6 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
 
     // Channel 3 → House
     else if (channel === "3") {
-
       if (!price2 || !moreDetail) {
         return res.status(400).send({
           status: false,
@@ -446,7 +445,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
     locationGps,
   } = req.body;
 
-  if (!id || !name || !price2 || !tel || !detail) {
+  if (!id || !name || !tel || !detail) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields name, price2",
@@ -477,10 +476,10 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
 
     // 🧠 CH 1 → tbcream
     if (channel === "1") {
-      if (!bland) {
+      if (!price2 || !bland) {
         return res.status(400).send({
           status: false,
-          message: "Missing required fields bland",
+          message: "Missing required fields price2, bland",
           data: [],
         });
       }
@@ -531,7 +530,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
         type,
         name,
         price1 || "",
-        price2,
+        price2 || "",
         tel,
         detail,
         locationGps,
@@ -566,6 +565,14 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
 
     // 🧠 CH 6 → tbtshuaj
     else if (channel === "6") {
+      if (!price2) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields price2",
+          data: [],
+        });
+      }
+
       query = `
         INSERT INTO public.tbtshuaj(
          channel, id, name, price1, price2, tel, detail,
