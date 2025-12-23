@@ -261,7 +261,8 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
 
     // Channel 3 → House
     else if (channel === "3") {
-      if (!price2 || !contactNumber || !moreDetail) {
+
+      if (!price2 || !moreDetail) {
         return res.status(400).send({
           status: false,
           message: "Missing required fields: price2, contactNumber",
@@ -290,7 +291,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         price2,
         price3 || "",
         tel,
-        contactNumber,
+        contactNumber || "",
         locationVideo || "",
         moreDetail,
         province,

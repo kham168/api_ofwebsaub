@@ -19,10 +19,36 @@ export const queryVillageDataAll = async (req, res) => {
 // query village by district id
 export const queryVillageDataByDistrictId = async (req, res) => {
   const districtId = req.query.districtId ?? 0;
+   const page = req.query.page ?? 0;
+  const limit = req.query.limit ?? 15;
 
+  // ✅ sanitize & convert
+  const validPage = Math.max(parseInt(page, 10) || 0, 0);
+  const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
+  const offset = validPage * validLimit;
+
+  if (!districtId) {
+    return res.status(400).json({ error: "districtid is required" });
+  }
   try {
-    if (!districtId) {
-      return res.status(400).json({ error: "districtid is required" });
+    const countQuery = `SELECT count(*) AS total 
+      FROM public.tbvillage WHERE districtid = $1`;
+
+    const countResult = await dbExecution(countQuery, [districtId]);
+    const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
+
+    if (total === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No data found",
+        data: [],
+        pagination: {
+          page: validPage,
+          limit: validLimit,
+          total,
+          totalPages: 0,
+        },
+      });
     }
 
     const query = `
@@ -32,7 +58,21 @@ export const queryVillageDataByDistrictId = async (req, res) => {
     `;
     const resultSingle = await dbExecution(query, [districtId]);
 
-    return res.json(resultSingle?.rows);
+    const rows = resultSingle?.rows || [];
+
+    const pagination = {
+      page: validPage,
+      limit: validLimit,
+      total,
+      totalPages: Math.ceil(total / validLimit),
+    };
+
+    res.status(200).send({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+      pagination,
+    });
   } catch (error) {
     console.error("Error in query_village_data_by_district_id:", error);
     res.status(500).send("Internal Server Error");
@@ -133,8 +173,7 @@ export const updateVillageData = async (req, res) => {
     const query = `
       UPDATE public.tbvillage
       SET village = $1,
-          arean = $2
-      WHERE villageid = $3
+          arean = $2 WHERE villageid = $3
       RETURNING *
     `;
     const values = [village, arean, villageId];
