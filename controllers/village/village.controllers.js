@@ -18,8 +18,7 @@ export const queryVillageDataAll = async (req, res) => {
 
 // query village by district id
 export const queryVillageDataByDistrictId = async (req, res) => {
- 
-  const { districtId } = req.body;
+  const districtId = req.query.districtId ?? 0;
 
   try {
     if (!districtId) {
@@ -34,6 +33,36 @@ export const queryVillageDataByDistrictId = async (req, res) => {
     const resultSingle = await dbExecution(query, [districtId]);
 
     return res.json(resultSingle?.rows);
+  } catch (error) {
+    console.error("Error in query_village_data_by_district_id:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+// query village by district id
+export const searchVillageDataByDistrictIdAndVillageName = async (req, res) => {
+  const districtId = req.query.districtId ?? 0;
+  const name = req.query.name ?? 0;
+
+  try {
+    if (!districtId) {
+      return res.status(400).json({ error: "districtid is required" });
+    }
+
+    const query = `
+      SELECT villageid, village, arean
+      FROM public.tbvillage
+      WHERE districtid = $1 and village Ilike $2 order by villageid asc
+    `;
+    const resultSingle = await dbExecution(query, [districtId, `%${name}%`]);
+
+    const rows = resultSingle?.rows || [];
+
+    return res.status(200).json({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
   } catch (error) {
     console.error("Error in query_village_data_by_district_id:", error);
     res.status(500).send("Internal Server Error");

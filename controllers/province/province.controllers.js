@@ -1,20 +1,30 @@
 import { dbExecution } from "../../config/dbConfig.js";
-
 export const queryProvinceDataAll = async (req, res) => {
-  // done
-
   try {
-    const query = `SELECT provinceid, province
-	FROM public.tbprovince;`;
+    const query = `
+      SELECT provinceid, province
+      FROM public.tbprovince;
+    `;
+
     const resultSingle = await dbExecution(query, []);
-    console.log("Query result:", resultSingle?.rows);
-    return res.json(resultSingle?.rows);
+    const rows = resultSingle?.rows || [];
+
+    return res.status(200).json({
+      status: true,
+      message: rows.length > 0 ? "Query successful" : "No data found",
+      data: rows,
+    });
+
   } catch (error) {
-    console.error("Error in testdda:", error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error in queryProvinceDataAll:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error",
+    });
   }
 };
 
+  
 export const queryProvinceDataOne = async (req, res) => {
   // done
   const id = req.body.id;
