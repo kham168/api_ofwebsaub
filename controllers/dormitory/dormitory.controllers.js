@@ -1,5 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopup } from "../class/class.controller.js";
+import { QueryTopData } from "../class/class.controller.js";
 // kho lawm  qhob no with image lawm nawb muas
 
 export const queryDormitoryDataAll = async (req, res) => {
@@ -69,7 +69,7 @@ export const queryDormitoryDataAll = async (req, res) => {
       }
 
       try {
-        const topResult = await QueryTopup.getAllProductB();
+        const topResult = await QueryTopData.getAllProductB();
 
         topData = topResult?.topData || topResult;
       } catch (e) {
@@ -120,7 +120,7 @@ export const queryDormitoryDataAll = async (req, res) => {
     // 🖼️ Map image URLs to full paths
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -226,7 +226,7 @@ export const searchDormitoryData = async (req, res) => {
 
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -333,7 +333,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
 
    rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -440,7 +440,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
 
    rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -533,7 +533,7 @@ export const queryDormitoryDataOne = async (req, res) => {
     // 🖼️ Process images
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,

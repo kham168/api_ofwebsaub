@@ -1,5 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopup } from "../class/class.controller.js";
+import { QueryTopData } from "../class/class.controller.js";
 
 // query tshuaj data all or select top 15   with image lawm nawb muas
 export const queryTshuajDataAll = async (req, res) => {
@@ -71,7 +71,7 @@ export const queryTshuajDataAll = async (req, res) => {
       }
 
       try {
-        const topResult = await QueryTopup.getAllProductAData();
+        const topResult = await QueryTopData.getAllProductAData();
         topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
@@ -100,7 +100,7 @@ export const queryTshuajDataAll = async (req, res) => {
     // ✅ Safely parse images
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
@@ -196,7 +196,7 @@ export const searchTshuajData = async (req, res) => {
     // ✅ Safely parse images from Postgres array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
@@ -268,7 +268,7 @@ export const queryTshuajDataOne = async (req, res) => {
     // ✅ Safely parse images from Postgres array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),

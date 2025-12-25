@@ -261,4 +261,4 @@ class queryTopData {
   }
 }
 
-export const QueryTopup = new queryTopData();
+export const QueryTopData = new queryTopData();

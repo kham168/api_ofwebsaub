@@ -1,5 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopup } from "../class/class.controller.js";
+import { QueryTopData } from "../class/class.controller.js";
 
 export const queryCreamDataAll = async (req, res) => {
   try {
@@ -65,7 +65,7 @@ export const queryCreamDataAll = async (req, res) => {
       }
 
       try {
-        const topResult = await QueryTopup.getAllProductAData();
+        const topResult = await QueryTopData.getAllProductAData();
         topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
@@ -95,7 +95,7 @@ export const queryCreamDataAll = async (req, res) => {
  
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
@@ -198,7 +198,7 @@ export const searchCreamData = async (req, res) => {
     // Format image URLs
      rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
@@ -289,7 +289,7 @@ export const queryCreamDataOne = async (req, res) => {
     // Parse images
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),

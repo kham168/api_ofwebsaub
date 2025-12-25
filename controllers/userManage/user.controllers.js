@@ -2,6 +2,7 @@ import { dbExecution } from "../../config/dbConfig.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { generateAccessToken } from "../../utils/jwt.js";
+import { QueryTopData } from "../class/class.controller.js";
 
 export const queryUserDataAll = async (req, res) => {
   try {
@@ -246,7 +247,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         price3 || "",
         type,
         totalRoom,
-        activeRoom || 0,
+        activeRoom || "0",
         locationVideo || "",
         tel,
         contactNumber || "",
@@ -533,7 +534,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
         price2 || "",
         tel,
         detail,
-        locationGps,
+        locationGps || "",
         imageArray,
         donation || "",
         dntStartDate || null,
@@ -813,4 +814,134 @@ export const updateProductStatus = async (req, res) => {
     console.error("Error in testdda:", error);
     res.status(500).send("Internal Server Error");
   }
+};
+
+export const queryProductionAllOfEachChannel = async (req, res) => {
+  const channel = String(req.query.channel ?? "");
+  const page = Math.max(parseInt(req.query.page) || 0, 0);
+  const limit = Math.max(parseInt(req.query.limit) || 15, 1);
+  const offset = page * limit;
+
+  const baseUrl = "http://localhost:5151/";
+
+  let query = "";
+  let total = 0;
+
+  try {
+    if (channel === "1") {
+      total = await getTotal("public.tbcream");
+      query = `
+        SELECT channel, id, bland, creamname,
+        price1, price2, price3, tel, detail, image,
+        status, donation, dntstartdate, dntenddate, cdate
+        FROM public.tbcream
+        WHERE status='1'
+        ORDER BY cdate DESC
+        LIMIT $1 OFFSET $2
+      `;
+    } else if (channel === "2") {
+      total = await getTotal("public.tbdormitory");
+      query = `
+      SELECT channel, id, dormantalname, price1, price2, price3, 
+type, totalroom, activeroom, locationvideo, tel, contactnumber,
+moredetail, provinceid, districtid, villageid, image, status, 
+plan_on_next_month, cdate
+	FROM public.tbdormitory WHERE status='1'
+        ORDER BY cdate DESC LIMIT $1 OFFSET $2
+      `;
+    } else if (channel === "3") {
+      total = await getTotal("public.tbhouse");
+      query = `
+  SELECT channel, id, housename, price1, price2, price3, tel, 
+contactnumber, locationvideo, status, moredetail, provinceid, 
+districtid, villageid, image, cdate
+	FROM public.tbhouse where status='1' order by cdate desc LIMIT $1 OFFSET $2
+      `;
+    } else if (channel === "4") {
+      total = await getTotal("public.tbkhoomkhotsheb");
+      query = `
+    SELECT channel, id, type, name, price1, price2, tel, detail,
+           locationgps, image, status, donation, dntstartdate,
+           dntenddate, cdate
+    FROM public.tbkhoomkhotsheb
+    WHERE status='1'
+    ORDER BY cdate DESC
+    LIMIT $1 OFFSET $2
+  `;
+    } else if (channel === "5") {
+      total = await getTotal("public.tbland");
+      query = `SELECT channel, id, ownername, productname, type, squaremeters, area, price, tel, contactnumber, locationurl, locationvideo, moredetail, provinceid, districtid, villageid, image, status, cdate
+	FROM public.tbland where status='1' order by cdate desc LIMIT $1 OFFSET $2;
+      `;
+    } else if (channel === "6") {
+      total = await getTotal("public.tbtshuaj");
+      query = `SELECT channel, id, name, price1, price2, tel, detail, image, status, donation, dntstartdate, dntenddate, cdate
+	FROM public.tbtshuaj where status='1' order by cdate desc LIMIT $1 OFFSET $2;
+      `;
+    } else if (channel === "7") {
+      total = await getTotal("public.tbtaxi");
+      query = `SELECT channel, id, name, price1, price2, tel, detail, provinceid, districtid, villageid, image, status, peopleid, turnofreason, cdate
+	FROM public.tbtaxi where status='1' order by cdate desc LIMIT $1 OFFSET $2;`;
+    } else if (channel === "8") {
+      total = await getTotal("public.tbmuas");
+      query = `SELECT channel, id, name, price, tel, detail, image, status, donation, dntstartdate, dntenddate, cdate
+	FROM public.tbmuas where status='1' order by cdate desc LIMIT $1 OFFSET $2;`;
+    } else if (channel === "9") {
+      total = await getTotal("public.tbsaub");
+      query = `SELECT channel, id, servicetype, servicename, detail, provinceid, districtid, villageid, tel, contact, image, videourl, voise, viewnumber, status, donation, dntstartdate, dntenddate, cdate, reason_off, offdate
+	FROM public.tbsaub where status='1' order by cdate desc LIMIT $1 OFFSET $2;`;
+    }
+
+    if (!query) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid channel",
+      });
+    }
+
+    if (total === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No data found",
+        data: [],
+        pagination: { page, limit, total, totalPages: 0 },
+      });
+    }
+
+    const result = await dbExecution(query, [limit, offset]);
+
+    const rows = await Promise.all(
+      (result.rows || []).map(async (r) => ({
+        ...r,
+        image: r.image
+          ? (
+              await QueryTopData.cleanImageArray(r.image)
+            ).map((img) => baseUrl + img)
+          : [],
+      }))
+    );
+
+    res.status(200).json({
+      status: true,
+      message: "Query successful",
+      data: rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (err) {
+    console.error("queryProductionAllOfEachChannel:", err);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+const getTotal = async (table) => {
+  const result = await dbExecution(
+    `SELECT COUNT(*) AS total FROM ${table} WHERE status='1'`,
+    []
+  );
+  return parseInt(result.rows[0].total, 10);
 };

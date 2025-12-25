@@ -1,5 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopup } from "../class/class.controller.js";
+import { QueryTopData } from "../class/class.controller.js";
 
 export const queryLandDataAll = async (req, res) => {
   try {
@@ -68,7 +68,7 @@ export const queryLandDataAll = async (req, res) => {
       }
 
       try {
-        const topResult = await QueryTopup.getAllProductB();
+        const topResult = await QueryTopData.getAllProductB();
 
         topData = topResult?.topData || topResult;
       } catch (e) {
@@ -116,7 +116,7 @@ export const queryLandDataAll = async (req, res) => {
     // ✅ Safely parse images from Postgres array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -197,7 +197,7 @@ export const queryLandDataOne = async (req, res) => {
     // ✅ Safely parse images from Postgres array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -290,7 +290,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
     // ✅ Parse image arrays like before
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,
@@ -392,7 +392,7 @@ export const queryLandDataByVillageId = async (req, res) => {
     // ✅ Proper image parsing
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
 
         return {
           ...r,

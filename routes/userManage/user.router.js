@@ -8,15 +8,16 @@ import {
   insertDataOfAnyFunction01,
   userLogin,
   updateUserData,
-  updateProductStatus,
+  updateProductStatus,queryProductionAllOfEachChannel
 } from "../../controllers/userManage/user.controllers.js";
 import { uploadImage } from "../../middleware/upload.Image.js";
 const route = Route();
- 
+
 route.post("/insert01", verifyJWT,
    uploadImage, insertDataOfAnyFunction01);
 route.get("/selectAll", verifyJWT, queryUserDataAll);
 route.get("/selectOne", verifyJWT, queryUserDataOne);
+route.get("/selectProduct", queryProductionAllOfEachChannel);
 route.post("/login", userLogin);
 route.post("/insert", verifyJWT, createNewUser);
 route.post("/insert02", verifyJWT, uploadImage, insertDataOfAnyFunction02);

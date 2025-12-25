@@ -1,5 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopup } from "../class/class.controller.js";
+import { QueryTopData } from "../class/class.controller.js";
 
 // query muas data all or select top 15
 export const queryMuasDataAll = async (req, res) => {
@@ -70,7 +70,7 @@ export const queryMuasDataAll = async (req, res) => {
       }
 
       try {
-        const topResult = await QueryTopup.getAllProductAData();
+        const topResult = await QueryTopData.getAllProductAData();
         topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);

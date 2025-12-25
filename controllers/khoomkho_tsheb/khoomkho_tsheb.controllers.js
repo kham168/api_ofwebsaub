@@ -1,5 +1,5 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopup } from "../class/class.controller.js";
+import { QueryTopData } from "../class/class.controller.js";
 
 export const queryKhoomKhoTshebDataAll = async (req, res) => {
   try {
@@ -65,7 +65,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
       }
 
       try {
-        const topResult = await QueryTopup.getAllProductAData();
+        const topResult = await QueryTopData.getAllProductAData();
         topData = topResult?.topData || topResult;
       } catch (e) {
         console.warn("Failed to load top data:", e.message);
@@ -95,7 +95,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     // Convert image array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
@@ -200,7 +200,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     // ✅ Safely parse images from Postgres array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
@@ -282,7 +282,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     // ✅ Safely parse images from Postgres array
     rows = await Promise.all(
       rows.map(async (r) => {
-        const imgs = await QueryTopup.cleanImageArray(r.image);
+        const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
