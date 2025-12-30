@@ -17,7 +17,7 @@ route.post("/insert01", verifyJWT,
    uploadImage, insertDataOfAnyFunction01);
 route.get("/selectAll", verifyJWT, queryUserDataAll);
 route.get("/selectOne", verifyJWT, queryUserDataOne);
-route.get("/selectProduct", queryProductionAllOfEachChannel);
+route.get("/selectProduct", verifyJWT, queryProductionAllOfEachChannel);
 route.post("/login", userLogin);
 route.post("/insert", verifyJWT, createNewUser);
 route.post("/insert02", verifyJWT, uploadImage, insertDataOfAnyFunction02);

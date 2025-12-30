@@ -226,6 +226,11 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         });
       }
 
+      const safeActiveRoom =
+        activeRoom === "" || activeRoom === null || activeRoom === undefined
+          ? 0
+          : Number(activeRoom);
+
       query = `
         INSERT INTO public.tbdormitory(
        channel, id, dormantalname, price1, price2, price3, type, totalroom, activeroom,
@@ -246,8 +251,8 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         price2,
         price3 || "",
         type,
-        totalRoom,
-        activeRoom || "0",
+        totalRoom || "",
+        safeActiveRoom,
         locationVideo || "",
         tel,
         contactNumber || "",
