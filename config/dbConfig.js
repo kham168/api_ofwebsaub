@@ -16,64 +16,30 @@ const dbPool = new Pool({
   allowExitOnIdle: true,
 });
 
-// export const dbMiddleware = (req, res, next) => {
-//   console.log("HHHHHHHH");
-//   dbPool.connect((err, client, success) => {
-//     if (err) {
-//       return next(err);
-//     }
-
-//     //attach db to the client req
-//     req.dbClient = client;
-
-//     //release client back to the pool
-//     req.releaseClient = success;
-
-//     //go to next middleware
-//     next();
-//   });
-// };
 
 export const dbExecution = async (query, params = []) => {
   const client = await dbPool.connect();
 
   try {
-    // Check if query is defined and is a non-empty string
+    // Validate query
     if (typeof query !== "string" || query.trim() === "") {
       throw new Error("Invalid query");
     }
-    const result = await client.query(query, params);
 
+    // Execute query
+    const result = await client.query(query, params);
     return result;
+
   } catch (error) {
-    await logEvents(`Query: ${query}\n\nParams: ${params}`);
-    console.error("Error executing database query:", error);
-    return false;
+    // Don't log duplicate key errors (23505) — they are normal
+    if (error.code !== "23505") {
+      console.error("Unexpected database error:", error.message);
+    }
+
+    // Always throw error to controller
+    throw error;
+
   } finally {
-    if (client) client.release();
+    client.release();
   }
 };
-
-// export const dbExecution = async (query, params = []) => {
-//   const client = await dbPool.connect();
-//   console.log("Connected to database");
-
-//   try {
-//     if (typeof query !== "string" || query.trim() === "") {
-//       throw new Error("Invalid query string1");
-//     }
-//     if (!Array.isArray(params)) {
-//       throw new Error("Params must be an array");
-//     }
-
-//     const result = await client.query(query, params);
-//     console.log("Query result:", result);
-//     return result;
-//   } catch (error) {
-//     // await logEvents(`Query: ${query}\n\nParams:${params}`);
-//     console.error("Error executing database query:", error);
-//     return false;
-//   } finally {
-//     if (client) client.release();
-//   }
-// };

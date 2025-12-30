@@ -74,53 +74,50 @@ export const queryUserDataOne = async (req, res) => {
 export const createNewUser = async (req, res) => {
   const { tel, name, peopleId, type, password, channel } = req.body;
 
-  // ✅ Validate required fields
   if (!tel || !name || !password) {
-    return res.status(400).send({
+    return res.status(400).json({
       status: false,
-      message: "Missing required fields: id, name, password are required",
-      data: [],
+      message: "Missing required fields: tel, name, password",
     });
   }
 
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
-
   try {
-    // ✅ Build query for inserting data directly into tbkhoomkhotsheb
-    const query = `INSERT INTO public.tbusermanage(
-	 tel, name, peopleid, type, password, channel, status)
-	VALUES ($1, $2, $3, $4, $5, $6,'1');
-        `;
+    const hashedPassword = await bcrypt.hash(password, 10);
 
+    const query = `
+      INSERT INTO public.tbusermanage
+        (tel, name, peopleid, type, password, channel, status)
+      VALUES
+        ($1, $2, $3, $4, $5, $6, '1')
+      RETURNING tel, name;
+    `;
     const values = [tel, name, peopleId, type, hashedPassword, channel];
 
     const result = await dbExecution(query, values);
 
-    // ✅ Response handling
-    if (result && result.rowCount > 0) {
-      return res.status(200).send({
-        status: true,
-        message: "Insert data successful",
-        data: result.rows,
-      });
-    } else {
-      return res.status(400).send({
-        status: false,
-        message: "Insert data failed",
-        data: [],
-      });
-    }
+    return res.status(201).json({
+      status: true,
+      message: "User created successfully",
+      data: result.rows,
+    });
+
   } catch (error) {
-    console.error("Error in insert user data:", error);
-    return res.status(500).send({
+  if (error.code === "23505") {
+    return res.status(409).json({
       status: false,
-      message: "Internal Server Error",
-      error: error.message,
-      data: [],
+      message: "Phone number already exists",
+      field: "tel",
     });
   }
+
+  console.error("Unexpected database error:", error.message);
+  return res.status(500).json({
+    status: false,
+    message: "Internal Server Error",
+  });
+}
 };
+
 
 export const insertDataOfAnyFunction02 = async (req, res) => {
   const {
