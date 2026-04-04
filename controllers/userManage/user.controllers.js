@@ -100,24 +100,22 @@ export const createNewUser = async (req, res) => {
       message: "User created successfully",
       data: result.rows,
     });
-
   } catch (error) {
-  if (error.code === "23505") {
-    return res.status(409).json({
+    if (error.code === "23505") {
+      return res.status(409).json({
+        status: false,
+        message: "Phone number already exists",
+        field: "tel",
+      });
+    }
+
+    console.error("Unexpected database error:", error.message);
+    return res.status(500).json({
       status: false,
-      message: "Phone number already exists",
-      field: "tel",
+      message: "Internal Server Error",
     });
   }
-
-  console.error("Unexpected database error:", error.message);
-  return res.status(500).json({
-    status: false,
-    message: "Internal Server Error",
-  });
-}
 };
-
 
 export const insertDataOfAnyFunction02 = async (req, res) => {
   const {
@@ -916,11 +914,11 @@ districtid, villageid, image, cdate
       (result.rows || []).map(async (r) => ({
         ...r,
         image: r.image
-          ? (
-              await QueryTopData.cleanImageArray(r.image)
-            ).map((img) => baseUrl + img)
+          ? (await QueryTopData.cleanImageArray(r.image)).map(
+              (img) => baseUrl + img,
+            )
           : [],
-      }))
+      })),
     );
 
     res.status(200).json({
@@ -943,7 +941,41 @@ districtid, villageid, image, cdate
 const getTotal = async (table) => {
   const result = await dbExecution(
     `SELECT COUNT(*) AS total FROM ${table} WHERE status='1'`,
-    []
+    [],
   );
   return parseInt(result.rows[0].total, 10);
+};
+
+export const saveLogsUserReviewWeb = async (req, res) => {
+  const { channel } = req.body;
+
+  if (!channel) {
+    return res.status(400).json({
+      status: false,
+      message: "Missing required fields: channel",
+    });
+  }
+
+  try {
+    const query = `
+    INSERT INTO public.tblogs_user_review_web (channel, cdate)
+  VALUES ($1, NOW())
+  RETURNING *;
+    `;
+    const values = [channel];
+
+    const result = await dbExecution(query, values);
+
+    return res.status(201).json({
+      status: true,
+      message: "Insert logs successfully",
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Unexpected database error:", error.message);
+    return res.status(500).json({
+      status: false,
+      message: "Internal Server Error",
+    });
+  }
 };

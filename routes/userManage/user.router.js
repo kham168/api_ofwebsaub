@@ -8,7 +8,7 @@ import {
   insertDataOfAnyFunction01,
   userLogin,
   updateUserData,
-  updateProductStatus,queryProductionAllOfEachChannel
+  updateProductStatus,queryProductionAllOfEachChannel,saveLogsUserReviewWeb
 } from "../../controllers/userManage/user.controllers.js";
 import { uploadImage } from "../../middleware/upload.Image.js";
 const route = Route();
@@ -23,4 +23,5 @@ route.post("/insert",  createNewUser);
 route.post("/insert02", uploadImage, insertDataOfAnyFunction02);
 route.put("/update",verifyJWT, updateUserData);
 route.put("/updateProductStatus",verifyJWT, updateProductStatus);
+route.post("/saveLogUserReviewWeb", saveLogsUserReviewWeb);
 export default route;
