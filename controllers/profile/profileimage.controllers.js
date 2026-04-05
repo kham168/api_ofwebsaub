@@ -6,7 +6,6 @@ export const queryAdvertData = async (req, res) => {
 
   //const baseUrl = process.env.BASE_URL;
   const baseUrl = process.env.BASE_URL;
-
   try {
     const query = `
       SELECT id, detail, image

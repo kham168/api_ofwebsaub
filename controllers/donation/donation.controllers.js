@@ -10,7 +10,7 @@ export const queryDonationListAll = async (req, res) => {
     const offset = validPage * validLimit;
 
     //const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Count total
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -125,7 +125,7 @@ export const queryCustomerDonationList = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Main query
     const query = `
       SELECT 
@@ -217,7 +217,7 @@ export const searchDonationLogByCustomerTel = async (req, res) => {
 
     // Base URL for images + QR
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Main query
     const query = `
 SELECT 

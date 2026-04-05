@@ -13,8 +13,8 @@ export const queryHouseDataAll = async (req, res) => {
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
-   // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // ✅ Count total records
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -120,7 +120,7 @@ export const queryHouseDataAll = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ If page === 0 → also call top data function
@@ -161,8 +161,8 @@ export const searchHouseData = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
-  //  const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // ✅ Count total matching records
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -216,7 +216,7 @@ export const searchHouseData = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -255,7 +255,7 @@ export const queryHouseDataByDistrictId = async (req, res) => {
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
   //const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     // Count total matching records
     const countQuery = `
@@ -325,7 +325,7 @@ export const queryHouseDataByDistrictId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -344,7 +344,7 @@ export const queryHouseDataByDistrictId = async (req, res) => {
   } catch (error) {
     console.error(
       "Error in query_house_data_byprovinceid_and_districtid:",
-      error
+      error,
     );
     return res.status(500).json({
       status: false,
@@ -371,8 +371,8 @@ export const queryHouseDataByVillageId = async (req, res) => {
   const validPage = Math.max(parseInt(page, 10) || 0, 0);
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
- // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     // Count total matching records
     const countQuery = `
@@ -435,7 +435,7 @@ export const queryHouseDataByVillageId = async (req, res) => {
     let rows = result?.rows || [];
 
     // Map images to full URLs
-   rows = await Promise.all(
+    rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopData.cleanImageArray(r.image);
 
@@ -443,7 +443,7 @@ export const queryHouseDataByVillageId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -480,8 +480,8 @@ export const queryHouseDataOne = async (req, res) => {
   //const { id } = req.params;
   const id = req.query.id ?? 0;
 
-//  const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  //  const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     const query = `
       SELECT 
@@ -532,7 +532,7 @@ export const queryHouseDataOne = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     res.status(200).send({

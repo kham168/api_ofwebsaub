@@ -20,7 +20,7 @@ export const queryCreamDataAll = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // ----------------------------------------
     // ✅ Query QR ONLY on first page
     // ----------------------------------------
@@ -163,7 +163,7 @@ export const searchCreamData = async (req, res) => {
 
     // Base URL for images + QR
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Query QR image
     const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 
@@ -236,7 +236,7 @@ export const searchCreamData = async (req, res) => {
 export const queryCreamDataOne = async (req, res) => {
   try {
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     const id = req.query.id ?? "";
 
     // Validate ID

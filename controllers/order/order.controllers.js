@@ -19,7 +19,7 @@ export const querySearchOrderData = async (req, res) => {
   const offset = validPage * validLimit;
 
   // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     // Count query
     const countQuery = `

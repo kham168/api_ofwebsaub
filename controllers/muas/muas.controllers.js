@@ -26,7 +26,7 @@ export const queryMuasDataAll = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Query QR image
     // Query QR image
     let channelData = null;
@@ -180,7 +180,7 @@ export const searchMuasData = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Query QR image
     const qrQuery = `
       SELECT qr 
@@ -275,7 +275,7 @@ export const queryMuasDataOne = async (req, res) => {
   }
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   // Query QR image
   const qrQuery = `
       SELECT qr 

@@ -15,7 +15,7 @@ export const queryDormitoryDataAll = async (req, res) => {
     const offset = validPage * validLimit;
 
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // 🧮 Count total records
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -177,7 +177,7 @@ export const searchDormitoryData = async (req, res) => {
     }
 
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM public.tbdormitory d
@@ -282,7 +282,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
     }
 
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // 🧮 Count total
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -388,7 +388,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
     }
 
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // 🧮 Count query for pagination
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -490,7 +490,7 @@ export const queryDormitoryDataOne = async (req, res) => {
     }
 
     //   const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // 📦 Main query (no LIMIT/OFFSET)
     const query = `
       SELECT 

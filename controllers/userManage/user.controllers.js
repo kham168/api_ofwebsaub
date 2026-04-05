@@ -823,7 +823,7 @@ export const queryProductionAllOfEachChannel = async (req, res) => {
   const offset = page * limit;
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   let query = "";
   let total = 0;
 

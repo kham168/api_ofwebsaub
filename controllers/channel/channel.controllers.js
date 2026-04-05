@@ -3,8 +3,7 @@ import { dbExecution } from "../../config/dbConfig.js";
 // query image data or select top 15 of image
 export const queryChannelDataAll = async (req, res) => {
   try {
-    // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
     const query = `
       SELECT id,
         channel,
@@ -85,8 +84,8 @@ export const queryChannelDataByOne = async (req, res) => {
   }
 
   try {
-    // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
+
     const query = `
       SELECT 
         id,

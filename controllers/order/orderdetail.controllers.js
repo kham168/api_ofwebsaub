@@ -23,7 +23,7 @@ export const queryOrderDetailDataAllByChannelAndSellStatus = async (
   const offset = validPage * validLimit;
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     // Count Query
     const countQuery = `
@@ -163,7 +163,7 @@ export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (
   const offset = validPage * validLimit;
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     // Count Query
     const countQuery = `
@@ -303,7 +303,7 @@ export const queryOrderDetailDataAllByChannelAndSellStatusIsNotBe0 = async (
   const offset = validPage * validLimit;
 
   // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     // Count Query
     const countQuery = `
@@ -432,7 +432,7 @@ export const queryOrderDetailDataOne = async (req, res) => {
   }
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     const query = `
 SELECT 

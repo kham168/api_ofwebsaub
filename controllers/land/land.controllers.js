@@ -12,8 +12,8 @@ export const queryLandDataAll = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
-   // const baseUrl = "http://localhost:5151/";
-      const baseUrl = process.env.BASE_URL;
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
 
     // ✅ Count total land records
     const countQuery = `
@@ -24,8 +24,7 @@ export const queryLandDataAll = async (req, res) => {
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult?.rows?.[0]?.total || "0", 10);
 
-
-     let channelData = null;
+    let channelData = null;
     let topData = null;
     // ----------------------------------------
     // ✅ Query QR + channel images ONLY on first page
@@ -123,7 +122,7 @@ export const queryLandDataAll = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Pagination info
@@ -135,7 +134,7 @@ export const queryLandDataAll = async (req, res) => {
     };
 
     // ✅ If page === 0 → also call top data function
-     
+
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
@@ -160,8 +159,8 @@ export const queryLandDataOne = async (req, res) => {
 
   const id = req.query.id ?? 0;
 
- // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+  // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   try {
     const query = `
       SELECT 
@@ -204,7 +203,7 @@ export const queryLandDataOne = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Build combined response
@@ -243,7 +242,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
     //const baseUrl = "http://localhost:5151/";
-     const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Count total records for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
@@ -297,7 +296,7 @@ export const queryLandDataByDistrictId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -342,8 +341,8 @@ export const queryLandDataByVillageId = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
-   // const baseUrl = "http://localhost:5151/";
-      const baseUrl = process.env.BASE_URL;
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // ✅ Count total records for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
@@ -399,7 +398,7 @@ export const queryLandDataByVillageId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -424,7 +423,6 @@ export const queryLandDataByVillageId = async (req, res) => {
     });
   }
 };
-
 
 export const updateProductData = async (req, res) => {
   try {

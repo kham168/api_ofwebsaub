@@ -13,7 +13,7 @@ export const queryTaxiDataAll = async (req, res) => {
   const offset = validPage * validLimit;
 
   // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
   try {
     // Count total records
     const countQuery = `
@@ -185,7 +185,7 @@ export const searchTaxiData = async (req, res) => {
   const offset = validPage * validLimit;
 
   // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
   try {
     // ✅ Count total matching records (with ILIKE for case-insensitive search)
     const countQuery = `
@@ -296,7 +296,7 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
   const offset = validPage * validLimit;
 
   // const baseUrl = process.env.BASE_URL || "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
   try {
     // ✅ Count total records
     const countQuery = `
@@ -405,7 +405,7 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
   const offset = validPage * validLimit;
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
   try {
     // ✅ Count total records
     const countQuery = `
@@ -510,7 +510,7 @@ export const queryTaxiDataOne = async (req, res) => {
   const id = req.query.id ?? 0;
 
   //const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
   try {
     const query = `
        SELECT 

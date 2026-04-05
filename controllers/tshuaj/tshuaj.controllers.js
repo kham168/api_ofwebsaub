@@ -27,7 +27,7 @@ export const queryTshuajDataAll = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     // const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Query QR image
     // Query QR image
     let channelData = null;
@@ -161,7 +161,7 @@ export const searchTshuajData = async (req, res) => {
     const totalPages = Math.ceil(total / validLimit);
 
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
     // Query QR image
     const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 
@@ -238,7 +238,7 @@ export const queryTshuajDataOne = async (req, res) => {
   const id = req.query.id ?? 0;
 
   //  const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
   // Query QR image
   const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 

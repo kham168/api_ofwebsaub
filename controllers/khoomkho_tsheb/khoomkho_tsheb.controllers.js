@@ -12,7 +12,7 @@ export const queryKhoomKhoTshebDataAll = async (req, res) => {
     const offset = validPage * validLimit;
 
     //const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
 
     // Count total
     const countQuery = `
@@ -157,7 +157,7 @@ export const searchKhoomKhoTshebData = async (req, res) => {
     }
 
     //  const baseUrl = "http://localhost:5151/";
-    const baseUrl = process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
 
     // ✅ Count total matches (for pagination)
     const countQuery = `
@@ -252,7 +252,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
     });
   }
   // const baseUrl = "http://localhost:5151/";
-  const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
 
   // Query QR image
   const qrQuery = `
