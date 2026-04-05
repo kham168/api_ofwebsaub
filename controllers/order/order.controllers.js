@@ -18,8 +18,8 @@ export const querySearchOrderData = async (req, res) => {
   const validLimit = Math.max(limit, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // Count query
     const countQuery = `
@@ -79,36 +79,35 @@ GROUP BY
 
     // Fix/format payment image
     const formattedRows = rows.map((item) => {
-  const img = item.paymentimage;
+      const img = item.paymentimage;
 
-  // If null → return null (DO NOT add baseUrl)
-  if (!img) {
-    item.paymentimage = null;
-    return item;
-  }
+      // If null → return null (DO NOT add baseUrl)
+      if (!img) {
+        item.paymentimage = null;
+        return item;
+      }
 
-  // Remove { }, quotes from PostgreSQL array output
-  const cleaned = img.replace(/[{}"]/g, "").trim();
+      // Remove { }, quotes from PostgreSQL array output
+      const cleaned = img.replace(/[{}"]/g, "").trim();
 
-  // If empty string → return null
-  if (!cleaned) {
-    item.paymentimage = null;
-    return item;
-  }
+      // If empty string → return null
+      if (!cleaned) {
+        item.paymentimage = null;
+        return item;
+      }
 
-  const imgList = cleaned.split(",").map((i) => i.trim());
+      const imgList = cleaned.split(",").map((i) => i.trim());
 
-  // If one file → return full URL string
-  if (imgList.length === 1) {
-    item.paymentimage = baseUrl + imgList[0];
-  } else {
-    // If many → return array of URLs
-    item.paymentimage = imgList.map((i) => baseUrl + i);
-  }
+      // If one file → return full URL string
+      if (imgList.length === 1) {
+        item.paymentimage = baseUrl + imgList[0];
+      } else {
+        // If many → return array of URLs
+        item.paymentimage = imgList.map((i) => baseUrl + i);
+      }
 
-  return item;
-});
-
+      return item;
+    });
 
     return res.status(200).send({
       status: true,
@@ -169,9 +168,9 @@ export const insertOrderDetailData = async (req, res) => {
     }
 
     // Handle uploaded images
-     const imageArray = req.files?.map((f) => f.filename) || [];
-    
-     // Insert into tborder
+    const imageArray = req.files?.map((f) => f.filename) || [];
+
+    // Insert into tborder
     const insertOrderQuery = `
       INSERT INTO public.tborder (
         orderid, shipping, delivery, channel,
@@ -190,8 +189,7 @@ export const insertOrderDetailData = async (req, res) => {
       custTel,
       custName ?? "",
       custComment ?? "",
-      imageArray.length > 0 ? imageArray.join(",") : null
-
+      imageArray.length > 0 ? imageArray.join(",") : null,
     ];
 
     const orderResult = await dbExecution(insertOrderQuery, orderValues);

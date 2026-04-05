@@ -3,8 +3,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 // query image data or select top 15 of image
 export const queryChannelDataAll = async (req, res) => {
   try {
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     const query = `
       SELECT id,
         channel,
@@ -29,7 +29,7 @@ export const queryChannelDataAll = async (req, res) => {
 
     const result = await dbExecution(query, []);
     const rows = result?.rows || [];
-/// hello
+    /// hello
     const formatted = rows.map((r) => {
       const pathProductDetailArray = r.pathproductdetail
         ? r.pathproductdetail
@@ -85,8 +85,8 @@ export const queryChannelDataByOne = async (req, res) => {
   }
 
   try {
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     const query = `
       SELECT 
         id,
@@ -217,7 +217,6 @@ export const insertChannelDataDetail = async (req, res) => {
 // update channel data
 
 export const updateChannelData = async (req, res) => {
-  
   const { id, detail, video1, video2, guidelineVideo, status } = req.body;
 
   if (!id) {
@@ -227,7 +226,7 @@ export const updateChannelData = async (req, res) => {
       data: null,
     });
   }
- 
+
   const imageArray = req.files?.files
     ? req.files.files.map((f) => f.filename)
     : null;

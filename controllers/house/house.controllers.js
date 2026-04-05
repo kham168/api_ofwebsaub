@@ -13,8 +13,8 @@ export const queryHouseDataAll = async (req, res) => {
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
-    const baseUrl = "http://localhost:5151/";
-
+   // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
     // ✅ Count total records
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -161,8 +161,8 @@ export const searchHouseData = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
-    const baseUrl = "http://localhost:5151/";
-
+  //  const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
     // ✅ Count total matching records
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -254,8 +254,8 @@ export const queryHouseDataByDistrictId = async (req, res) => {
   const validPage = Math.max(parseInt(page, 10) || 0, 0);
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
   try {
     // Count total matching records
     const countQuery = `
@@ -371,8 +371,8 @@ export const queryHouseDataByVillageId = async (req, res) => {
   const validPage = Math.max(parseInt(page, 10) || 0, 0);
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
-  const baseUrl = "http://localhost:5151/";
-
+ // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // Count total matching records
     const countQuery = `
@@ -480,8 +480,8 @@ export const queryHouseDataOne = async (req, res) => {
   //const { id } = req.params;
   const id = req.query.id ?? 0;
 
-  const baseUrl = "http://localhost:5151/";
-
+//  const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     const query = `
       SELECT 

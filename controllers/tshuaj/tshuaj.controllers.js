@@ -26,8 +26,8 @@ export const queryTshuajDataAll = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Query QR image
     // Query QR image
     let channelData = null;
@@ -105,7 +105,7 @@ export const queryTshuajDataAll = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Send response
@@ -160,8 +160,8 @@ export const searchTshuajData = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
-    const baseUrl = "http://localhost:5151/";
-
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Query QR image
     const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 
@@ -201,7 +201,7 @@ export const searchTshuajData = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Send final response
@@ -237,8 +237,8 @@ export const queryTshuajDataOne = async (req, res) => {
 
   const id = req.query.id ?? 0;
 
-  const baseUrl = "http://localhost:5151/";
-
+  //  const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   // Query QR image
   const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 
@@ -273,7 +273,7 @@ export const queryTshuajDataOne = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Send final response
@@ -282,7 +282,7 @@ export const queryTshuajDataOne = async (req, res) => {
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
-      qr
+      qr,
     });
   } catch (error) {
     console.error("Error in query_tshuaj_dataone:", error);
@@ -290,7 +290,7 @@ export const queryTshuajDataOne = async (req, res) => {
       status: false,
       message: "Internal Server Error",
       data: [],
-      qr: null
+      qr: null,
     });
   }
 };

@@ -14,8 +14,8 @@ export const queryDormitoryDataAll = async (req, res) => {
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
 
-    const baseUrl = "http://localhost:5151/";
-
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // 🧮 Count total records
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -126,7 +126,7 @@ export const queryDormitoryDataAll = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -176,8 +176,8 @@ export const searchDormitoryData = async (req, res) => {
       });
     }
 
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM public.tbdormitory d
@@ -232,7 +232,7 @@ export const searchDormitoryData = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -281,8 +281,8 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
       });
     }
 
-    const baseUrl = "http://localhost:5151/";
-
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // 🧮 Count total
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -331,7 +331,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
     const result = await dbExecution(query, [districtId, validLimit, offset]);
     let rows = result?.rows || [];
 
-   rows = await Promise.all(
+    rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopData.cleanImageArray(r.image);
 
@@ -339,7 +339,7 @@ export const queryDormitoryDataByDistrictId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Send success response
@@ -387,8 +387,8 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
       });
     }
 
-    const baseUrl = "http://localhost:5151/";
-
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // 🧮 Count query for pagination
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -438,7 +438,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
     const result = await dbExecution(query, [villageId, validLimit, offset]);
     let rows = result?.rows || [];
 
-   rows = await Promise.all(
+    rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopData.cleanImageArray(r.image);
 
@@ -446,7 +446,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -465,7 +465,7 @@ export const queryDormitoryDataByVillageId = async (req, res) => {
   } catch (error) {
     console.error(
       "Error in query_dormitory_data_by_district_or_villageid:",
-      error
+      error,
     );
     res.status(500).send({
       status: false,
@@ -489,8 +489,8 @@ export const queryDormitoryDataOne = async (req, res) => {
       });
     }
 
-    const baseUrl = "http://localhost:5151/";
-
+    //   const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // 📦 Main query (no LIMIT/OFFSET)
     const query = `
       SELECT 
@@ -539,7 +539,7 @@ export const queryDormitoryDataOne = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // ✅ Send success response

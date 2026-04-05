@@ -9,8 +9,8 @@ export const queryDonationListAll = async (req, res) => {
     const validLimit = Math.max(limit, 1);
     const offset = validPage * validLimit;
 
-    const baseUrl = "http://localhost:5151/";
-
+    //const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Count total
     const countQuery = `
       SELECT COUNT(*) AS total
@@ -124,8 +124,8 @@ export const queryCustomerDonationList = async (req, res) => {
     const countResult = await dbExecution(countQuery, [donationIdInt]);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Main query
     const query = `
       SELECT 
@@ -216,8 +216,8 @@ export const searchDonationLogByCustomerTel = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // Base URL for images + QR
-    const baseUrl = "http://localhost:5151/";
-
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Main query
     const query = `
 SELECT 
@@ -342,7 +342,7 @@ export const customerDonation = async (req, res) => {
 
     const donationResult = await dbExecution(
       insertDonationQuery,
-      donationValues
+      donationValues,
     );
 
     if (!donationResult?.rowCount) {

@@ -3,7 +3,7 @@ import { dbExecution } from "../../config/dbConfig.js";
 // query all order data by channel
 export const queryOrderDetailDataAllByChannelAndSellStatus = async (
   req,
-  res
+  res,
 ) => {
   const channel = req.query.channel ?? "";
   const status = req.query.status ?? "";
@@ -22,8 +22,8 @@ export const queryOrderDetailDataAllByChannelAndSellStatus = async (
   const validLimit = Math.max(limit, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // Count Query
     const countQuery = `
@@ -143,7 +143,7 @@ GROUP BY
 // query all order data by channel
 export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (
   req,
-  res
+  res,
 ) => {
   const channel = req.query.channel ?? "";
   const status = req.query.status ?? "";
@@ -162,8 +162,8 @@ export const queryOrderDetailDataAllByChannelAndStaffConfirmStatus = async (
   const validLimit = Math.max(limit, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // Count Query
     const countQuery = `
@@ -282,10 +282,9 @@ GROUP BY
   }
 };
 
-
 export const queryOrderDetailDataAllByChannelAndSellStatusIsNotBe0 = async (
   req,
-  res
+  res,
 ) => {
   const channel = req.query.channel ?? "";
   const page = parseInt(req.query.page) || 0;
@@ -303,8 +302,8 @@ export const queryOrderDetailDataAllByChannelAndSellStatusIsNotBe0 = async (
   const validLimit = Math.max(limit, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // Count Query
     const countQuery = `
@@ -361,11 +360,7 @@ GROUP BY
      LIMIT $2 OFFSET $3;
     `;
 
-    const result = await dbExecution(query, [
-      channel,
-      validLimit,
-      offset,
-    ]);
+    const result = await dbExecution(query, [channel, validLimit, offset]);
 
     const rows = result?.rows || [];
 
@@ -436,8 +431,8 @@ export const queryOrderDetailDataOne = async (req, res) => {
     });
   }
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     const query = `
 SELECT 
@@ -539,7 +534,14 @@ GROUP BY
 };
 
 export const updateOrderListStatus = async (req, res) => {
-  const { orderId, staffConfirm, sellStatus, sellComment,paymentType, sellName } = req.body;
+  const {
+    orderId,
+    staffConfirm,
+    sellStatus,
+    sellComment,
+    paymentType,
+    sellName,
+  } = req.body;
 
   if (!orderId) {
     return res.status(400).send({
@@ -568,7 +570,7 @@ export const updateOrderListStatus = async (req, res) => {
             selldate    = NOW()
         WHERE orderid = $1 RETURNING *
       `;
-      values = [orderId, sellStatus,paymentType, sellComment, sellName];
+      values = [orderId, sellStatus, paymentType, sellComment, sellName];
     }
 
     // 2️⃣ Staff confirming sale

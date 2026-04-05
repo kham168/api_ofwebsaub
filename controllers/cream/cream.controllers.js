@@ -19,8 +19,8 @@ export const queryCreamDataAll = async (req, res) => {
     const countResult = await dbExecution(countQuery, []);
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // ----------------------------------------
     // ✅ Query QR ONLY on first page
     // ----------------------------------------
@@ -92,7 +92,7 @@ export const queryCreamDataAll = async (req, res) => {
 
     const result = await dbExecution(dataQuery, [validLimit, offset]);
     let rows = result?.rows || [];
- 
+
     rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopData.cleanImageArray(r.image);
@@ -100,7 +100,7 @@ export const queryCreamDataAll = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // Pagination data
@@ -162,8 +162,8 @@ export const searchCreamData = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
 
     // Base URL for images + QR
-    const baseUrl = "http://localhost:5151/";
-
+    //  const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Query QR image
     const qrQuery = `
       SELECT qr FROM public.tbchanneldetail 
@@ -196,14 +196,14 @@ export const searchCreamData = async (req, res) => {
     let rows = result?.rows || [];
 
     // Format image URLs
-     rows = await Promise.all(
+    rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopData.cleanImageArray(r.image);
         return {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -235,7 +235,8 @@ export const searchCreamData = async (req, res) => {
 
 export const queryCreamDataOne = async (req, res) => {
   try {
-    const baseUrl = "http://localhost:5151/";
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     const id = req.query.id ?? "";
 
     // Validate ID
@@ -294,7 +295,7 @@ export const queryCreamDataOne = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     // Final response (QR at top level)
@@ -302,7 +303,7 @@ export const queryCreamDataOne = async (req, res) => {
       status: true,
       message: "Query successful",
       data: rows,
-      qr
+      qr,
     });
   } catch (error) {
     console.error("Error in queryCreamDataOne:", error);

@@ -12,8 +12,8 @@ export const queryTaxiDataAll = async (req, res) => {
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // Count total records
     const countQuery = `
@@ -129,7 +129,7 @@ export const queryTaxiDataAll = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const response = {
@@ -154,7 +154,7 @@ export const queryTaxiDataAll = async (req, res) => {
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && {...channelData, topData }),
+      ...(validPage === 0 && { ...channelData, topData }),
     });
   } catch (error) {
     console.error("Error in query_taxi_dataall:", error);
@@ -184,8 +184,8 @@ export const searchTaxiData = async (req, res) => {
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  // const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // ✅ Count total matching records (with ILIKE for case-insensitive search)
     const countQuery = `
@@ -243,7 +243,7 @@ export const searchTaxiData = async (req, res) => {
     let rows = result?.rows || [];
 
     // ✅ Proper image parsing
-     rows = await Promise.all(
+    rows = await Promise.all(
       rows.map(async (r) => {
         const imgs = await QueryTopData.cleanImageArray(r.image);
 
@@ -251,7 +251,7 @@ export const searchTaxiData = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -295,8 +295,8 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = process.env.BASE_URL || "http://localhost:5151/";
-
+  // const baseUrl = process.env.BASE_URL || "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // ✅ Count total records
     const countQuery = `
@@ -360,7 +360,7 @@ export const queryTaxiByProvinceIdAndDistrictId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -404,8 +404,8 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
   const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
   const offset = validPage * validLimit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     // ✅ Count total records
     const countQuery = `
@@ -471,7 +471,7 @@ export const queryTaxiByDistrictIdAndVillageId = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     const pagination = {
@@ -509,8 +509,8 @@ export const queryTaxiDataOne = async (req, res) => {
 
   const id = req.query.id ?? 0;
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   try {
     const query = `
        SELECT 
@@ -549,7 +549,7 @@ export const queryTaxiDataOne = async (req, res) => {
           ...r,
           image: imgs.map((img) => baseUrl + img),
         };
-      })
+      }),
     );
 
     res.status(200).send({

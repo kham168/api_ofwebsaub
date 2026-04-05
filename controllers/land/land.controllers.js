@@ -12,7 +12,8 @@ export const queryLandDataAll = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10) || 0, 0);
     const validLimit = Math.max(parseInt(limit, 10) || 15, 1);
     const offset = validPage * validLimit;
-    const baseUrl = "http://localhost:5151/";
+   // const baseUrl = "http://localhost:5151/";
+      const baseUrl = process.env.BASE_URL;
 
     // ✅ Count total land records
     const countQuery = `
@@ -159,8 +160,8 @@ export const queryLandDataOne = async (req, res) => {
 
   const id = req.query.id ?? 0;
 
-  const baseUrl = "http://localhost:5151/";
-
+ // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
   try {
     const query = `
       SELECT 
@@ -241,8 +242,8 @@ export const queryLandDataByDistrictId = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
-    const baseUrl = "http://localhost:5151/";
-
+    //const baseUrl = "http://localhost:5151/";
+     const baseUrl = process.env.BASE_URL;
     // Count total records for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total
@@ -341,8 +342,8 @@ export const queryLandDataByVillageId = async (req, res) => {
     const validPage = Math.max(parseInt(page, 10), 0);
     const validLimit = Math.max(parseInt(limit, 10), 1);
     const offset = validPage * validLimit;
-    const baseUrl = "http://localhost:5151/";
-
+   // const baseUrl = "http://localhost:5151/";
+      const baseUrl = process.env.BASE_URL;
     // ✅ Count total records for pagination
     const countQuery = `
       SELECT COUNT(DISTINCT l.id) AS total

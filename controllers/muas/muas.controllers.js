@@ -25,8 +25,8 @@ export const queryMuasDataAll = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Query QR image
     // Query QR image
     let channelData = null;
@@ -126,13 +126,13 @@ export const queryMuasDataAll = async (req, res) => {
       total,
       totalPages: Math.ceil(total / validLimit),
     };
- 
+
     res.status(200).send({
       status: true,
       message: rows.length > 0 ? "Query successful" : "No data found",
       data: rows,
       pagination,
-      ...(validPage === 0 && {channelData, topData }),
+      ...(validPage === 0 && { channelData, topData }),
     });
   } catch (error) {
     console.error("Error in query_muas dataall:", error);
@@ -179,8 +179,8 @@ export const searchMuasData = async (req, res) => {
     const total = parseInt(countResult.rows[0]?.total || 0, 10);
     const totalPages = Math.ceil(total / validLimit);
 
-    const baseUrl = "http://localhost:5151/";
-
+    // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     // Query QR image
     const qrQuery = `
       SELECT qr 
@@ -274,8 +274,8 @@ export const queryMuasDataOne = async (req, res) => {
     });
   }
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   // Query QR image
   const qrQuery = `
       SELECT qr 
@@ -343,7 +343,7 @@ export const queryMuasDataOne = async (req, res) => {
     });
   }
 };
-  
+
 export const updateProductData = async (req, res) => {
   try {
     const { id, name, price, tel, detail, donation } = req.body;
@@ -406,7 +406,6 @@ export const updateProductData = async (req, res) => {
       message: "Product not found",
       data: null,
     });
-
   } catch (error) {
     console.error("Error updating product:", error);
     return res.status(500).send({
@@ -416,4 +415,3 @@ export const updateProductData = async (req, res) => {
     });
   }
 };
-

@@ -12,8 +12,8 @@ export const queryDataAllByName = async (req, res) => {
   }
 
   try {
-    const baseUrl = "http://localhost:5151/";
-
+   // const baseUrl = "http://localhost:5151/";
+    const baseUrl = process.env.BASE_URL;
     const query = `
       SELECT productname, price, image, lastupdateprice, cdate
       FROM public.tbnoteprice

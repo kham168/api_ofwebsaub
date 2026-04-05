@@ -2,8 +2,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 
 // select all data
 export const queryAdvertData = async (req, res) => {
-  const baseUrl = "http://localhost:5151/"; // base URL for image path
-
+  //const baseUrl = "http://localhost:5151/"; // base URL for image path
+  const baseUrl = process.env.BASE_URL;
   try {
     const query = `
       SELECT id, detail, image
@@ -59,7 +59,6 @@ export const queryAdvertData = async (req, res) => {
     });
   }
 };
-
 
 // insert profile image
 export const insertAdvertDataDetail = async (req, res) => {
@@ -183,4 +182,3 @@ export const updateProfileDataDetail = async (req, res) => {
     });
   }
 };
-

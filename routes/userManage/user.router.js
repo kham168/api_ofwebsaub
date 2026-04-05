@@ -19,7 +19,7 @@ route.get("/selectAll", verifyJWT, queryUserDataAll);
 route.get("/selectOne", verifyJWT, queryUserDataOne);
 route.get("/selectProduct", verifyJWT, queryProductionAllOfEachChannel);
 route.post("/login", userLogin);
-route.post("/insert",  createNewUser);
+route.post("/insert", verifyJWT,createNewUser);
 route.post("/insert02", uploadImage, insertDataOfAnyFunction02);
 route.put("/update",verifyJWT, updateUserData);
 route.put("/updateProductStatus",verifyJWT, updateProductStatus);

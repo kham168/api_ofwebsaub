@@ -822,8 +822,8 @@ export const queryProductionAllOfEachChannel = async (req, res) => {
   const limit = Math.max(parseInt(req.query.limit) || 15, 1);
   const offset = page * limit;
 
-  const baseUrl = "http://localhost:5151/";
-
+  //const baseUrl = "http://localhost:5151/";
+  const baseUrl = process.env.BASE_URL;
   let query = "";
   let total = 0;
 

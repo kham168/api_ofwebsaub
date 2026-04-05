@@ -3,8 +3,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 class queryTopData {
   async getAllProductAData() {
     try {
-      const baseUrl = "http://localhost:5151/";
-
+   //   const baseUrl = "http://localhost:5151/";
+      const baseUrl = process.env.BASE_URL;
       const tbcream = `
         SELECT channel, id, creamname AS name, tel, detail, donation, image
         FROM public.tbcream
@@ -75,7 +75,8 @@ class queryTopData {
 
   async getAllProductB(req, res) {
     try {
-      const baseUrl = "http://localhost:5151/";
+    //  const baseUrl = "http://localhost:5151/";
+        const baseUrl = process.env.BASE_URL;
       const limit = 1; // 🔹 Change to 2 if you want top 2 per category
 
       // 🏘️ 1. Dormitory
