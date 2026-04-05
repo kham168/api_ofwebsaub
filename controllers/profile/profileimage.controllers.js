@@ -5,7 +5,7 @@ export const queryAdvertData = async (req, res) => {
   //const baseUrl = "http://localhost:5151/"; // base URL for image path
 
   //const baseUrl = process.env.BASE_URL;
-  const baseUrl = process.env.BASE_URL.replace(/\/+$/, "") + "/";
+  const baseUrl = process.env.BASE_URL;
 
   try {
     const query = `
