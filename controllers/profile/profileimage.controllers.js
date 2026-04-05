@@ -4,7 +4,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 export const queryAdvertData = async (req, res) => {
   //const baseUrl = "http://localhost:5151/"; // base URL for image path
 
-  const baseUrl = process.env.BASE_URL;
+  //const baseUrl = process.env.BASE_URL;
+  const baseUrl = process.env.BASE_URL.replace(/\/+$/, "") + "/";
 
   try {
     const query = `
