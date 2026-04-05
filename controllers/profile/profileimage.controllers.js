@@ -3,7 +3,9 @@ import { dbExecution } from "../../config/dbConfig.js";
 // select all data
 export const queryAdvertData = async (req, res) => {
   //const baseUrl = "http://localhost:5151/"; // base URL for image path
+
   const baseUrl = process.env.BASE_URL;
+
   try {
     const query = `
       SELECT id, detail, image
@@ -20,16 +22,17 @@ export const queryAdvertData = async (req, res) => {
       const data = resultSingle.rows.map((row) => {
         let images = [];
 
-        // Handle text[] from PostgreSQL
+        const joinUrl = (base, path) =>
+          `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+
         if (Array.isArray(row.image)) {
-          images = row.image.map((img) => `${baseUrl}${img}`);
+          images = row.image.map((img) => joinUrl(baseUrl, img));
         } else if (typeof row.image === "string" && row.image.startsWith("{")) {
-          // If stored as '{img1,img2}'
           const clean = row.image
             .replace(/[{}"]/g, "")
             .split(",")
             .filter(Boolean);
-          images = clean.map((img) => `${baseUrl}${img}`);
+          images = clean.map((img) => joinUrl(baseUrl, img));
         }
 
         return {
