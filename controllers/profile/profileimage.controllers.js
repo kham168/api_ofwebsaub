@@ -3,9 +3,8 @@ import { dbExecution } from "../../config/dbConfig.js";
 // select all data
 export const queryAdvertData = async (req, res) => {
   //const baseUrl = "http://localhost:5151/"; // base URL for image path
-
-  //const baseUrl = process.env.BASE_URL;
-  const baseUrl = process.env.BASE_URL;
+ 
+  const baseUrl ="https://service.tsheb.la/" || process.env.BASE_URL;
   try {
     const query = `
       SELECT id, detail, image

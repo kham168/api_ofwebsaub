@@ -43,7 +43,7 @@ app.use(express.static(path.join(__dirname, "./landimage")));
 app.use(express.static(path.join(__dirname, "./houseimage")));
 app.use(express.static(path.join(__dirname, "./khoomkho_tshebimage")));
 app.use(express.static(path.join(__dirname, "./dormitoryimage")));
-app.use(express.static(path.join(__dirname, "./taxiimage")));
+app.use(express.static(path.join(__dirname, "./taxiImage")));
 app.use(express.static(path.join(__dirname, "./tshuajimage")));
 app.use(express.static(path.join(__dirname, "./channelimage")));
 app.use(express.static(path.join(__dirname, "./profileimage")));

@@ -17,7 +17,7 @@ export const queryChannelDataAll = async (req, res) => {
         pathproductdetail,
         image,
         video1,
-        video2,
+        imageadvert,
         guidelinevideo,
         peoplecarimagepath,
         cdate
@@ -237,44 +237,53 @@ export const updateChannelData = async (req, res) => {
     const values = [];
     let paramIndex = 1;
 
-    if (detail !== null && detail !== undefined) {
+    if (detail !== undefined && detail !== null && detail !== "") {
       fields.push(`detail = $${paramIndex}`);
       values.push(detail);
       paramIndex++;
     }
 
-    if (imageArray !== null && imageArray.length > 0) {
+    if (
+      imageArray !== undefined &&
+      imageArray !== null &&
+      imageArray !== "" &&
+      imageArray.length > 0
+    ) {
       const imageString = imageArray.join(","); // store as comma-separated string
       fields.push(`image = $${paramIndex}`);
       values.push(imageString);
       paramIndex++;
     }
 
-    if (qrImage !== null && qrImage !== undefined) {
+    if (qrImage !== undefined && qrImage !== null && qrImage !== "") {
       fields.push(`qr = $${paramIndex}`);
       values.push(qrImage);
       paramIndex++;
     }
 
-    if (video1 !== null && video1 !== undefined) {
+    if (video1 !== undefined && video1 !== null && video1 !== "") {
       fields.push(`video1 = $${paramIndex}`);
       values.push(video1);
       paramIndex++;
     }
 
-    if (video2 !== null && video2 !== undefined) {
+    if (video2 !== undefined && video2 !== null && video2 !== "") {
       fields.push(`video2 = $${paramIndex}`);
       values.push(video2);
       paramIndex++;
     }
 
-    if (guidelineVideo !== null && guidelineVideo !== undefined) {
+    if (
+      guidelineVideo !== undefined &&
+      guidelineVideo !== null &&
+      guidelineVideo !== ""
+    ) {
       fields.push(`guidelinevideo = $${paramIndex}`);
       values.push(guidelineVideo);
       paramIndex++;
     }
 
-    if (status !== null && status !== undefined) {
+    if (status !== undefined && status !== null && status !== "") {
       fields.push(`status = $${paramIndex}`);
       values.push(status);
       paramIndex++;

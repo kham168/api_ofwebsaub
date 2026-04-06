@@ -357,10 +357,26 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
 
     // Channel 7 → Taxi
     else if (channel === "7") {
-      if (!price2 || !peopleId || !moreDetail) {
+      if (!price2) {
         return res.status(400).send({
           status: false,
-          message: "Missing required fields: peopleId, moreDetail",
+          message: "Missing required fields: price2",
+          data: null,
+        });
+      }
+
+      if (!peopleId) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields: peopleId",
+          data: null,
+        });
+      }
+
+      if (!moreDetail) {
+        return res.status(400).send({
+          status: false,
+          message: "Missing required fields: moreDetail",
           data: null,
         });
       }
