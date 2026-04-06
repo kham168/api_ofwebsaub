@@ -995,3 +995,121 @@ export const saveLogsUserReviewWeb = async (req, res) => {
     });
   }
 };
+
+export const queryGuidelineVideoAll = async (req, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
+
+    const query = `
+      SELECT 
+        id,
+        detail,
+        video,
+        status
+      FROM public.tbguidelinevideo
+      WHERE status = '1'
+      ORDER BY id ASC;
+    `;
+
+    const result = await dbExecution(query, []);
+    const rows = result?.rows || [];
+
+    const formatted = rows.map((r) => {
+      // make video full URL (same style as your other APIs)
+      const videoUrl = r.video ? baseUrl + r.video.trim() : null;
+
+      return {
+        ...r,
+        video: videoUrl,
+      };
+    });
+
+    res.status(200).send({
+      status: true,
+      message: "Query guideline video success",
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("Error in queryGuidelineVideoAll:", error);
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: [],
+    });
+  }
+};
+
+export const updateGuidelineVideo = async (req, res) => {
+  try {
+    const { id, detail, video, status } = req.body;
+
+    if (!id) {
+      return res.status(400).send({
+        status: false,
+        message: "Missing required field: id",
+        data: [],
+      });
+    }
+
+    // Build dynamic update
+    const fields = [];
+    const values = [];
+    let index = 1;
+
+    if (detail !== undefined && detail !== null && detail !== "") {
+      fields.push(`detail = $${index++}`);
+      values.push(detail);
+    }
+
+    if (video !== undefined && video !== null && video !== "") {
+      fields.push(`video = $${index++}`);
+      values.push(video);
+    }
+
+    if (status !== undefined && status !== null && status !== "") {
+      fields.push(`status = $${index++}`);
+      values.push(status);
+    }
+
+    // If nothing to update
+    if (fields.length === 0) {
+      return res.status(400).send({
+        status: false,
+        message: "No valid fields to update",
+        data: [],
+      });
+    }
+
+    const query = `
+      UPDATE public.tbguidelinevideo
+      SET ${fields.join(", ")}
+      WHERE id = $${index}
+      RETURNING *;
+    `;
+
+    values.push(id);
+
+    const result = await dbExecution(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).send({
+        status: false,
+        message: "Data not found",
+        data: [],
+      });
+    }
+
+    res.status(200).send({
+      status: true,
+      message: "Update guideline video success",
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error("Error in updateGuidelineVideo:", error);
+    res.status(500).send({
+      status: false,
+      message: "Internal Server Error",
+      data: [],
+    });
+  }
+};

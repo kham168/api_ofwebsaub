@@ -1,9 +1,11 @@
 import { dbExecution } from "../../config/dbConfig.js";
 
 // query image data or select top 15 of image
+
 export const queryChannelDataAll = async (req, res) => {
   try {
-    const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
+
     const query = `
       SELECT id,
         channel,
@@ -17,9 +19,11 @@ export const queryChannelDataAll = async (req, res) => {
         pathproductdetail,
         image,
         video1,
+        video2,
         imageadvert,
         guidelinevideo,
         peoplecarimagepath,
+        qr,
         cdate
       FROM public.tbchanneldetail
       WHERE status = '1' 
@@ -28,7 +32,7 @@ export const queryChannelDataAll = async (req, res) => {
 
     const result = await dbExecution(query, []);
     const rows = result?.rows || [];
-    /// hello
+
     const formatted = rows.map((r) => {
       const pathProductDetailArray = r.pathproductdetail
         ? r.pathproductdetail
@@ -45,12 +49,18 @@ export const queryChannelDataAll = async (req, res) => {
             .map((img) => baseUrl + img)
         : [];
 
-      const qrUrl = r.qr ? baseUrl + r.qr : null;
+      // ✅ imageadvert (already correct)
+      const imageAdvert = r.imageadvert ? baseUrl + r.imageadvert.trim() : null;
+
+      // ✅ NEW: qr (single image)
+      const qrUrl = r.qr ? baseUrl + r.qr.trim() : null;
 
       return {
         ...r,
         pathproductdetail: pathProductDetailArray,
         image: imageArray,
+        imageadvert: imageAdvert,
+        qr: qrUrl, // ✅ added
       };
     });
 
@@ -70,9 +80,8 @@ export const queryChannelDataAll = async (req, res) => {
 };
 
 // query muas image data or select top 15 of image
-export const queryChannelDataByOne = async (req, res) => {
-  //const { id } = req.params;
 
+export const queryChannelDataByOne = async (req, res) => {
   const id = req.query.id ?? 0;
 
   if (!id) {
@@ -84,7 +93,7 @@ export const queryChannelDataByOne = async (req, res) => {
   }
 
   try {
-    const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
+    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
 
     const query = `
       SELECT 
@@ -101,8 +110,10 @@ export const queryChannelDataByOne = async (req, res) => {
         image,
         video1,
         video2,
+        imageadvert,
         guidelinevideo,
-        peoplecarimagepath,qr,
+        peoplecarimagepath,
+        qr,
         cdate
       FROM public.tbchanneldetail
       WHERE id = $1 AND status = '1';
@@ -112,7 +123,7 @@ export const queryChannelDataByOne = async (req, res) => {
     const rows = result?.rows || [];
 
     const formatted = rows.map((r) => {
-      // Convert `pathproductdetail` string → array
+      // array
       const pathProductDetailArray = r.pathproductdetail
         ? r.pathproductdetail
             .split(",")
@@ -120,16 +131,21 @@ export const queryChannelDataByOne = async (req, res) => {
             .filter(Boolean)
         : [];
 
-      // Convert `image` string → array and prepend baseUrl
+      // image array
       const imageArray = r.image
         ? r.image
             .split(",")
-            .map((x) => x.trim())
+            .map((x) => baseUrl + x.trim())
             .filter(Boolean)
-            .map((img) => baseUrl + img)
         : [];
 
-      // Optionally make video URLs full too
+      // ✅ single image
+      const imageAdvert = r.imageadvert ? baseUrl + r.imageadvert.trim() : null;
+
+      // ✅ single QR image
+      const qrUrl = r.qr ? baseUrl + r.qr.trim() : null;
+
+      // videos (you already made full URL here — OK)
       const video1 = r.video1 ? baseUrl + r.video1 : null;
       const video2 = r.video2 ? baseUrl + r.video2 : null;
       const guidelinevideo = r.guidelinevideo
@@ -140,6 +156,8 @@ export const queryChannelDataByOne = async (req, res) => {
         ...r,
         pathproductdetail: pathProductDetailArray,
         image: imageArray,
+        imageadvert: imageAdvert, // ✅ added
+        qr: qrUrl, // ✅ added
         video1,
         video2,
         guidelinevideo,
@@ -231,7 +249,7 @@ export const updateChannelData = async (req, res) => {
     : null;
 
   const qrImage = req.files?.file ? req.files.file[0].filename : null;
-
+  const imageAdvert = req.files?.filed ? req.files.filed[0].filename : null;
   try {
     const fields = [];
     const values = [];
@@ -270,6 +288,16 @@ export const updateChannelData = async (req, res) => {
     if (video2 !== undefined && video2 !== null && video2 !== "") {
       fields.push(`video2 = $${paramIndex}`);
       values.push(video2);
+      paramIndex++;
+    }
+
+    if (
+      imageAdvert !== undefined &&
+      imageAdvert !== null &&
+      imageAdvert !== ""
+    ) {
+      fields.push(`imageadvert = $${paramIndex}`);
+      values.push(imageAdvert);
       paramIndex++;
     }
 

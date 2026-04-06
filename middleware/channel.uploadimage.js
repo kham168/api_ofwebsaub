@@ -13,6 +13,7 @@ const storage = multer.diskStorage({
 
 // MULTIPLE FIELD UPLOAD
 export const uploadChannelFiles = multer({ storage }).fields([
-  { name: "files", maxCount: 5 }, // imageArray
+  { name: "files", maxCount: 2 }, // imageArray
   { name: "file", maxCount: 1 },  // qr
+  { name: "filed", maxCount: 1 },  // qr
 ]);
