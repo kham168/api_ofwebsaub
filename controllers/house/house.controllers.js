@@ -33,7 +33,7 @@ export const queryHouseDataAll = async (req, res) => {
     if (validPage === 0) {
       const qrQuery = `
     SELECT qr,
-      image AS "channelimage",
+      imageadvert AS "channelimage",
       video1,
       video2,
       guidelinevideo
@@ -57,13 +57,14 @@ export const queryHouseDataAll = async (req, res) => {
         };
 
         channelData = {
+          // Keep baseUrl for files stored on your server (QR and Images)
           qr: raw.qr ? baseUrl + raw.qr : null,
-          channelimage: convertToUrlArray(raw.channelimage),
-          video1: raw.video1 ? baseUrl + raw.video1 : null,
-          video2: raw.video2 ? baseUrl + raw.video2 : null,
-          guidelinevideo: raw.guidelinevideo
-            ? baseUrl + raw.guidelinevideo
-            : null,
+          channelimage: raw.channelimage ? baseUrl + raw.channelimage : null,
+
+          // No baseUrl for YouTube/External links
+          video1: raw.video1 || null,
+          video2: raw.video2 || null,
+          guidelinevideo: raw.guidelinevideo || null,
         };
       }
 
