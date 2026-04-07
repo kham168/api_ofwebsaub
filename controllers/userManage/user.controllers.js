@@ -998,7 +998,7 @@ export const saveLogsUserReviewWeb = async (req, res) => {
 
 export const queryGuidelineVideoAll = async (req, res) => {
   try {
-    const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
+    // const baseUrl = process.env.BASE_URL || "https://service.tsheb.la/";
 
     const query = `
       SELECT 
@@ -1014,20 +1014,10 @@ export const queryGuidelineVideoAll = async (req, res) => {
     const result = await dbExecution(query, []);
     const rows = result?.rows || [];
 
-    const formatted = rows.map((r) => {
-      // make video full URL (same style as your other APIs)
-      const videoUrl = r.video ? baseUrl + r.video.trim() : null;
-
-      return {
-        ...r,
-        video: videoUrl,
-      };
-    });
-
     res.status(200).send({
       status: true,
       message: "Query guideline video success",
-      data: formatted,
+      data: rows,
     });
   } catch (error) {
     console.error("Error in queryGuidelineVideoAll:", error);
