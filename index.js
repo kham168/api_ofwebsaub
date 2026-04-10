@@ -38,17 +38,17 @@ app.use(cors());
 // app.use(cors(corsOptions));
 
 app.use(express.static(path.join(__dirname, "./creamimage")));
-app.use(express.static(path.join(__dirname, "./muasimage")));
-app.use(express.static(path.join(__dirname, "./landimage")));
-app.use(express.static(path.join(__dirname, "./houseimage")));
+app.use(express.static(path.join(__dirname, "./muasImage")));
+app.use(express.static(path.join(__dirname, "./landImage")));
+app.use(express.static(path.join(__dirname, "./houseImage")));
 app.use(express.static(path.join(__dirname, "./khoomkho_tshebimage")));
-app.use(express.static(path.join(__dirname, "./dormitoryimage")));
+app.use(express.static(path.join(__dirname, "./dormitoryImage")));
 app.use(express.static(path.join(__dirname, "./taxiImage")));
-app.use(express.static(path.join(__dirname, "./tshuajimage")));
+app.use(express.static(path.join(__dirname, "./tshuajImage")));
 app.use(express.static(path.join(__dirname, "./channelimage")));
 app.use(express.static(path.join(__dirname, "./profileimage")));
 app.use(express.static(path.join(__dirname, "./donationimage")));
-app.use(express.static(path.join(__dirname, "./paymentimage")));
+app.use(express.static(path.join(__dirname, "./paymentImage")));
 app.use(express.static(path.join(__dirname, "./notepriceimage")));
 app.use("/", express.static(path.join(process.cwd(), "uploads")));
 

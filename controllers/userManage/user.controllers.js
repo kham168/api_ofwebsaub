@@ -465,7 +465,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
   if (!id || !name || !tel || !detail) {
     return res.status(400).send({
       status: false,
-      message: "Missing required fields name, price2",
+      message: "Missing required fields name, detail, tel",
       data: [],
     });
   }
