@@ -37,11 +37,11 @@ const app = express();
 app.use(cors());
 // app.use(cors(corsOptions));
 
-app.use(express.static(path.join(__dirname, "./creamimage")));
+app.use(express.static(path.join(__dirname, "./creamImage")));
 app.use(express.static(path.join(__dirname, "./muasImage")));
 app.use(express.static(path.join(__dirname, "./landImage")));
 app.use(express.static(path.join(__dirname, "./houseImage")));
-app.use(express.static(path.join(__dirname, "./khoomkho_tshebimage")));
+app.use(express.static(path.join(__dirname, "./khoomkho_tshebImage")));
 app.use(express.static(path.join(__dirname, "./dormitoryImage")));
 app.use(express.static(path.join(__dirname, "./taxiImage")));
 app.use(express.static(path.join(__dirname, "./tshuajImage")));
