@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import corsed from "./config/corsOption.js";
 
 // routes
+import all from "./routes/byClassMethod/getDataAll.router.js";
 import muas from "./routes/muas/muas.router.js";
 import cream from "./routes/cream/cream.router.js";
 import taxi from "./routes/taxi/taxi.router.js";
@@ -55,7 +56,7 @@ app.use("/", express.static(path.join(process.cwd(), "uploads")));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(requestLimiter);
-
+app.use("/api/all", all);
 app.use("/api/muas", muas);
 app.use("/api/cream", cream);
 app.use("/api/taxi", taxi);
