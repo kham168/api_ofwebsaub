@@ -416,7 +416,7 @@ class selectDataAll {
         totalPages: Math.ceil(total / validLimit),
       };
 
-      return {ເຮະ 
+      return {
         status: true,
         message: rows.length > 0 ? "Query successful" : "No data found",
         data: rows,
