@@ -231,7 +231,7 @@ class selectDataAll {
         INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
         INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(d.villageid)
         WHERE d.status = '1'
         GROUP BY 
          d.channel, d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
@@ -382,7 +382,7 @@ class selectDataAll {
         INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
         INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(h.villageid)
         WHERE h.status = '1'
         GROUP BY 
         h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
@@ -416,7 +416,7 @@ class selectDataAll {
         totalPages: Math.ceil(total / validLimit),
       };
 
-      return {
+      return {ເຮະ 
         status: true,
         message: rows.length > 0 ? "Query successful" : "No data found",
         data: rows,
@@ -439,6 +439,7 @@ class selectDataAll {
   };
 
   // Other Service id is ==> 4
+
   queryOtherServiceDataAll = async (page, limit) => {
     try {
       // sanitize numbers
@@ -666,7 +667,7 @@ class selectDataAll {
         INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
         INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(l.villageid)
         WHERE l.status = '1'
         GROUP BY 
         l.channel, l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
@@ -964,7 +965,7 @@ class selectDataAll {
       INNER JOIN public.tbdistrict d ON d.districtid = t.districtid
       INNER JOIN public.tbprovince p ON p.provinceid = t.provinceid
       LEFT JOIN public.tbvillage v 
-        ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
+        ON v.villageid = ANY(t.villageid)
       WHERE t.status = '1'
       GROUP BY 
        t.channel, t.id, t.name, t.price1, t.price2, t.tel, t.detail,
@@ -1026,29 +1027,6 @@ class selectDataAll {
       };
     }
   };
-
-  // Clean image array from PostgreSQL (handles all bad formats)
-  async cleanImageArray(dbValue) {
-    if (!dbValue) return [];
-
-    let str = dbValue;
-
-    // Convert array to string if needed
-    if (Array.isArray(str)) {
-      str = str.join(",");
-    }
-
-    // Remove { } and all quotes inside
-    str = str.replace(/[{}"]/g, "");
-
-    // Split into array
-    const arr = str
-      .split(",")
-      .map((i) => i.trim())
-      .filter((i) => i.length > 0);
-
-    return arr;
-  }
 }
 
 export const selectAllData = new selectDataAll();

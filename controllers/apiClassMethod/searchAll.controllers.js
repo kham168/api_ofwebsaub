@@ -8,51 +8,39 @@ export const searchDataAll = async (req, res) => {
     const detail = req.query.detail || "";
     const dId = req.query.dId || "";
     const vId = req.query.vId || "";
-    const page = parseInt(req.query.page) || 0;
-    const limit = parseInt(req.query.limit) || 15;
+    // const page = parseInt(req.query.page) || 0;
+    // const limit = parseInt(req.query.limit) || 25;
 
     let data = [];
 
     // ✅ cleaner switch
     switch (channelId) {
       case 1:
-        data = await searchAllData.SearchCreamData(detail, page, limit);
+        data = await searchAllData.SearchCreamData(detail);
         break;
 
       case 2:
-        data = await searchAllData.searchDormitoryDataByDistrictId(
-          detail,
-          dId,
-          vId,
-          page,
-          limit,
-        );
+        data = await searchAllData.searchDormitoryData(detail, dId, vId);
         break;
 
       case 3:
-        data = await searchAllData.searchHouseDataByDistrictId(
-          detail,
-          dId,
-          vId,
-          page,
-          limit,
-        );
+        data = await searchAllData.searchHouseData(detail, dId, vId);
         break;
 
       case 4:
-        data = await searchAllData.searchOtherServiceDataAll(page, limit);
+        data = await searchAllData.searchOtherService(detail, dId, vId);
         break;
 
       case 5:
-        data = await searchAllData.searchLandDataByDistrictId(page, limit);
+        data = await searchAllData.searchLandData(dId, vId);
         break;
 
       case 6:
-        data = await searchAllData.searchTshuajData(page, limit);
+        data = await searchAllData.searchTshuajData(detail);
         break;
 
       case 7:
-        data = await searchAllData.searchTaxiData(page, limit);
+        data = await searchAllData.searchTaxiData(detail, dId, vId);
         break;
 
       default:
