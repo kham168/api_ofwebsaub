@@ -7,7 +7,7 @@ const folderMap = {
   1: "./creamImage",
   2: "./dormitoryImage",
   3: "./houseImage",
-  4: "./khoomkho_tshebImage",
+  4: "./otherserviceImage",
   5: "./landImage",
   6: "./tshuajImage",
   7: "./taxiImage",

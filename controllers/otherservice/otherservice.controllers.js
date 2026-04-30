@@ -2,7 +2,7 @@ import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopData } from "../class/class.controller.js";
 
 // query khoomkho_tsheb data by id
-export const queryKhoomKhoTshebDataOne = async (req, res) => {
+export const queryOtherServiceDataOne = async (req, res) => {
   //const id = req.params.id;
 
   const idParam = req.query.id ?? "";

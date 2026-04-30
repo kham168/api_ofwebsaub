@@ -153,31 +153,33 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
     });
   }
 
-  // Normalize village to array
-  const parseVillageList = (v) => {
+  const villageArray = (v) => {
     if (!v) return [];
-    if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+
+    if (Array.isArray(v)) {
+      return v.map((x) => Number(x)).filter((x) => !isNaN(x));
+    }
 
     if (typeof v === "string") {
       const trimmed = v.trim();
+
       if (trimmed.startsWith("[")) {
         try {
           const parsed = JSON.parse(trimmed);
           return Array.isArray(parsed)
-            ? parsed.map((x) => String(x).trim()).filter(Boolean)
+            ? parsed.map((x) => Number(x)).filter((x) => !isNaN(x))
             : [];
         } catch {}
       }
+
       return trimmed
         .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean);
+        .map((x) => Number(x))
+        .filter((x) => !isNaN(x));
     }
 
-    return [String(v).trim()];
+    return [Number(v)].filter((x) => !isNaN(x));
   };
-
-  const villageArray = parseVillageList(village);
 
   let imageArray = []; // imageArray
 
@@ -202,7 +204,10 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
   let query = "";
   let values = [];
 
-  if (!imageArray.length || !villageArray.length) {
+  const vArr = villageArray(village);
+
+  if (!imageArray.length || !vArr.length) {
+    //if (!imageArray.length || !villageArray.length) {
     return res.status(400).send({
       status: false,
       message: "image or village array is empty",
@@ -234,7 +239,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         ) VALUES (
         '2',  $1, $2, $3, $4, $5, $6, $7, $8,
           $9, $10, $11, $12,
-          $13, $14, $15::text[], $16::text[], '1', $17, NOW()
+          $13, $14, $15::int[], $16::text[], '1', $17, NOW()
         )
         RETURNING *;
       `;
@@ -254,7 +259,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         moreDetail,
         province,
         district,
-        villageArray,
+        vArr,
         imageArray,
         plan_on_next_month || "",
       ];
@@ -279,7 +284,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         VALUES (
         '3',  $1, $2, $3, $4, $5,
           $6, $7, $8, '1', $9,
-          $10, $11, $12::text[], $13::text[], NOW()
+          $10, $11, $12::int[], $13::text[], NOW()
         )
         RETURNING *;
       `;
@@ -296,7 +301,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         moreDetail,
         province,
         district,
-        villageArray,
+        vArr,
         imageArray,
       ];
     }
@@ -329,7 +334,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         VALUES (
         '5',  $1, $2, $3, $4, $5, $6, $7,
           $8, $9, $10, $11, $12,
-          $13, $14, $15::text[], $16::text[],
+          $13, $14, $15::int[], $16::text[],
           '1', NOW()
         )
         RETURNING *;
@@ -350,7 +355,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         moreDetail,
         province,
         district,
-        villageArray,
+        vArr,
         imageArray,
       ];
     }
@@ -387,7 +392,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
           status, peopleid, turnofreason, cdate
         ) VALUES (
          '7', $1, $2, $3, $4, $5, $6, 
-          $7, $8, $9::text[], $10::text[], 
+          $7, $8, $9::int[], $10::text[], 
           '1', $11, $12, NOW()
         )
         RETURNING *;
@@ -402,7 +407,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
         moreDetail,
         province,
         district,
-        villageArray,
+        vArr,
         imageArray,
         peopleId,
         turnOfReason || "",
@@ -460,6 +465,8 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
     dntStartDate,
     dntEndDate,
     locationGps,
+    district,
+    village,
   } = req.body;
 
   if (!id || !name || !tel || !detail) {
@@ -490,6 +497,36 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
     let query = "";
     let values = [];
     let result = null;
+
+    const villageArray = (v) => {
+      if (!v) return [];
+
+      if (Array.isArray(v)) {
+        return v.map((x) => Number(x)).filter((x) => !isNaN(x));
+      }
+
+      if (typeof v === "string") {
+        const trimmed = v.trim();
+
+        if (trimmed.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            return Array.isArray(parsed)
+              ? parsed.map((x) => Number(x)).filter((x) => !isNaN(x))
+              : [];
+          } catch {}
+        }
+
+        return trimmed
+          .split(",")
+          .map((x) => Number(x))
+          .filter((x) => !isNaN(x));
+      }
+
+      return [Number(v)].filter((x) => !isNaN(x));
+    };
+
+    const vArr = villageArray(village);
 
     // 🧠 CH 1 → tbcream
     if (channel === "1") {
@@ -537,9 +574,9 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
       query = `
         INSERT INTO public.tbotherservice(
          channel, id, type, name, price1, price2, 
-          tel, detail, locationgps, image, status, donation, dntstartdate, dntenddate, cdate
+          tel, detail, locationgps, image, status, donation, dntstartdate, dntenddate, cdate,districtid, villageid
         )
-        VALUES ('4', $1, $2, $3, $4, $5, $6, $7, $8, $9::text[],'1', $10, $11, $12, NOW())
+        VALUES ('4', $1, $2, $3, $4, $5, $6, $7, $8, $9::text[],'1', $10, $11, $12, NOW(),$13, $14::int[])
         RETURNING *;
       `;
       values = [
@@ -555,6 +592,8 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
         donation || "",
         dntStartDate || null,
         dntEndDate || null,
+        district,
+        vArr,
       ];
     }
 
