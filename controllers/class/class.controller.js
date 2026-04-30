@@ -77,7 +77,7 @@ class queryTopData {
     try {
       //  const baseUrl = "http://localhost:5151/";
       const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
-      const limit = 1; // 🔹 Change to 2 if you want top 2 per category
+     // const limit = 1; // 🔹 Change to 2 if you want top 2 per category
 
       // 🏘️ 1. Dormitory
       const tbdormitory = `
@@ -102,7 +102,7 @@ class queryTopData {
         INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
         INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(d.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(d.villageid)
         WHERE d.status = '1'
         GROUP BY 
          d.channel, d.id, d.dormantalname, d.type,
@@ -110,7 +110,7 @@ class queryTopData {
           d.contactnumber, d.moredetail,
           p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
         ORDER BY d.cdate DESC
-        LIMIT $1;
+        LIMIT 1;
       `;
 
       // 🏠 2. House
@@ -132,14 +132,14 @@ class queryTopData {
         INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
         INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(h.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(h.villageid)
         WHERE h.status = '1'
         GROUP BY 
         h.channel,  h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
           h.contactnumber, h.locationvideo, h.moredetail,
           p.province, d.district, h.image, h.cdate
         ORDER BY h.cdate DESC
-        LIMIT $1;
+        LIMIT 1;
       `;
 
       // 🏞️ 3. Land
@@ -163,14 +163,14 @@ class queryTopData {
         INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
         INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(l.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(l.villageid)
         WHERE l.status = '1'
         GROUP BY 
         l.channel, l.id, l.productname, l.area, l.tel, l.contactnumber, 
           l.locationurl, l.locationvideo, l.moredetail, 
           p.province, d.district, l.image, l.cdate
         ORDER BY l.cdate DESC
-        LIMIT $1;
+        LIMIT 1;
       `;
 
       // 🚕 4. Taxi
@@ -190,21 +190,21 @@ class queryTopData {
         INNER JOIN public.tbdistrict d ON d.districtid = t.districtid
         INNER JOIN public.tbprovince p ON p.provinceid = t.provinceid
         LEFT JOIN public.tbvillage v 
-          ON v.villageid = ANY(string_to_array(replace(replace(t.villageid, '{', ''), '}', ''), ',')::int[])
+          ON v.villageid = ANY(t.villageid)
         WHERE t.status = '1'
         GROUP BY 
         t.channel, t.id, t.name, t.tel, t.detail,
           p.province, d.district, t.image, t.cdate
         ORDER BY t.cdate DESC
-        LIMIT $1;
+        LIMIT 1;
       `;
 
       // ⚙️ Execute all queries in parallel
       const [dormitoryRes, houseRes, landRes, taxiRes] = await Promise.all([
-        dbExecution(tbdormitory, [limit]),
-        dbExecution(tbhouse, [limit]),
-        dbExecution(tbland, [limit]),
-        dbExecution(tbtaxi, [limit]),
+        dbExecution(tbdormitory, []),
+        dbExecution(tbhouse, []),
+        dbExecution(tbland, []),
+        dbExecution(tbtaxi, []),
       ]);
 
       // Format images using async cleanImageArray
