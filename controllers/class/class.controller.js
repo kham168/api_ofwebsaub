@@ -13,9 +13,9 @@ class queryTopData {
         LIMIT 1;
       `;
 
-      const tbkhoomkhotsheb = `
+      const tbOtherService = `
         SELECT channel,id, name, tel, detail, donation, image
-        FROM public.tbkhoomkhotsheb
+        FROM public.tbotherservice
         WHERE status = '1'
         ORDER BY cdate DESC
         LIMIT 1;
@@ -38,9 +38,9 @@ class queryTopData {
       `;
 
       // Run queries in parallel
-      const [creamRes, khoomRes, muasRes, tshuajRes] = await Promise.all([
+      const [creamRes, otherSV, muasRes, tshuajRes] = await Promise.all([
         dbExecution(tbcream, []),
-        dbExecution(tbkhoomkhotsheb, []),
+        dbExecution(tbOtherService, []),
         dbExecution(tbmuas, []),
         dbExecution(tbtshuaj, []),
       ]);
@@ -59,7 +59,7 @@ class queryTopData {
       // Combine into one array
       const mergedTopData = [
         ...(await formatImage(creamRes?.rows)),
-        ...(await formatImage(khoomRes?.rows)),
+        ...(await formatImage(otherSV?.rows)),
         ...(await formatImage(muasRes?.rows)),
         ...(await formatImage(tshuajRes?.rows)),
       ];

@@ -40,7 +40,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
         k.locationgps,
         k.image,
         k.donation
-      FROM public.tbkhoomkhotsheb k
+      FROM public.tbotherservice k
       WHERE k.id = $1;
     `;
 
@@ -66,7 +66,7 @@ export const queryKhoomKhoTshebDataOne = async (req, res) => {
       qr,
     });
   } catch (error) {
-    console.error("Error in query khoomkho tsheb dataone:", error);
+    console.error("Error in query otherservice dataone:", error);
     res.status(500).send({
       status: false,
       message: "Internal Server Error",
@@ -131,7 +131,7 @@ export const updateProductData = async (req, res) => {
     values.push(id);
 
     const query = `
-      UPDATE public.tbkhoomkhotsheb
+      UPDATE public.tbotherservice
       SET ${updateFields.join(", ")}
       WHERE id = $${index}
       RETURNING *

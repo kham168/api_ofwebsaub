@@ -252,7 +252,7 @@ LIMIT 50;
 
       // Query QR image
       const qrQuery = `
-      SELECT qr FROM public.tbchanneldetail 
+      SELECT qr FROM public.tbotherservice 
       WHERE id = '4' LIMIT 1;
     `;
       const qrResult = await dbExecution(qrQuery, []);
@@ -271,7 +271,7 @@ LIMIT 50;
         locationgps,
         image,
         donation
-      FROM public.tbkhoomkhotsheb
+      FROM public.tbotherservice
       WHERE
 status = '1'
 AND name ILIKE $1

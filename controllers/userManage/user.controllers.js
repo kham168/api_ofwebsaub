@@ -524,7 +524,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
       ];
     }
 
-    // 🧠 CH 4 → tbkhoomkhotsheb
+    // 🧠 CH 4 → tbotherservice
     else if (channel === "4") {
       if (!type) {
         return res.status(400).send({
@@ -535,7 +535,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
       }
 
       query = `
-        INSERT INTO public.tbkhoomkhotsheb(
+        INSERT INTO public.tbotherservice(
          channel, id, type, name, price1, price2, 
           tel, detail, locationgps, image, status, donation, dntstartdate, dntenddate, cdate
         )
@@ -798,7 +798,7 @@ export const updateProductStatus = async (req, res) => {
     } else if (channel === "3") {
       const query = `UPDATE public.tbhouse SET status=$2 WHERE id=$1 RETURNING *`;
     } else if (channel === "4") {
-      const query = `UPDATE public.tbkhoomkhotsheb SET status=$2 WHERE id =$1 RETURNING *`;
+      const query = `UPDATE public.tbotherservice SET status=$2 WHERE id =$1 RETURNING *`;
     } else if (channel === "5") {
       const query = `UPDATE public.tbland SET status = $2 WHERE id = $1 RETURNING *; `;
     } else if (channel === "6") {
@@ -874,12 +874,12 @@ districtid, villageid, image, cdate
 	FROM public.tbhouse where status='1' order by cdate desc LIMIT $1 OFFSET $2
       `;
     } else if (channel === "4") {
-      total = await getTotal("public.tbkhoomkhotsheb");
+      total = await getTotal("public.tbotherservice");
       query = `
     SELECT channel, id, type, name, price1, price2, tel, detail,
            locationgps, image, status, donation, dntstartdate,
            dntenddate, cdate
-    FROM public.tbkhoomkhotsheb
+    FROM public.tbotherservice
     WHERE status='1'
     ORDER BY cdate DESC
     LIMIT $1 OFFSET $2

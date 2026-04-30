@@ -453,7 +453,7 @@ class selectDataAll {
       // Count total
       const countQuery = `
         SELECT COUNT(*) AS total
-        FROM public.tbkhoomkhotsheb
+        FROM public.tbotherservice
         WHERE status = '1';
       `;
       const countResult = await dbExecution(countQuery, []);
@@ -522,7 +522,7 @@ class selectDataAll {
           locationgps,
           image,
           donation
-        FROM public.tbkhoomkhotsheb
+        FROM public.tbotherservice
         WHERE status = '1'
         ORDER BY cdate DESC
         LIMIT $1 OFFSET $2;
