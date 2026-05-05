@@ -239,7 +239,7 @@ class selectDataAll {
          d.channel, d.id, d.dormantalname, d.price1, d.price2, d.price3, d.type,
           d.totalroom, d.activeroom, d.locationvideo, d.tel, 
           d.contactnumber, d.moredetail,
-          p.province, dis.district, d.image, d.plan_on_next_month, d.cdate
+          p.province, dis.district, d.image, d.plan_on_next_month, d.cdate, d.TypeStatus
         ORDER BY d.cdate DESC
         LIMIT $1 OFFSET $2;
       `;
@@ -390,7 +390,7 @@ class selectDataAll {
         GROUP BY 
         h.channel, h.id, h.housename, h.price1, h.price2, h.price3, h.tel, 
           h.contactnumber, h.locationvideo, h.moredetail,
-          p.province, d.district, h.image, h.cdate
+          p.province, d.district, h.image, h.cdate,  h.TypeStatus
         ORDER BY h.cdate DESC
         LIMIT $1 OFFSET $2;
       `;
@@ -677,7 +677,7 @@ class selectDataAll {
         GROUP BY 
         l.channel, l.id, l.productname,l.type,l.squaremeters, l.area, l.price, l.tel, l.contactnumber, 
           l.locationurl, l.locationvideo, l.moredetail, 
-          p.province, d.district, l.image, l.cdate
+          p.province, d.district, l.image, l.cdate, l.TypeStatus
         ORDER BY l.cdate DESC
         LIMIT $1 OFFSET $2;
       `;
@@ -967,7 +967,7 @@ class selectDataAll {
         d.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
         t.image,
-        tTypeStatus
+        t.TypeStatus
       FROM public.tbtaxi t
       INNER JOIN public.tbdistrict d ON d.districtid = t.districtid
       INNER JOIN public.tbprovince p ON p.provinceid = t.provinceid
@@ -976,7 +976,7 @@ class selectDataAll {
       WHERE t.status = '1'
       GROUP BY 
        t.channel, t.id, t.name, t.price1, t.price2, t.tel, t.detail,
-        p.province, d.district, t.image
+        p.province, d.district, t.image, t.TypeStatus
       ORDER BY t.id DESC
       LIMIT $1 OFFSET $2;
     `;
