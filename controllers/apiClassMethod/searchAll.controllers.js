@@ -1,4 +1,5 @@
 import { searchAllData } from "../class/classSearchDataAll.js";
+import { classInsertDataS } from "../class/classinsertdata.controller.js";
 
 export const searchDataAll = async (req, res) => {
   try {
@@ -41,6 +42,9 @@ export const searchDataAll = async (req, res) => {
 
       case 7:
         data = await searchAllData.searchTaxiData(detail, dId, vId);
+        break;
+      case 20:
+        data = await classInsertDataS.searchTaxiCallingAll(detail);
         break;
 
       default:

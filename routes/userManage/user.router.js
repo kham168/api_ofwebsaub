@@ -15,6 +15,7 @@ import {
   updateGuidelineVideo,
 } from "../../controllers/userManage/user.controllers.js";
 import { uploadImage } from "../../middleware/upload.Image.js";
+import { classInsertDataS } from "../../controllers/class/classinsertdata.controller.js";
 const route = Route();
 
 route.post("/insert01", verifyJWT, uploadImage, insertDataOfAnyFunction01);
@@ -23,10 +24,11 @@ route.get("/selectOne", verifyJWT, queryUserDataOne);
 route.get("/selectProduct", verifyJWT, queryProductionAllOfEachChannel);
 route.post("/login", userLogin);
 route.post("/insert", verifyJWT, createNewUser);
-route.post("/insert02",verifyJWT, uploadImage, insertDataOfAnyFunction02);
+route.post("/insert02", verifyJWT, uploadImage, insertDataOfAnyFunction02);
 route.put("/update", verifyJWT, updateUserData);
 route.put("/updateProductStatus", verifyJWT, updateProductStatus);
 route.post("/saveLogUserReviewWeb", saveLogsUserReviewWeb);
+route.post("/insertServiceOrder", classInsertDataS.insertAllServiceOder);
 route.get("/guidelineVideo", queryGuidelineVideoAll);
 route.put("/updateGuideVideo", updateGuidelineVideo);
 export default route;

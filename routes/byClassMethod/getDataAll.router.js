@@ -5,7 +5,7 @@ import { searchDataAll } from "../../controllers/apiClassMethod/searchAll.contro
 
 const route = Route();
 
-route.get("/selectDataAll", selectDataAll);
+route.get("/selectDataAll", selectDataAll); //dbExecution
 route.get("/searchDataAll", searchDataAll);
 
 export default route;

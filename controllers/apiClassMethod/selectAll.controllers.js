@@ -1,10 +1,11 @@
 import { dbExecution } from "../../config/dbConfig.js";
-import { QueryTopData } from "../class/class.controller.js";
+import { classInsertDataS } from "../class/classinsertdata.controller.js";
 import { selectAllData } from "../class/classSelectDataAll.js";
 
 export const selectDataAll = async (req, res) => {
   try {
     const channelId = parseInt(req.query.channelId) || 0;
+    const channel = parseInt(req.query.channel) || 0;
     const page = parseInt(req.query.page) || 0;
     const limit = parseInt(req.query.limit) || 15;
 
@@ -41,11 +42,14 @@ export const selectDataAll = async (req, res) => {
       case 7:
         data = await selectAllData.queryTaxiDataAll(page, limit);
         break;
+      case 20:
+        data = await classInsertDataS.getTaxiCallingAll(channel, page, limit);
+        break;
 
       default:
         return res.status(400).json({
           status: false,
-          message: "Invalid channelIdddd",
+          message: "Invalid channelId",
           data: [],
         });
     }

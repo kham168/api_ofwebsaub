@@ -1,7 +1,9 @@
 import { dbExecution } from "../../config/dbConfig.js";
 import { QueryTopData } from "../class/class.controller.js";
 
+
 // query taxi data by id
+
 export const queryTaxiDataOne = async (req, res) => {
   //const id = req.params.id;
 

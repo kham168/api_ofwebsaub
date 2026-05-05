@@ -83,7 +83,8 @@ class selectDataAll {
            c.tel,
            c.detail,
            c.donation,
-           c.image
+           c.image,
+           c.TypeStatus
          FROM public.tbcream c
          WHERE c.status = '1'
          ORDER BY c.cdate DESC
@@ -226,7 +227,8 @@ class selectDataAll {
           dis.district,
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           d.image,
-          d.cdate
+          d.cdate,
+          d.TypeStatus
         FROM public.tbdormitory d
         INNER JOIN public.tbprovince p ON p.provinceid = d.provinceid
         INNER JOIN public.tbdistrict dis ON dis.districtid = d.districtid
@@ -377,7 +379,8 @@ class selectDataAll {
           d.district,
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           h.image,
-          h.cdate
+          h.cdate,
+          h.TypeStatus
         FROM public.tbhouse h
         INNER JOIN public.tbprovince p ON p.provinceid = h.provinceid
         INNER JOIN public.tbdistrict d ON d.districtid = h.districtid
@@ -521,7 +524,8 @@ class selectDataAll {
           detail,
           locationgps,
           image,
-          donation
+          donation,
+          TypeStatus
         FROM public.tbotherservice
         WHERE status = '1'
         ORDER BY cdate DESC
@@ -662,7 +666,8 @@ class selectDataAll {
           d.district,
           ARRAY_AGG(v.village ORDER BY v.village) AS villages,
           l.image,
-          l.cdate
+          l.cdate,
+          l.TypeStatus
         FROM public.tbland l
         INNER JOIN public.tbprovince p ON p.provinceid = l.provinceid
         INNER JOIN public.tbdistrict d ON d.districtid = l.districtid
@@ -810,7 +815,8 @@ class selectDataAll {
         t.tel,
         t.detail,
         t.donation,
-        t.image
+        t.image,
+        t.TypeStatus
       FROM public.tbtshuaj t 
       WHERE t.status = '1'
       LIMIT $1 OFFSET $2;
@@ -960,7 +966,8 @@ class selectDataAll {
         p.province,
         d.district,
         ARRAY_AGG(v.village ORDER BY v.village) AS villages,
-        t.image
+        t.image,
+        tTypeStatus
       FROM public.tbtaxi t
       INNER JOIN public.tbdistrict d ON d.districtid = t.districtid
       INNER JOIN public.tbprovince p ON p.provinceid = t.provinceid
