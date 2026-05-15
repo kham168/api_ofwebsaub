@@ -10,6 +10,9 @@ export const selectDataAll = async (req, res) => {
     const limit = parseInt(req.query.limit) || 15;
 
     let data = [];
+    let dataS = [];
+
+    dataS = classInsertDataS.monitorB(channelId, "getDataDetailOfChannel");
 
     // ✅ cleaner switch
     switch (channelId) {

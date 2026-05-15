@@ -1034,6 +1034,30 @@ class selectDataAll {
       };
     }
   };
+
+  async monitorB(channel, detail) {
+    // ✅ Validate
+    if (!channel || !detail) {
+      return;
+    }
+
+    try {
+      const query = ` 
+      INSERT INTO public.tbmonitoring(
+      channel, detail, cdate)VALUES (
+      $1, $2, NOW());
+    `;
+
+      const values = [channel, detail];
+
+      const result = await dbExecution(query, values);
+
+      if (result.rowCount > 0) {
+      }
+    } catch (error) {
+      //  console.error("Error insertList:", error);
+    }
+  }
 }
 
 export const selectAllData = new selectDataAll();

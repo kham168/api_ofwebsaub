@@ -163,6 +163,27 @@ class classInsertData {
     }
   };
 
+  async monitorB(channel, detail) {
+    // ✅ Validate
+    if (!detail) {
+      detail = "unknown";
+    }
+
+    try {
+      const query = ` 
+      INSERT INTO public.tbmonitoring(
+      channel, detail, cdate)VALUES (
+      $1, $2, NOW());
+    `;
+
+      const values = [channel, detail];
+
+      const result = await dbExecution(query, values);
+    } catch (error) {
+      //  console.error("Error insertList:", error);
+    }
+  }
+
   // Clean image array from PostgreSQL (handles all bad formats)
   async cleanImageArray(dbValue) {
     if (!dbValue) return [];

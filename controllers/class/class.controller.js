@@ -77,7 +77,7 @@ class queryTopData {
     try {
       //  const baseUrl = "http://localhost:5151/";
       const baseUrl = "https://service.tsheb.la/" || process.env.BASE_URL;
-     // const limit = 1; // 🔹 Change to 2 if you want top 2 per category
+      // const limit = 1; // 🔹 Change to 2 if you want top 2 per category
 
       // 🏘️ 1. Dormitory
       const tbdormitory = `
@@ -235,6 +235,27 @@ class queryTopData {
         message: "Internal Server Error",
         data: {},
       };
+    }
+  }
+
+  async monitorA(channel, detail) {
+    // ✅ Validate
+    if (!detail) {
+      detail = "unknown";
+    }
+
+    try {
+      const query = `
+      INSERT INTO public.tbmonitoring(
+      channel, detail, cdate)VALUES (
+      $1, $2, NOW());
+    `;
+
+      const values = [channel, detail];
+
+      const result = await dbExecution(query, values);
+    } catch (error) {
+      //  console.error("Error insertList:", error);
     }
   }
 

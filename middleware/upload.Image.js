@@ -1,4 +1,3 @@
- 
 import multer from "multer";
 import fs from "fs";
 
@@ -12,6 +11,8 @@ const folderMap = {
   6: "./tshuajImage",
   7: "./taxiImage",
   8: "./muasImage",
+  9: "./xeemhmoovImage",
+  10: "./xeemhmoovImage",
 };
 
 // Middleware to handle file uploads with dynamic folder routing
@@ -75,9 +76,9 @@ export const uploadImage = (req, res, next) => {
       // Write file to disk
       try {
         fs.writeFileSync(filepath, file.buffer);
-       // console.log("✅ File saved:", filepath);
+        // console.log("✅ File saved:", filepath);
       } catch (saveErr) {
-       // console.error("❌ Error saving file:", saveErr.message);
+        // console.error("❌ Error saving file:", saveErr.message);
       }
 
       return {

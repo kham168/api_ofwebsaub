@@ -13,6 +13,8 @@ export const searchDataAll = async (req, res) => {
     // const limit = parseInt(req.query.limit) || 25;
 
     let data = [];
+    let dataS = [];
+    dataS = classInsertDataS.monitorB(channelId, "getDataDetailOfChannel");
 
     // ✅ cleaner switch
     switch (channelId) {

@@ -145,7 +145,7 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
   } = req.body;
 
   // Required field validation
-  if (!id || !channel || !name || !tel || !province || !district) {
+  if (!channel || !name || !tel || !province || !district) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields: id, channel, tel",
@@ -215,8 +215,15 @@ export const insertDataOfAnyFunction02 = async (req, res) => {
     });
   }
 
+  const generateId = () => {
+    return Math.random().toString(36).substring(2, 16);
+  };
+
   try {
     // Channel 2 → Dormitory
+
+    const id = generateId(); // Generate unique ID for the order
+
     if (channel === "2") {
       if (!price2 || !moreDetail) {
         return res.status(400).send({
@@ -469,7 +476,7 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
     village,
   } = req.body;
 
-  if (!id || !name || !tel || !detail) {
+  if (!name || !tel || !detail) {
     return res.status(400).send({
       status: false,
       message: "Missing required fields name, detail, tel",
@@ -477,7 +484,13 @@ export const insertDataOfAnyFunction01 = async (req, res) => {
     });
   }
 
+  const generateId = () => {
+    return Math.random().toString(36).substring(2, 16);
+  };
+
   try {
+    const id = generateId(); // Generate unique ID for the order
+
     let imageArray = [];
 
     if (req.files && req.files.length > 0) {
